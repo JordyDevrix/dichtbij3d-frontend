@@ -271,8 +271,8 @@ export default function CalculatorScreen() {
             </>
           ) : (
             <Card style={{ gap: spacing.md, alignItems: 'center', paddingVertical: spacing.xxl }}>
-              <Icon name="magic" size={30} color={colors.orangeBorder} />
-              <Muted style={{ textAlign: 'center' }}>{t('calculator.subtitle')}</Muted>
+              <Icon name="magic" size={26} color={colors.orange} />
+              <Muted style={{ textAlign: 'center' }}>{t('calculator.emptyHint')}</Muted>
             </Card>
           )}
         </View>

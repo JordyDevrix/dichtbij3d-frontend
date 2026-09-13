@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../src/api';
 import type { AdvertSearchParams, AdvertSort, AdvertSummary, AdvertType, PublicStats, Tag } from '../src/api/types';
@@ -8,7 +8,6 @@ import { AdvertCard } from '../src/components/AdvertCard';
 import { Icon } from '../src/components/Icon';
 import { Page } from '../src/components/Page';
 import {
-  Badge,
   Body,
   Button,
   Card,
@@ -26,7 +25,7 @@ import {
 } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
 import { useI18n } from '../src/i18n';
-import { advertTypeColor, colors, radius, spacing } from '../src/theme/theme';
+import { advertTypeColor, colors, spacing, typography } from '../src/theme/theme';
 import { numberFmt, toCents } from '../src/utils/format';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
 
@@ -172,37 +171,46 @@ export default function MarketplaceScreen() {
   return (
     <Page refreshing={loading} onRefresh={() => void load(0, false)}>
       {!user && (
-        <Card style={{ padding: 0, overflow: 'hidden' }} padded={false}>
-          <View
-            style={{
-              padding: isWide ? spacing.xxl : spacing.xl,
-              gap: spacing.md,
-              backgroundColor: colors.orangeSofter,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.orangeBorder,
-            }}
-          >
-            <Badge label={t('common.tagline')} tone={{ bg: colors.orange, fg: colors.white }} />
-            <H1 style={{ fontSize: isWide ? 38 : 28, maxWidth: 640 }}>{t('marketplace.heroTitle')}</H1>
-            <Body style={{ maxWidth: 620 }}>{t('marketplace.heroSubtitle')}</Body>
-            <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.sm }}>
+        <Card padded={false} flat style={{ backgroundColor: colors.surface }}>
+          <View style={{ padding: isWide ? spacing.xxl : spacing.xl, gap: spacing.md }}>
+            <Row gap={6}>
+              <Icon name="bolt" size={11} color={colors.orange} />
+              <Body style={{ ...typography.tiny, color: colors.orange, textTransform: 'uppercase' }}>
+                {t('common.tagline')}
+              </Body>
+            </Row>
+            <H1 style={{ fontSize: isWide ? 40 : 27, lineHeight: isWide ? 46 : 33, maxWidth: 660 }}>
+              {t('marketplace.heroTitle')}
+            </H1>
+            <Body style={{ maxWidth: 600, color: colors.textMuted }}>{t('marketplace.heroSubtitle')}</Body>
+            <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
               <Button
                 title={t('marketplace.heroCtaCreate')}
                 icon="plus"
-                size="lg"
+                size={isWide ? 'lg' : 'md'}
                 onPress={() => router.push('/create')}
               />
               <Button
                 title={t('common.createAccount')}
                 icon="userPlus"
                 variant="outline"
-                size="lg"
+                size={isWide ? 'lg' : 'md'}
                 onPress={() => router.push('/auth/register')}
               />
             </Row>
           </View>
           {stats && (
-            <Row style={{ padding: spacing.lg, flexWrap: 'wrap', gap: spacing.xl }}>
+            <Row
+              style={{
+                paddingHorizontal: isWide ? spacing.xxl : spacing.xl,
+                paddingVertical: spacing.lg,
+                flexWrap: 'wrap',
+                gap: spacing.xl,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+                backgroundColor: colors.surfaceAlt,
+              }}
+            >
               {[
                 { icon: 'layers' as const, value: stats.adverts, label: t('marketplace.statAdverts') },
                 { icon: 'users' as const, value: stats.users, label: t('marketplace.statUsers') },
@@ -210,8 +218,8 @@ export default function MarketplaceScreen() {
                 { icon: 'eye' as const, value: stats.views, label: t('marketplace.statViews') },
               ].map((item) => (
                 <Row key={item.label} gap={spacing.sm}>
-                  <Icon name={item.icon} size={15} color={colors.orange} />
-                  <Body style={{ fontWeight: '800', color: colors.ink }}>{numberFmt(item.value, locale)}</Body>
+                  <Icon name={item.icon} size={13} color={colors.orange} />
+                  <Body style={{ fontWeight: '700', color: colors.ink }}>{numberFmt(item.value, locale)}</Body>
                   <Muted>{item.label}</Muted>
                 </Row>
               ))}
@@ -222,7 +230,7 @@ export default function MarketplaceScreen() {
 
       <View style={{ gap: spacing.md }}>
         <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-          <View style={{ flexGrow: 1, flexBasis: 260 }}>
+          <View style={{ flexGrow: 1, flexBasis: 150 }}>
             <Input
               value={query}
               onChangeText={setQuery}
@@ -232,24 +240,30 @@ export default function MarketplaceScreen() {
             />
           </View>
           <Button
-            title={activeFilterCount ? `${t('common.filters')} (${activeFilterCount})` : t('common.filters')}
+            title={activeFilterCount ? `${t('common.filters')} · ${activeFilterCount}` : t('common.filters')}
             icon="filter"
             variant={activeFilterCount ? 'secondary' : 'outline'}
             onPress={openFilters}
-            style={{ height: 46 }}
+            style={{ height: 44 }}
           />
-          <View style={{ minWidth: 200 }}>
-            <Select
-              value={sort}
-              options={sortOptions}
-              onChange={(value) => setSort(value)}
-              icon="sort"
-              placeholder={t('common.sort')}
-            />
-          </View>
+          {isWide && (
+            <View style={{ minWidth: 190 }}>
+              <Select
+                value={sort}
+                options={sortOptions}
+                onChange={(value) => setSort(value)}
+                icon="sort"
+                placeholder={t('common.sort')}
+              />
+            </View>
+          )}
         </Row>
 
-        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.lg }}
+        >
           <Chip
             label={t('common.all')}
             selected={filters.types.length === 0}
@@ -268,7 +282,7 @@ export default function MarketplaceScreen() {
               }
             />
           ))}
-        </Row>
+        </ScrollView>
 
         {filters.tags.length > 0 && (
           <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
@@ -324,7 +338,16 @@ export default function MarketplaceScreen() {
       )}
 
       <Sheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title={t('common.filters')} width={560}>
-        <View style={{ gap: spacing.lg }}>
+        <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
+          {!isWide && (
+            <Select
+              label={t('common.sort')}
+              value={sort}
+              options={sortOptions}
+              onChange={(value) => setSort(value)}
+              icon="sort"
+            />
+          )}
           <View style={{ gap: spacing.sm }}>
             <Muted>{t('marketplace.type')}</Muted>
             <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
@@ -433,7 +456,7 @@ export default function MarketplaceScreen() {
               }}
             />
           </Row>
-        </View>
+        </ScrollView>
       </Sheet>
     </Page>
   );

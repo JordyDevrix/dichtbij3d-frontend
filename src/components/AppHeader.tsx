@@ -1,31 +1,42 @@
 import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, layout, radius, spacing, typography } from '../theme/theme';
 import { Icon, IconName } from './Icon';
-import { Avatar, Button, Muted, Row, Sheet } from './ui';
+import { Avatar, Button, Divider, MenuItem, Muted, Row, Sheet } from './ui';
+import { PreferencesSheet } from './PreferencesSheet';
 import { useAuth } from '../context/AuthContext';
-import { useI18n, LOCALES, LOCALE_LABELS, LOCALE_SHORT, Locale } from '../i18n';
+import { useI18n } from '../i18n';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import { absoluteUrl } from '../api/client';
 
-interface NavItem {
+export interface NavItem {
   href: string;
   labelKey: string;
   icon: IconName;
 }
 
-export const NAV_ITEMS: NavItem[] = [
+/** Desktop top navigation — browsing destinations only. */
+export const PRIMARY_NAV: NavItem[] = [
+  { href: '/', labelKey: 'nav.marketplace', icon: 'layers' },
+  { href: '/models', labelKey: 'nav.models', icon: 'cubes' },
+  { href: '/calculator', labelKey: 'nav.calculator', icon: 'calculator' },
+];
+
+/**
+ * Phone tab bar — exactly five slots with "create" in the middle, so the primary
+ * action sits under the thumb and the bar stays symmetrical.
+ */
+export const TAB_ITEMS: NavItem[] = [
   { href: '/', labelKey: 'nav.marketplace', icon: 'layers' },
   { href: '/models', labelKey: 'nav.models', icon: 'cubes' },
   { href: '/create', labelKey: 'nav.create', icon: 'plus' },
-  { href: '/calculator', labelKey: 'nav.calculator', icon: 'calculator' },
   { href: '/notifications', labelKey: 'nav.notifications', icon: 'bell' },
   { href: '/profile', labelKey: 'nav.profile', icon: 'user' },
 ];
 
-function isActive(pathname: string, href: string) {
+export function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/' || pathname === '/index';
   return pathname.startsWith(href);
 }
@@ -36,51 +47,123 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const [hovered, setHovered] = useState(false);
   return (
     <Pressable
+      accessibilityRole="link"
       onPress={() => router.push(item.href as any)}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 7,
-        paddingVertical: 8,
+        paddingVertical: 7,
         paddingHorizontal: 12,
-        borderRadius: radius.pill,
-        backgroundColor: active ? colors.orangeSoft : hovered ? colors.surfaceAlt : 'transparent',
+        borderRadius: radius.md,
+        backgroundColor: active || hovered ? colors.surfaceAlt : 'transparent',
       }}
     >
-      <Icon name={item.icon} size={13} color={active ? colors.orangeDarker : colors.textMuted} />
       <Text
         style={{
           fontSize: 14,
-          fontWeight: active ? '700' : '600',
-          color: active ? colors.orangeDarker : colors.textMuted,
+          fontWeight: active ? '600' : '500',
+          color: active ? colors.ink : colors.textMuted,
         }}
       >
         {t(item.labelKey)}
       </Text>
+      {active && (
+        <View
+          style={{
+            position: 'absolute',
+            left: 12,
+            right: 12,
+            bottom: -11,
+            height: 2,
+            borderRadius: 2,
+            backgroundColor: colors.orange,
+          }}
+        />
+      )}
     </Pressable>
   );
 }
 
-export function Logo({ onPress }: { onPress?: () => void }) {
+export function Logo({ onPress, compact }: { onPress?: () => void; compact?: boolean }) {
   return (
-    <Pressable onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+    <Pressable
+      accessibilityRole="link"
+      onPress={onPress}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+    >
       <View
         style={{
-          width: 34,
-          height: 34,
-          borderRadius: 10,
+          width: 30,
+          height: 30,
+          borderRadius: 9,
           backgroundColor: colors.orange,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon name="cube" size={17} color={colors.white} />
+        <Icon name="cube" size={15} color={colors.white} />
       </View>
-      <Text style={{ fontSize: 19, fontWeight: '800', color: colors.ink, letterSpacing: -0.5 }}>
-        Dichtbij<Text style={{ color: colors.orange }}>3D</Text>
-      </Text>
+      {!compact && (
+        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.ink, letterSpacing: -0.5 }}>
+          Dichtbij<Text style={{ color: colors.orange }}>3D</Text>
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+
+/** Small circular icon button used for the header actions. */
+function HeaderAction({
+  icon,
+  label,
+  onPress,
+  badge,
+}: {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+  badge?: number;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: hovered ? colors.surfaceAlt : 'transparent',
+      }}
+    >
+      <Icon name={icon} size={15} color={colors.textMuted} />
+      {!!badge && badge > 0 && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 3,
+            right: 2,
+            minWidth: 16,
+            height: 16,
+            borderRadius: 8,
+            paddingHorizontal: 4,
+            backgroundColor: colors.orange,
+            borderWidth: 2,
+            borderColor: colors.surface,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ color: colors.white, fontSize: 9, fontWeight: '800' }}>
+            {badge > 99 ? '99+' : badge}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -89,20 +172,28 @@ export function AppHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { t, locale, setLocale } = useI18n();
+  const { t } = useI18n();
   const { user, isAdmin, unreadCount, logout } = useAuth();
   const { isWide } = useBreakpoint();
-  const [langOpen, setLangOpen] = useState(false);
+  const [prefsOpen, setPrefsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const go = (href: string) => {
+    setMenuOpen(false);
+    router.push(href as any);
+  };
 
   return (
     <View
-      style={{
-        backgroundColor: colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-        paddingTop: insets.top,
-      }}
+      style={[
+        {
+          backgroundColor: colors.surface,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          paddingTop: insets.top,
+          ...(Platform.OS === 'web' ? ({ position: 'sticky', top: 0, zIndex: 20 } as any) : null),
+        },
+      ]}
     >
       <View
         style={{
@@ -110,17 +201,17 @@ export function AppHeader() {
           maxWidth: layout.maxWidth,
           alignSelf: 'center',
           paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.md,
+          height: 58,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: spacing.md,
+          gap: spacing.sm,
         }}
       >
         <Logo onPress={() => router.push('/')} />
 
-        {isWide && (
-          <Row gap={2} style={{ flex: 1, marginLeft: spacing.lg }}>
-            {NAV_ITEMS.filter((item) => item.href !== '/notifications' && item.href !== '/profile').map((item) => (
+        {isWide ? (
+          <Row gap={2} style={{ flex: 1, marginLeft: spacing.xl }}>
+            {PRIMARY_NAV.map((item) => (
               <NavLink key={item.href} item={item} active={isActive(pathname, item.href)} />
             ))}
             {isAdmin && (
@@ -130,124 +221,73 @@ export function AppHeader() {
               />
             )}
           </Row>
+        ) : (
+          <View style={{ flex: 1 }} />
         )}
-        {!isWide && <View style={{ flex: 1 }} />}
 
-        <Pressable
-          onPress={() => setLangOpen(true)}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            paddingVertical: 7,
-            paddingHorizontal: 11,
-            borderRadius: radius.pill,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Icon name="globe" size={12} color={colors.textMuted} />
-          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textMuted }}>{LOCALE_SHORT[locale]}</Text>
-        </Pressable>
+        {isWide && user && (
+          <Button
+            title={t('nav.create')}
+            icon="plus"
+            size="sm"
+            style={{ alignSelf: 'center' }}
+            onPress={() => router.push('/create')}
+          />
+        )}
 
         {user ? (
           <>
-            <Pressable onPress={() => router.push('/notifications')} style={{ padding: 8 }}>
-              <Icon name="bell" size={17} color={colors.textMuted} />
-              {unreadCount > 0 && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 2,
-                    right: 0,
-                    minWidth: 17,
-                    height: 17,
-                    borderRadius: 9,
-                    paddingHorizontal: 4,
-                    backgroundColor: colors.orange,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ color: colors.white, fontSize: 10, fontWeight: '800' }}>
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-            <Pressable onPress={() => setMenuOpen(true)}>
-              <Avatar name={user.displayName} uri={absoluteUrl(user.avatarUrl)} size={34} />
+            {isWide && (
+              <HeaderAction
+                icon="bell"
+                label={t('nav.notifications')}
+                badge={unreadCount}
+                onPress={() => router.push('/notifications')}
+              />
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={user.displayName}
+              onPress={() => setMenuOpen(true)}
+              style={{ marginLeft: 2 }}
+            >
+              <Avatar name={user.displayName} uri={absoluteUrl(user.avatarUrl)} size={32} />
             </Pressable>
           </>
         ) : (
-          <Row gap={spacing.sm}>
-            <Button title={t('nav.login')} variant="ghost" size="sm" onPress={() => router.push('/auth/login')} />
+          <Row gap={spacing.xs}>
+            <HeaderAction icon="gear" label={t('prefs.title')} onPress={() => setPrefsOpen(true)} />
+            {isWide && (
+              <Button title={t('nav.login')} variant="ghost" size="sm" onPress={() => router.push('/auth/login')} />
+            )}
             <Button title={t('nav.register')} size="sm" onPress={() => router.push('/auth/register')} />
           </Row>
         )}
       </View>
 
-      <Sheet open={langOpen} onClose={() => setLangOpen(false)} title={t('common.language')} width={360}>
-        {LOCALES.map((code: Locale) => (
-          <Pressable
-            key={code}
-            onPress={() => {
-              setLocale(code);
-              setLangOpen(false);
-            }}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.md,
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.sm,
-              borderRadius: radius.md,
-              backgroundColor: code === locale ? colors.orangeSofter : 'transparent',
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '800', color: colors.orange, width: 26 }}>
-              {LOCALE_SHORT[code]}
-            </Text>
-            <Text style={{ ...typography.bodyStrong, flex: 1 }}>{LOCALE_LABELS[code]}</Text>
-            {code === locale && <Icon name="check" size={14} color={colors.orange} />}
-          </Pressable>
-        ))}
-      </Sheet>
+      <PreferencesSheet open={prefsOpen} onClose={() => setPrefsOpen(false)} />
 
-      <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title={user?.displayName} width={380}>
-        <Muted>{user?.email}</Muted>
-        <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
-          {[
-            { href: '/profile', label: t('nav.profile'), icon: 'user' as IconName },
-            { href: '/settings/security', label: t('nav.security'), icon: 'shield' as IconName },
-            { href: '/models', label: t('models.mine'), icon: 'cubes' as IconName },
-            ...(isAdmin ? [{ href: '/admin', label: t('nav.admin'), icon: 'userShield' as IconName }] : []),
-          ].map((entry) => (
-            <Pressable
-              key={entry.href}
-              onPress={() => {
-                setMenuOpen(false);
-                router.push(entry.href as any);
-              }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.md,
-                paddingVertical: spacing.md,
-                paddingHorizontal: spacing.sm,
-                borderRadius: radius.md,
-              }}
-            >
-              <Icon name={entry.icon} size={14} color={colors.textMuted} />
-              <Text style={typography.bodyStrong}>{entry.label}</Text>
-            </Pressable>
-          ))}
-          <Button
-            title={t('nav.logout')}
+      <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title={user?.displayName} width={360}>
+        <Muted style={{ marginTop: -spacing.sm }}>{user?.email}</Muted>
+        <View style={{ gap: 2, marginTop: spacing.sm }}>
+          <MenuItem icon="user" label={t('nav.profile')} onPress={() => go('/profile')} />
+          <MenuItem icon="cubes" label={t('models.mine')} onPress={() => go('/models')} />
+          <MenuItem icon="calculator" label={t('nav.calculator')} onPress={() => go('/calculator')} />
+          <MenuItem icon="shield" label={t('nav.security')} onPress={() => go('/settings/security')} />
+          {isAdmin && <MenuItem icon="userShield" label={t('nav.admin')} onPress={() => go('/admin')} />}
+          <Divider style={{ marginVertical: spacing.sm }} />
+          <MenuItem
+            icon="gear"
+            label={t('prefs.title')}
+            onPress={() => {
+              setMenuOpen(false);
+              setPrefsOpen(true);
+            }}
+          />
+          <MenuItem
             icon="logout"
-            variant="outline"
-            full
-            style={{ marginTop: spacing.sm }}
+            label={t('nav.logout')}
+            tone="danger"
             onPress={() => {
               setMenuOpen(false);
               void logout();

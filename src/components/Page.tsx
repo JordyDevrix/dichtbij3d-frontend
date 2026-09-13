@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshControl, ScrollView, View, ViewStyle } from 'react-native';
+import { RefreshControl, ScrollView, useWindowDimensions, View, ViewStyle } from 'react-native';
 import { colors, layout, spacing } from '../theme/theme';
 
 export function Page({
@@ -15,6 +15,8 @@ export function Page({
   onRefresh?: () => void;
   contentStyle?: ViewStyle;
 }) {
+  const { width } = useWindowDimensions();
+  const gutter = width >= 900 ? spacing.xl : spacing.lg;
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -30,8 +32,8 @@ export function Page({
             width: '100%',
             maxWidth,
             alignSelf: 'center',
-            paddingHorizontal: spacing.lg,
-            paddingTop: spacing.lg,
+            paddingHorizontal: gutter,
+            paddingTop: gutter,
             gap: spacing.lg,
           },
           contentStyle,

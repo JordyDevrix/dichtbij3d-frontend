@@ -90,7 +90,7 @@ export default function LoginScreen() {
 
         <Row gap={spacing.md}>
           <Divider style={{ flex: 1 }} />
-          <Muted>{t('common.of')}</Muted>
+          <Muted>{t('common.or')}</Muted>
           <Divider style={{ flex: 1 }} />
         </Row>
 

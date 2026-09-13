@@ -57,4 +57,5 @@ export const StorageKeys = {
   accessToken: 'd3d.accessToken',
   refreshToken: 'd3d.refreshToken',
   locale: 'd3d.locale',
+  theme: 'd3d.theme',
 };

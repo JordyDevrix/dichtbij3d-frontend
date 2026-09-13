@@ -6,7 +6,7 @@
     "scheme": "dichtbij3d",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -28,8 +28,7 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.INTERNET",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.READ_EXTERNAL_STORAGE"
       ]
     },
     "web": {

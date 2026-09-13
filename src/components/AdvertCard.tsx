@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Image, Platform, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../api';
 import { absoluteUrl } from '../api/client';
@@ -97,19 +97,25 @@ export function AdvertCard({ advert, onChanged }: Props) {
             backgroundColor: colors.surface,
             borderRadius: radius.lg,
             borderWidth: 1,
-            borderColor: hovered ? colors.orangeBorder : colors.border,
+            borderColor: hovered ? colors.borderStrong : colors.border,
             overflow: 'hidden',
-            transform: [{ translateY: hovered ? -2 : 0 }],
+            transform: [{ translateY: hovered ? -3 : 0 }],
+            ...(Platform.OS === 'web'
+              ? ({
+                  transitionDuration: '180ms',
+                  transitionProperty: 'transform, border-color, box-shadow',
+                } as any)
+              : null),
           },
-          shadow.card,
+          hovered ? shadow.raised : shadow.card,
         ]}
       >
-        <View style={{ height: 168, backgroundColor: colors.orangeSofter }}>
+        <View style={{ aspectRatio: 16 / 10, backgroundColor: colors.surfaceAlt }}>
           {cover ? (
             <Image source={{ uri: cover }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="cube" size={38} color={colors.orangeBorder} />
+              <Icon name="cube" size={34} color={colors.borderStrong} />
             </View>
           )}
           <View style={{ position: 'absolute', top: spacing.md, left: spacing.md, flexDirection: 'row', gap: 6 }}>
@@ -132,10 +138,9 @@ export function AdvertCard({ advert, onChanged }: Props) {
           )}
 
           <Row style={{ justifyContent: 'space-between', marginTop: 2 }}>
-            <Row gap={6}>
-              <Icon name="euro" size={13} color={colors.orange} />
-              <Body style={{ fontWeight: '700', color: colors.ink }}>{priceLabel()}</Body>
-            </Row>
+            <Body style={{ fontSize: 17, fontWeight: '700', color: colors.ink, letterSpacing: -0.3 }}>
+              {priceLabel()}
+            </Body>
             {advert.allowBidding && (
               <Row gap={5}>
                 <Icon name="gavel" size={12} color={colors.textFaint} />
@@ -146,15 +151,15 @@ export function AdvertCard({ advert, onChanged }: Props) {
             )}
           </Row>
 
-          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 2 }} />
+          <View style={{ height: 1, backgroundColor: colors.border, marginTop: spacing.xs }} />
 
           <Row style={{ justifyContent: 'space-between' }}>
             <Pressable
               onPress={() => router.push(`/user/${advert.author.id}`)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 }}
             >
-              <Avatar name={advert.author.displayName} uri={absoluteUrl(advert.author.avatarUrl)} size={26} />
-              <Muted numberOfLines={1} style={{ flexShrink: 1 }}>
+              <Avatar name={advert.author.displayName} uri={absoluteUrl(advert.author.avatarUrl)} size={22} />
+              <Muted numberOfLines={1} style={{ flexShrink: 1, fontSize: 12 }}>
                 {advert.author.displayName}
                 {advert.city ? ` · ${advert.city}` : ''}
               </Muted>
@@ -171,7 +176,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
             </Row>
           </Row>
 
-          <Muted style={{ ...typography.tiny }}>{timeAgo(advert.createdAt, t, locale)}</Muted>
+          <Muted style={typography.tiny}>{timeAgo(advert.createdAt, t, locale)}</Muted>
         </View>
       </Pressable>
 

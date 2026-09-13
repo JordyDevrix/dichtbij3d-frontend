@@ -66,6 +66,7 @@ export function timeAgo(iso: string | null | undefined, t: TranslateFn, locale =
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return t('common.hoursAgo', { n: hours });
   const days = Math.floor(hours / 24);
+  if (days === 1) return t('common.dayAgo');
   if (days < 14) return t('common.daysAgo', { n: days });
   return formatDate(iso, locale);
 }
@@ -81,7 +82,7 @@ export function initials(name: string): string {
 
 /** Deterministic colour for avatars without a picture. */
 export function avatarColor(seed: string): string {
-  const palette = ['#FF6A00', '#E35A00', '#2B6CB0', '#1B8A5A', '#5B3FBF', '#B7791F', '#C0392B'];
+  const palette = ['#F26514', '#D9540B', '#1B62C9', '#137A47', '#6236C9', '#9A6400', '#C62B1F'];
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   return palette[hash % palette.length];

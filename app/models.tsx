@@ -48,18 +48,18 @@ function ModelCard({ model, onPress }: { model: ModelSummary; onPress: () => voi
           backgroundColor: colors.surface,
           borderRadius: radius.lg,
           borderWidth: 1,
-          borderColor: hovered ? colors.orangeBorder : colors.border,
+          borderColor: hovered ? colors.borderStrong : colors.border,
           overflow: 'hidden',
         },
         shadow.card,
       ]}
     >
-      <View style={{ height: 150, backgroundColor: colors.orangeSofter }}>
+      <View style={{ aspectRatio: 16 / 10, backgroundColor: colors.surfaceAlt }}>
         {model.thumbnailUrl ? (
           <Image source={{ uri: absoluteUrl(model.thumbnailUrl) }} style={{ width: '100%', height: '100%' }} />
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="cubes" size={34} color={colors.orangeBorder} />
+            <Icon name="cubes" size={32} color={colors.borderStrong} />
           </View>
         )}
       </View>
@@ -67,7 +67,7 @@ function ModelCard({ model, onPress }: { model: ModelSummary; onPress: () => voi
         <H3 numberOfLines={1}>{model.title}</H3>
         <Muted numberOfLines={2}>{model.description ?? ''}</Muted>
         <Row style={{ justifyContent: 'space-between' }}>
-          <Body style={{ fontWeight: '700', color: colors.orange }}>
+          <Body style={{ fontSize: 16, fontWeight: '700', color: colors.ink, letterSpacing: -0.3 }}>
             {model.priceCents > 0 ? money(model.priceCents, locale, model.currency) : t('common.free')}
           </Body>
           <Row gap={spacing.md}>
@@ -209,28 +209,30 @@ export default function ModelsScreen() {
         {user && <Button title={t('models.upload')} icon="upload" onPress={() => setUploadOpen(true)} />}
       </Row>
 
-      <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-        {tabs
-          .filter((entry) => !entry.auth || user)
-          .map((entry) => (
-            <Pressable
-              key={entry.key}
-              onPress={() => setTab(entry.key)}
-              style={{
-                paddingVertical: 8,
-                paddingHorizontal: 14,
-                borderRadius: radius.pill,
-                backgroundColor: tab === entry.key ? colors.orange : colors.surface,
-                borderWidth: 1,
-                borderColor: tab === entry.key ? colors.orange : colors.border,
-              }}
-            >
-              <Body style={{ color: tab === entry.key ? colors.white : colors.textMuted, fontWeight: '700' }}>
-                {entry.label}
-              </Body>
-            </Pressable>
-          ))}
-      </Row>
+      {tabs.filter((entry) => !entry.auth || user).length > 1 && (
+        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+          {tabs
+            .filter((entry) => !entry.auth || user)
+            .map((entry) => (
+              <Pressable
+                key={entry.key}
+                onPress={() => setTab(entry.key)}
+                style={{
+                  paddingVertical: 7,
+                  paddingHorizontal: 14,
+                  borderRadius: radius.pill,
+                  backgroundColor: tab === entry.key ? colors.orange : colors.surface,
+                  borderWidth: 1,
+                  borderColor: tab === entry.key ? colors.orange : colors.border,
+                }}
+              >
+                <Body style={{ fontSize: 14, color: tab === entry.key ? colors.white : colors.textMuted, fontWeight: '600' }}>
+                  {entry.label}
+                </Body>
+              </Pressable>
+            ))}
+        </Row>
+      )}
 
       {tab === 'browse' && (
         <Input value={query} onChangeText={setQuery} placeholder={t('common.searchPlaceholder')} icon="search" />

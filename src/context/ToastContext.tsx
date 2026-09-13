@@ -23,11 +23,14 @@ const ToastContext = createContext<ToastValue>({
   error: () => undefined,
 });
 
-const TONES: Record<ToastTone, { bg: string; fg: string; icon: IconName }> = {
-  success: { bg: colors.success, fg: colors.white, icon: 'checkCircle' },
-  error: { bg: colors.danger, fg: colors.white, icon: 'error' },
-  info: { bg: colors.ink, fg: colors.white, icon: 'info' },
-};
+/** Read lazily so a theme swap is reflected without reloading the module. */
+function tones(): Record<ToastTone, { bg: string; fg: string; icon: IconName }> {
+  return {
+    success: { bg: colors.success, fg: colors.white, icon: 'checkCircle' },
+    error: { bg: colors.danger, fg: colors.white, icon: 'error' },
+    info: { bg: colors.ink, fg: colors.surface, icon: 'info' },
+  };
+}
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
@@ -65,7 +68,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         }}
       >
         {items.map((item) => {
-          const tone = TONES[item.tone];
+          const tone = tones()[item.tone];
           return (
             <Animated.View
               key={item.id}
@@ -77,7 +80,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   backgroundColor: tone.bg,
                   paddingVertical: spacing.md,
                   paddingHorizontal: spacing.lg,
-                  borderRadius: radius.pill,
+                  borderRadius: radius.md,
                   maxWidth: 520,
                 },
                 shadow.raised,

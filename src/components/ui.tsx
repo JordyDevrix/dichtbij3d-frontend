@@ -6,11 +6,11 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
   TextInputProps,
+  useWindowDimensions,
   View,
   ViewStyle,
 } from 'react-native';
@@ -51,15 +51,15 @@ export function Button({
   const [hovered, setHovered] = useState(false);
   const palette: Record<ButtonVariant, { bg: string; fg: string; border: string; hover: string }> = {
     primary: { bg: colors.orange, fg: colors.white, border: colors.orange, hover: colors.orangeDark },
-    secondary: { bg: colors.orangeSoft, fg: colors.orangeDarker, border: colors.orangeSoft, hover: colors.orangeBorder },
-    outline: { bg: 'transparent', fg: colors.text, border: colors.borderStrong, hover: colors.surfaceAlt },
+    secondary: { bg: colors.orangeSoft, fg: colors.orangeDarker, border: colors.orangeBorder, hover: colors.orangeBorder },
+    outline: { bg: colors.surface, fg: colors.text, border: colors.border, hover: colors.surfaceAlt },
     ghost: { bg: 'transparent', fg: colors.textMuted, border: 'transparent', hover: colors.surfaceAlt },
-    danger: { bg: colors.danger, fg: colors.white, border: colors.danger, hover: '#A5322A' },
+    danger: { bg: colors.danger, fg: colors.white, border: colors.danger, hover: colors.orangeDark },
   };
   const sizing: Record<ButtonSize, { py: number; px: number; font: number; icon: number }> = {
-    sm: { py: 7, px: 12, font: 13, icon: 13 },
-    md: { py: 11, px: 18, font: 15, icon: 15 },
-    lg: { py: 15, px: 24, font: 16, icon: 17 },
+    sm: { py: 7, px: 12, font: 13, icon: 12 },
+    md: { py: 10, px: 16, font: 14, icon: 14 },
+    lg: { py: 13, px: 22, font: 15, icon: 16 },
   };
   const p = palette[variant];
   const s = sizing[size];
@@ -71,20 +71,24 @@ export function Button({
       onPress={inactive ? undefined : onPress}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
-      style={[
+      style={({ pressed }) => [
         {
           backgroundColor: hovered && !inactive ? p.hover : p.bg,
           borderColor: p.border,
           borderWidth: 1,
-          borderRadius: radius.pill,
+          borderRadius: radius.md,
           paddingVertical: s.py,
           paddingHorizontal: s.px,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: spacing.sm,
-          opacity: inactive ? 0.55 : 1,
+          gap: 7,
+          opacity: inactive ? 0.45 : pressed ? 0.85 : 1,
           alignSelf: full ? 'stretch' : 'flex-start',
+          transform: [{ scale: pressed && !inactive ? 0.985 : 1 }],
+          ...(Platform.OS === 'web'
+            ? ({ transitionDuration: '140ms', transitionProperty: 'background-color, border-color, transform' } as any)
+            : null),
         },
         style,
       ]}
@@ -94,7 +98,7 @@ export function Button({
       ) : (
         icon && <Icon name={icon} size={s.icon} color={p.fg} />
       )}
-      <Text style={{ color: p.fg, fontSize: s.font, fontWeight: '700' }}>{title}</Text>
+      <Text style={{ color: p.fg, fontSize: s.font, fontWeight: '600', letterSpacing: -0.1 }}>{title}</Text>
       {iconRight && !loading && <Icon name={iconRight} size={s.icon} color={p.fg} />}
     </Pressable>
   );
@@ -128,7 +132,7 @@ export function IconButton({
       style={[
         {
           padding: spacing.sm,
-          borderRadius: radius.pill,
+          borderRadius: radius.md,
           backgroundColor: hovered ? colors.surfaceAlt : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
@@ -147,10 +151,13 @@ export function Card({
   children,
   style,
   padded = true,
+  flat,
 }: {
   children: React.ReactNode;
   style?: ViewStyle;
   padded?: boolean;
+  /** Drop the shadow — useful for cards inside other surfaces. */
+  flat?: boolean;
 }) {
   return (
     <View
@@ -161,8 +168,9 @@ export function Card({
           borderWidth: 1,
           borderColor: colors.border,
           padding: padded ? spacing.lg : 0,
+          overflow: 'hidden',
         },
-        shadow.card,
+        flat ? null : shadow.card,
         style,
       ]}
     >
@@ -237,7 +245,16 @@ export function Input({ label, hint, error, icon, password, containerStyle, styl
           borderRadius: radius.md,
           paddingHorizontal: spacing.md,
           paddingVertical: rest.multiline ? spacing.md : 0,
-          minHeight: rest.multiline ? 110 : 46,
+          minHeight: rest.multiline ? 112 : 44,
+          ...(Platform.OS === 'web'
+            ? ({
+                transitionDuration: '140ms',
+                transitionProperty: 'border-color, box-shadow',
+                boxShadow: focused
+                  ? `0 0 0 3px ${error ? colors.dangerSoft : colors.orangeSoft}`
+                  : 'none',
+              } as any)
+            : null),
         }}
       >
         {icon && <Icon name={icon} size={15} color={focused ? colors.orange : colors.textFaint} style={rest.multiline ? { marginTop: 3 } : undefined} />}
@@ -336,12 +353,12 @@ export function Badge({ label, tone }: { label: string; tone: { bg: string; fg: 
       style={{
         backgroundColor: tone.bg,
         borderRadius: radius.sm,
-        paddingHorizontal: 8,
+        paddingHorizontal: 7,
         paddingVertical: 3,
         alignSelf: 'flex-start',
       }}
     >
-      <Text style={{ color: tone.fg, fontSize: 11, fontWeight: '700', letterSpacing: 0.2 }}>{label}</Text>
+      <Text style={{ color: tone.fg, fontSize: 11, fontWeight: '700', letterSpacing: 0.1 }}>{label}</Text>
     </View>
   );
 }
@@ -407,15 +424,15 @@ export function EmptyState({
     <View style={{ alignItems: 'center', paddingVertical: spacing.xxl, paddingHorizontal: spacing.lg, gap: spacing.md }}>
       <View
         style={{
-          width: 64,
-          height: 64,
-          borderRadius: 32,
+          width: 56,
+          height: 56,
+          borderRadius: radius.lg,
           backgroundColor: colors.orangeSoft,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon name={icon} size={26} color={colors.orange} />
+        <Icon name={icon} size={22} color={colors.orange} />
       </View>
       <H3 style={{ textAlign: 'center' }}>{title}</H3>
       {body && <Muted style={{ textAlign: 'center', maxWidth: 420 }}>{body}</Muted>}
@@ -449,6 +466,17 @@ export function SwitchRow({
         onValueChange={onValueChange}
         trackColor={{ true: colors.orange, false: colors.borderStrong }}
         thumbColor={colors.white}
+        ios_backgroundColor={colors.borderStrong}
+        // react-native-web ignores trackColor/thumbColor and falls back to its
+        // own blue-green unless these web-only props are set as well.
+        {...(Platform.OS === 'web'
+          ? ({
+              activeThumbColor: colors.white,
+              activeTrackColor: colors.orange,
+              thumbColor: colors.white,
+              trackColor: colors.borderStrong,
+            } as any)
+          : null)}
       />
     </Pressable>
   );
@@ -555,16 +583,20 @@ export function Sheet({
   children: React.ReactNode;
   width?: number;
 }) {
+  const { width: screenWidth } = useWindowDimensions();
+  // Phones get a bottom sheet (thumb-reachable); wider screens get a dialog.
+  const asBottomSheet = screenWidth < 640;
+
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={open} transparent animationType={asBottomSheet ? 'slide' : 'fade'} onRequestClose={onClose}>
       <Pressable
         onPress={onClose}
         style={{
           flex: 1,
           backgroundColor: colors.overlay,
           alignItems: 'center',
-          justifyContent: 'center',
-          padding: spacing.lg,
+          justifyContent: asBottomSheet ? 'flex-end' : 'center',
+          padding: asBottomSheet ? 0 : spacing.lg,
         }}
       >
         <Pressable
@@ -572,15 +604,34 @@ export function Sheet({
           style={[
             {
               width: '100%',
-              maxWidth: width,
-              backgroundColor: colors.surface,
-              borderRadius: radius.xl,
-              padding: spacing.xl,
+              maxWidth: asBottomSheet ? undefined : width,
+              maxHeight: '92%',
+              backgroundColor: colors.elevated,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: asBottomSheet ? 0 : radius.xl,
+              borderTopLeftRadius: radius.xl,
+              borderTopRightRadius: radius.xl,
+              paddingHorizontal: spacing.xl,
+              paddingTop: asBottomSheet ? spacing.md : spacing.xl,
+              paddingBottom: spacing.xl,
               gap: spacing.md,
             },
             shadow.raised,
           ]}
         >
+          {asBottomSheet && (
+            <View
+              style={{
+                alignSelf: 'center',
+                width: 38,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.borderStrong,
+                marginBottom: spacing.sm,
+              }}
+            />
+          )}
           {title && (
             <Row style={{ justifyContent: 'space-between' }}>
               <H2>{title}</H2>
@@ -594,31 +645,133 @@ export function Sheet({
   );
 }
 
+/* ------------------------------------------------------------------ Segmented */
+
+export function Segmented<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string; icon?: IconName }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        backgroundColor: colors.surfaceAlt,
+        borderRadius: radius.md,
+        padding: 3,
+        gap: 3,
+      }}
+    >
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <Pressable
+            key={option.value}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            onPress={() => onChange(option.value)}
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              paddingVertical: 8,
+              borderRadius: radius.sm,
+              backgroundColor: active ? colors.surface : 'transparent',
+              borderWidth: 1,
+              borderColor: active ? colors.border : 'transparent',
+            }}
+          >
+            {option.icon && (
+              <Icon name={option.icon} size={12} color={active ? colors.orange : colors.textFaint} />
+            )}
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: active ? colors.text : colors.textMuted,
+              }}
+            >
+              {option.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ MenuItem */
+
+export function MenuItem({
+  icon,
+  label,
+  hint,
+  onPress,
+  trailing,
+  tone,
+}: {
+  icon: IconName;
+  label: string;
+  hint?: string;
+  onPress?: () => void;
+  trailing?: React.ReactNode;
+  tone?: 'default' | 'danger';
+}) {
+  const [hovered, setHovered] = useState(false);
+  const fg = tone === 'danger' ? colors.danger : colors.text;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        paddingVertical: 11,
+        paddingHorizontal: spacing.md,
+        borderRadius: radius.md,
+        backgroundColor: hovered ? colors.surfaceAlt : 'transparent',
+      }}
+    >
+      <Icon name={icon} size={14} color={tone === 'danger' ? colors.danger : colors.textMuted} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ ...typography.bodyStrong, color: fg }}>{label}</Text>
+        {hint ? <Muted style={{ marginTop: 1 }}>{hint}</Muted> : null}
+      </View>
+      {trailing}
+    </Pressable>
+  );
+}
+
 /* ------------------------------------------------------------------ Stat */
 
 export function Stat({ icon, value, label }: { icon: IconName; value: string; label: string }) {
   return (
     <Card style={{ flexGrow: 1, flexBasis: 160, gap: spacing.sm }}>
-      <Row>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <Text style={{ ...typography.h1, fontSize: 24 }}>{value}</Text>
         <View
           style={{
-            width: 34,
-            height: 34,
+            width: 32,
+            height: 32,
             borderRadius: radius.md,
             backgroundColor: colors.orangeSoft,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Icon name={icon} size={15} color={colors.orange} />
+          <Icon name={icon} size={14} color={colors.orange} />
         </View>
-        <Text style={typography.h2}>{value}</Text>
       </Row>
       <Muted>{label}</Muted>
     </Card>
   );
 }
-
-export const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.background },
-});

@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../../src/api';
 import type { AdminMetrics, AuditLogEntry } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
-import { Body, Card, H2, H3, Muted, Row, Spinner, Stat } from '../../src/components/ui';
+import { Body, Button, Card, EmptyState, H2, H3, Muted, Row, Spinner, Stat } from '../../src/components/ui';
 import { useI18n } from '../../src/i18n';
 import { advertTypeColor, colors, radius, spacing } from '../../src/theme/theme';
 import { formatDateTime, numberFmt } from '../../src/utils/format';
@@ -39,16 +39,23 @@ export default function AdminOverviewScreen() {
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [audit, setAudit] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setFailed(false);
     Promise.all([api.adminMetrics(), api.adminAuditLog(0, 25)])
       .then(([m, log]) => {
         setMetrics(m);
         setAudit(log.content);
       })
-      .catch(() => undefined)
+      .catch(() => setFailed(true))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const typeRows = useMemo(() => {
     if (!metrics) return [];
@@ -62,8 +69,17 @@ export default function AdminOverviewScreen() {
 
   return (
     <AdminShell>
-      {loading || !metrics ? (
+      {loading ? (
         <Spinner />
+      ) : !metrics ? (
+        <Card>
+          <EmptyState
+            icon="warning"
+            title={t('common.somethingWentWrong')}
+            body={failed ? t('errors.generic') : undefined}
+            action={<Button title={t('common.retry')} icon="refresh" variant="outline" onPress={load} />}
+          />
+        </Card>
       ) : (
         <>
           <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>

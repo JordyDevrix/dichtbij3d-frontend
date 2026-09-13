@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,18 +10,23 @@ import { ToastProvider } from '../src/context/ToastContext';
 import { AppHeader } from '../src/components/AppHeader';
 import { BottomBar } from '../src/components/BottomBar';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
+import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { colors } from '../src/theme/theme';
 
 function Shell() {
   const { isWide } = useBreakpoint();
+  const { scheme } = useTheme();
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    // Remounting on a palette swap is what makes every inline style pick up the
+    // new token values without threading a theme object through the whole app.
+    <View key={scheme} style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AppHeader />
       <View style={{ flex: 1 }}>
         <Stack
           screenOptions={{
             headerShown: false,
-            animation: 'fade',
+            animation: Platform.OS === 'web' ? 'none' : 'fade',
             contentStyle: { backgroundColor: colors.background },
           }}
         />
@@ -35,14 +40,15 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <I18nProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <StatusBar style="dark" />
-              <Shell />
-            </AuthProvider>
-          </ToastProvider>
-        </I18nProvider>
+        <ThemeProvider>
+          <I18nProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <Shell />
+              </AuthProvider>
+            </ToastProvider>
+          </I18nProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
