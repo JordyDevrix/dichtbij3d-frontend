@@ -27,8 +27,9 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "INTERNET",
-        "READ_EXTERNAL_STORAGE"
+        "android.permission.INTERNET",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -49,7 +50,11 @@
       ]
     ],
     "extra": {
-      "apiUrl": "http://localhost:8080"
+      "apiUrl": "http://localhost:8080",
+      "router": {},
+      "eas": {
+        "projectId": "8a01c1fe-37f9-432e-a96b-22091836bdaa"
+      }
     },
     "experiments": {
       "typedRoutes": false
