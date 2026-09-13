@@ -24,6 +24,7 @@ import type {
   PrinterModel,
   PublicStats,
   PublicUser,
+  PurchaseResponse,
   Reaction,
   Report,
   Role,
@@ -144,6 +145,14 @@ export const api = {
   model: (id: string) => request<ModelDetail>(`/api/models/${id}`),
   createModel: (body: ModelCreateRequest) => request<ModelDetail>('/api/models', { method: 'POST', body }),
   deleteModel: (id: string) => request<MessageResponse>(`/api/models/${id}`, { method: 'DELETE' }),
+  buyAdvert: (id: string, message?: string) =>
+    request<PurchaseResponse>(`/api/adverts/${id}/buy`, { method: 'POST', body: { message } }),
+  purchaseModel: (id: string, message?: string) =>
+    request<PurchaseResponse>(`/api/models/${id}/purchase`, { method: 'POST', body: { message } }),
+  grantModelPurchase: (modelId: string, requestId: string) =>
+    request<MessageResponse>(`/api/models/${modelId}/purchase-requests/${requestId}/grant`, { method: 'POST' }),
+  declineModelPurchase: (modelId: string, requestId: string) =>
+    request<MessageResponse>(`/api/models/${modelId}/purchase-requests/${requestId}/decline`, { method: 'POST' }),
   acquireModel: (id: string) => request<MessageResponse>(`/api/models/${id}/acquire`, { method: 'POST' }),
   modelDownloadUrl: (modelId: string, fileId: string) =>
     `${API_BASE_URL}/api/models/${modelId}/files/${fileId}/download`,

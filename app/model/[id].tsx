@@ -17,7 +17,9 @@ import {
   H1,
   H3,
   Muted,
+  Input,
   Row,
+  Sheet,
   Spinner,
 } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
@@ -33,16 +35,18 @@ export default function ModelDetailScreen() {
   const router = useRouter();
   const goBack = useGoBack('/models');
   const { t, locale } = useI18n();
-  const { user, requireAuth } = useAuth();
+  const { user, requireAuth, booting } = useAuth();
   const toast = useToast();
   const { isWide } = useBreakpoint();
 
   const [detail, setDetail] = useState<ModelDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [buyOpen, setBuyOpen] = useState(false);
+  const [buyMessage, setBuyMessage] = useState('');
 
   const load = useCallback(async () => {
-    if (!id) return;
+    if (!id || booting) return;
     try {
       setDetail(await api.model(id));
     } catch {
@@ -50,7 +54,9 @@ export default function ModelDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+    // Waiting for the stored token keeps the answer viewer-aware: an anonymous
+    // request would report no access and hide the owner's own actions.
+  }, [id, booting]);
 
   useEffect(() => {
     setLoading(true);
@@ -71,8 +77,40 @@ export default function ModelDetailScreen() {
       </Page>
     );
 
-  const { model, files } = detail;
+  const { model, files, purchaseRequests, myPurchaseStatus } = detail;
   const isOwner = user?.id === model.owner.id;
+  const isPaid = model.priceCents > 0;
+
+  /** Paid models are never handed out automatically: the owner has to release them. */
+  const requestPurchase = async () => {
+    if (!requireAuth(`/model/${model.id}`)) return;
+    setBusy(true);
+    try {
+      const result = await api.purchaseModel(model.id, buyMessage.trim() || undefined);
+      setBuyOpen(false);
+      setBuyMessage('');
+      toast.success(t('models.purchaseSent'));
+      router.push(`/messages/${result.conversationId}`);
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t('errors.generic'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const decide = async (requestId: string, grant: boolean) => {
+    setBusy(true);
+    try {
+      if (grant) await api.grantModelPurchase(model.id, requestId);
+      else await api.declineModelPurchase(model.id, requestId);
+      toast.success(grant ? t('models.accessGranted') : t('models.requestDeclined'));
+      await load();
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t('errors.generic'));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const acquire = async () => {
     if (!requireAuth(`/model/${model.id}`)) return;
@@ -218,14 +256,30 @@ export default function ModelDetailScreen() {
             </H1>
             {model.hasAccess ? (
               <Badge label={t('models.owned')} tone={{ bg: colors.successSoft, fg: colors.success }} />
+            ) : isOwner ? null : isPaid ? (
+              myPurchaseStatus === 'PENDING' ? (
+                <>
+                  <Badge label={t('models.purchasePending')} tone={{ bg: colors.warningSoft, fg: colors.warning }} />
+                  <Muted style={{ fontSize: 12 }}>{t('models.purchasePendingHint')}</Muted>
+                </>
+              ) : (
+                <>
+                  <Button
+                    title={t('models.buy', { price: money(model.priceCents, locale, model.currency) })}
+                    icon="cart"
+                    full
+                    loading={busy}
+                    onPress={() => {
+                      if (!requireAuth(`/model/${model.id}`)) return;
+                      setBuyOpen(true);
+                    }}
+                  />
+                  <Muted style={{ fontSize: 12 }}>{t('models.buyHint')}</Muted>
+                  {myPurchaseStatus === 'DECLINED' && <Muted>{t('models.purchaseDeclined')}</Muted>}
+                </>
+              )
             ) : (
-              <Button
-                title={model.priceCents > 0 ? t('models.buy', { price: money(model.priceCents, locale) }) : t('models.getFree')}
-                icon="coins"
-                full
-                loading={busy}
-                onPress={acquire}
-              />
+              <Button title={t('models.getFree')} icon="download" full loading={busy} onPress={acquire} />
             )}
             {isOwner && (
               <Button
@@ -249,6 +303,66 @@ export default function ModelDetailScreen() {
             )}
           </Card>
 
+          {isOwner && purchaseRequests.length > 0 && (
+            <Card style={{ gap: spacing.md }}>
+              <H3>{t('models.buyers')}</H3>
+              <Muted style={{ fontSize: 12 }}>{t('models.buyersHint')}</Muted>
+              {purchaseRequests.map((purchase) => (
+                <View key={purchase.id} style={{ gap: spacing.sm }}>
+                  <Divider />
+                  <Row style={{ alignItems: 'flex-start' }}>
+                    <Avatar name={purchase.buyer.displayName} uri={absoluteUrl(purchase.buyer.avatarUrl)} size={32} />
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Pressable onPress={() => router.push(`/user/${purchase.buyer.id}`)}>
+                        <Body style={{ fontWeight: '700' }}>{purchase.buyer.displayName}</Body>
+                      </Pressable>
+                      {purchase.message ? <Muted>{purchase.message}</Muted> : null}
+                      {purchase.status === 'PENDING' ? (
+                        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+                          <Button
+                            title={t('models.grantAccess')}
+                            icon="check"
+                            size="sm"
+                            loading={busy}
+                            onPress={() => void decide(purchase.id, true)}
+                          />
+                          <Button
+                            title={t('models.declineAccess')}
+                            icon="ban"
+                            size="sm"
+                            variant="ghost"
+                            loading={busy}
+                            onPress={() => void decide(purchase.id, false)}
+                          />
+                          {purchase.conversationId && (
+                            <Button
+                              title={t('chat.contact')}
+                              icon="envelope"
+                              size="sm"
+                              variant="outline"
+                              onPress={() => router.push(`/messages/${purchase.conversationId}`)}
+                            />
+                          )}
+                        </Row>
+                      ) : (
+                        <Badge
+                          label={
+                            purchase.status === 'GRANTED' ? t('models.accessGranted') : t('models.requestDeclined')
+                          }
+                          tone={
+                            purchase.status === 'GRANTED'
+                              ? { bg: colors.successSoft, fg: colors.success }
+                              : { bg: colors.surfaceAlt, fg: colors.textMuted }
+                          }
+                        />
+                      )}
+                    </View>
+                  </Row>
+                </View>
+              ))}
+            </Card>
+          )}
+
           <Card style={{ gap: spacing.md }}>
             <Muted>{t('advert.postedBy')}</Muted>
             <Pressable onPress={() => router.push(`/user/${model.owner.id}`)}>
@@ -264,6 +378,23 @@ export default function ModelDetailScreen() {
           </Card>
         </View>
       </View>
+
+      <Sheet open={buyOpen} onClose={() => setBuyOpen(false)} title={t('models.buyTitle')} width={440}>
+        <Body style={{ fontWeight: '700' }}>{model.title}</Body>
+        <H1 style={{ color: colors.orange }}>{money(model.priceCents, locale, model.currency)}</H1>
+        <Muted>{t('models.buyIntro')}</Muted>
+        <Input
+          label={t('advert.buyMessage')}
+          value={buyMessage}
+          onChangeText={setBuyMessage}
+          placeholder={t('advert.buyMessagePlaceholder')}
+          multiline
+        />
+        <Row style={{ justifyContent: 'flex-end' }}>
+          <Button title={t('common.cancel')} variant="ghost" onPress={() => setBuyOpen(false)} />
+          <Button title={t('models.buyConfirm')} icon="cart" loading={busy} onPress={requestPurchase} />
+        </Row>
+      </Sheet>
     </Page>
   );
 }

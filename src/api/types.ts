@@ -16,9 +16,13 @@ export type NotificationType =
   | 'ADVERT_ACCEPTED'
   | 'ADVERT_REMOVED'
   | 'BID_PLACED'
+  | 'ADVERT_PURCHASE_REQUEST'
   | 'BID_ACCEPTED'
   | 'BID_REJECTED'
   | 'MODEL_PURCHASED'
+  | 'MODEL_PURCHASE_REQUEST'
+  | 'MODEL_ACCESS_GRANTED'
+  | 'MODEL_PURCHASE_DECLINED'
   | 'MODEL_SHARED'
   | 'MESSAGE_RECEIVED'
   | 'ACCOUNT_DISABLED'
@@ -149,6 +153,7 @@ export interface AdvertDetail {
   deadline: string | null;
   viewCount: number;
   imageUrls: string[];
+  imageKeys: string[];
   tags: Tag[];
   author: PublicUser;
   acceptedBy: PublicUser | null;
@@ -204,9 +209,27 @@ export interface ModelFile {
   downloadUrl: string | null;
 }
 
+export type PurchaseRequestStatus = 'PENDING' | 'GRANTED' | 'DECLINED';
+
+export interface ModelPurchaseRequest {
+  id: string;
+  buyer: PublicUser;
+  status: PurchaseRequestStatus;
+  message: string | null;
+  conversationId: string | null;
+  createdAt: string;
+}
+
 export interface ModelDetail {
   model: ModelSummary;
   files: ModelFile[];
+  purchaseRequests: ModelPurchaseRequest[];
+  myPurchaseStatus: PurchaseRequestStatus | null;
+}
+
+export interface PurchaseResponse {
+  conversationId: string;
+  message: string;
 }
 
 export interface ModelFileRef {

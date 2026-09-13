@@ -38,7 +38,7 @@ export default function AdvertDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t, locale } = useI18n();
-  const { user, isAdmin, requireAuth } = useAuth();
+  const { user, isAdmin, requireAuth, booting } = useAuth();
   const toast = useToast();
   const { isWide } = useBreakpoint();
   const { startChat, starting } = useStartChat();
@@ -54,6 +54,8 @@ export default function AdvertDetailScreen() {
   const [bidAmount, setBidAmount] = useState('');
   const [bidMessage, setBidMessage] = useState('');
   const [bidOpen, setBidOpen] = useState(false);
+  const [buyOpen, setBuyOpen] = useState(false);
+  const [buyMessage, setBuyMessage] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
@@ -64,7 +66,7 @@ export default function AdvertDetailScreen() {
   const pinged = useRef(false);
 
   const load = useCallback(async () => {
-    if (!id) return;
+    if (!id || booting) return;
     try {
       const detail = await api.advert(id);
       setAdvert(detail);
@@ -73,7 +75,9 @@ export default function AdvertDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+    // Same reason as the model page: load once the session token is known,
+    // otherwise the backend answers as if nobody is signed in.
+  }, [id, booting]);
 
   useEffect(() => {
     setLoading(true);
@@ -109,6 +113,9 @@ export default function AdvertDetailScreen() {
     );
 
   const isOwner = user?.id === advert.author.id;
+  // A sale advert is bought; a request advert is applied for. The page follows that split.
+  const isSale = advert.type === 'MODEL_FOR_SALE' || advert.type === 'PRINT_FOR_SALE';
+  const canBuy = isSale && advert.priceCents != null && advert.status === 'OPEN' && !isOwner;
   const typeTone = advertTypeColor[advert.type];
   const statusTone = statusColor[advert.status] ?? statusColor.OPEN;
   const images = advert.imageUrls.map((url) => absoluteUrl(url)!).filter(Boolean);
@@ -145,6 +152,21 @@ export default function AdvertDetailScreen() {
       setBidAmount('');
       setBidMessage('');
     }, t('advert.placeBid'));
+  };
+
+  const submitBuy = () => {
+    if (!requireAuth(`/advert/${advert.id}`)) return;
+    setBusy(true);
+    api
+      .buyAdvert(advert.id, buyMessage.trim() || undefined)
+      .then((result) => {
+        setBuyOpen(false);
+        setBuyMessage('');
+        toast.success(t('advert.buySent'));
+        router.push(`/messages/${result.conversationId}`);
+      })
+      .catch((error) => toast.error(error instanceof ApiError ? error.message : t('errors.generic')))
+      .finally(() => setBusy(false));
   };
 
   const submitDelete = () => {
@@ -186,6 +208,15 @@ export default function AdvertDetailScreen() {
       <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm }}>
         <Button title={t('common.back')} icon="back" variant="ghost" size="sm" onPress={goBack} />
         <Row gap={spacing.sm}>
+          {isOwner && advert.status !== 'REMOVED' && (
+            <Button
+              title={t('advert.edit')}
+              icon="edit"
+              variant="outline"
+              size="sm"
+              onPress={() => router.push({ pathname: '/create', params: { edit: advert.id } })}
+            />
+          )}
           {!isOwner && user && (
             <Button title={t('advert.report')} icon="flag" variant="ghost" size="sm" onPress={() => setReportOpen(true)} />
           )}
@@ -311,11 +342,13 @@ export default function AdvertDetailScreen() {
           {/* ------------------------------------------------ reactions */}
           <Card style={{ gap: spacing.md }}>
             <Row style={{ justifyContent: 'space-between' }}>
-              <H2>{t('advert.reactions')}</H2>
+              <H2>{isSale ? t('advert.questionsTitle') : t('advert.reactionsTitle')}</H2>
               <Badge label={String(advert.reactions.length)} tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }} />
             </Row>
 
-            {advert.reactions.length === 0 && <Muted>{t('advert.noReactions')}</Muted>}
+            {advert.reactions.length === 0 && (
+              <Muted>{isSale ? t('advert.noQuestions') : t('advert.noReactions')}</Muted>
+            )}
 
             {advert.reactions.map((reaction) => (
               <View key={reaction.id} style={{ gap: spacing.sm }}>
@@ -334,7 +367,7 @@ export default function AdvertDetailScreen() {
                     )}
                     <Body>{reaction.body}</Body>
                     <Row gap={spacing.sm} style={{ marginTop: 4 }}>
-                      {isOwner && advert.status === 'OPEN' && (
+                      {isOwner && !isSale && advert.status === 'OPEN' && (
                         <Button
                           title={t('advert.acceptHelper')}
                           icon="handshake"
@@ -375,21 +408,28 @@ export default function AdvertDetailScreen() {
             {advert.status === 'OPEN' && !isOwner && (
               <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
                 <Divider />
-                <H3>{t('advert.reactTitle')}</H3>
+                <H3>{isSale ? t('advert.askTitle') : t('advert.reactTitle')}</H3>
                 {user ? (
                   <>
                     <Input
                       value={reactionBody}
                       onChangeText={setReactionBody}
-                      placeholder={t('advert.reactPlaceholder')}
+                      placeholder={isSale ? t('advert.askPlaceholder') : t('advert.reactPlaceholder')}
                       multiline
                     />
-                    <SwitchRow
-                      label={t('advert.reactAsApplication')}
-                      value={isApplication}
-                      onValueChange={setIsApplication}
+                    {!isSale && (
+                      <SwitchRow
+                        label={t('advert.reactAsApplication')}
+                        value={isApplication}
+                        onValueChange={setIsApplication}
+                      />
+                    )}
+                    <Button
+                      title={isSale ? t('advert.askSend') : t('advert.reactSend')}
+                      icon="comments"
+                      loading={busy}
+                      onPress={submitReaction}
                     />
-                    <Button title={t('advert.reactSend')} icon="comments" loading={busy} onPress={submitReaction} />
                   </>
                 ) : (
                   <Card style={{ backgroundColor: colors.orangeSofter, borderColor: colors.orangeBorder }}>
@@ -410,6 +450,23 @@ export default function AdvertDetailScreen() {
         <View style={{ flex: 1, gap: spacing.lg, width: '100%', minWidth: 280 }}>
           <Card style={{ gap: spacing.md }}>
             {priceBlock()}
+            {isSale && advert.priceCents == null && !advert.allowBidding && (
+              <Muted>{t('advert.priceOnRequest')}</Muted>
+            )}
+            {canBuy && (
+              <>
+                <Button
+                  title={t('advert.buyNow')}
+                  icon="cart"
+                  full
+                  onPress={() => {
+                    if (!requireAuth(`/advert/${advert.id}`)) return;
+                    setBuyOpen(true);
+                  }}
+                />
+                <Muted style={{ fontSize: 12 }}>{t('advert.buyHint')}</Muted>
+              </>
+            )}
             {advert.allowBidding && (
               <>
                 <Row style={{ justifyContent: 'space-between' }}>
@@ -434,16 +491,27 @@ export default function AdvertDetailScreen() {
 
             {isOwner && (
               <View style={{ gap: spacing.sm }}>
-                {advert.status !== 'COMPLETED' && (
-                  <Button
-                    title={t('advert.markCompleted')}
-                    icon="checkCircle"
-                    variant="outline"
-                    full
-                    loading={busy}
-                    onPress={() => void run(() => api.setAdvertStatus(advert.id, 'COMPLETED'))}
-                  />
-                )}
+                {isSale
+                  ? advert.status !== 'SOLD' && (
+                      <Button
+                        title={t('advert.markSold')}
+                        icon="checkCircle"
+                        variant="outline"
+                        full
+                        loading={busy}
+                        onPress={() => void run(() => api.setAdvertStatus(advert.id, 'SOLD'), t('advert.markedSold'))}
+                      />
+                    )
+                  : advert.status !== 'COMPLETED' && (
+                      <Button
+                        title={t('advert.markCompleted')}
+                        icon="checkCircle"
+                        variant="outline"
+                        full
+                        loading={busy}
+                        onPress={() => void run(() => api.setAdvertStatus(advert.id, 'COMPLETED'))}
+                      />
+                    )}
                 {advert.status === 'OPEN' && (
                   <Button
                     title={t('advert.markCancelled')}
@@ -567,6 +635,25 @@ export default function AdvertDetailScreen() {
       </View>
 
       {/* ------------------------------------------------ modals */}
+      <Sheet open={buyOpen} onClose={() => setBuyOpen(false)} title={t('advert.buyNow')} width={440}>
+        <Body style={{ fontWeight: '700' }}>{advert.title}</Body>
+        {advert.priceCents != null && (
+          <H2 style={{ color: colors.orange }}>{money(advert.priceCents, locale, advert.currency)}</H2>
+        )}
+        <Muted>{t('advert.buyIntro')}</Muted>
+        <Input
+          label={t('advert.buyMessage')}
+          value={buyMessage}
+          onChangeText={setBuyMessage}
+          placeholder={t('advert.buyMessagePlaceholder')}
+          multiline
+        />
+        <Row style={{ justifyContent: 'flex-end' }}>
+          <Button title={t('common.cancel')} variant="ghost" onPress={() => setBuyOpen(false)} />
+          <Button title={t('advert.buyConfirm')} icon="cart" loading={busy} onPress={submitBuy} />
+        </Row>
+      </Sheet>
+
       <Sheet open={bidOpen} onClose={() => setBidOpen(false)} title={t('advert.placeBid')} width={420}>
         <Input
           label={t('advert.bidAmount')}

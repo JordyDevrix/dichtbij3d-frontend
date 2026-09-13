@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../src/api';
 import { absoluteUrl } from '../src/api/client';
 import { ADVERT_TYPES } from '../src/api/types';
@@ -39,6 +39,8 @@ const TYPE_ICONS: Record<AdvertType, 'print' | 'cube' | 'coins' | 'box'> = {
 
 export default function CreateAdvertScreen() {
   const router = useRouter();
+  const { edit: editId } = useLocalSearchParams<{ edit?: string }>();
+  const isEditing = typeof editId === 'string' && editId.length > 0;
   const goBack = useGoBack('/');
   const { t, locale } = useI18n();
   const { user, booting } = useAuth();
@@ -60,6 +62,7 @@ export default function CreateAdvertScreen() {
   const [modelId, setModelId] = useState<string | null>(null);
 
   const [tags, setTags] = useState<Tag[]>([]);
+  const [loadingAdvert, setLoadingAdvert] = useState(false);
   const [myModels, setMyModels] = useState<ModelSummary[]>([]);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -79,8 +82,42 @@ export default function CreateAdvertScreen() {
   useEffect(() => {
     if (!user) return;
     api.myModels().then(setMyModels).catch(() => undefined);
-    setCity((prev) => prev || user.city || '');
-  }, [user]);
+    if (!isEditing) setCity((prev) => prev || user.city || '');
+  }, [user, isEditing]);
+
+  // Editing reuses this form: load the advert once and prefill every field.
+  useEffect(() => {
+    if (!isEditing || !user) return;
+    let cancelled = false;
+    setLoadingAdvert(true);
+    api
+      .advert(editId as string)
+      .then((advert) => {
+        if (cancelled) return;
+        setType(advert.type);
+        setTitle(advert.title);
+        setDescription(advert.description);
+        setPrice(advert.priceCents != null ? (advert.priceCents / 100).toFixed(2) : '');
+        setAllowBidding(advert.allowBidding);
+        setBudgetMin(advert.budgetMinCents != null ? (advert.budgetMinCents / 100).toFixed(2) : '');
+        setBudgetMax(advert.budgetMaxCents != null ? (advert.budgetMaxCents / 100).toFixed(2) : '');
+        setHiddenAfterAccept(advert.hiddenAfterAccept);
+        setCity(advert.city ?? '');
+        setDeadline(advert.deadline ?? '');
+        setSelectedTags(advert.tags.map((tag) => tag.slug));
+        setModelId(advert.model?.id ?? null);
+        setImages(
+          advert.imageUrls
+            .map((url, index) => ({ key: advert.imageKeys?.[index] ?? '', url: absoluteUrl(url) ?? url }))
+            .filter((image) => image.key),
+        );
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : t('errors.generic')))
+      .finally(() => !cancelled && setLoadingAdvert(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditing, editId, user, t]);
 
   if (booting) return null;
 
@@ -169,7 +206,7 @@ export default function CreateAdvertScreen() {
     setFieldErrors({});
     setBusy(true);
     try {
-      const advert = await api.createAdvert({
+      const body = {
         type,
         title: title.trim(),
         description: description.trim(),
@@ -183,8 +220,9 @@ export default function CreateAdvertScreen() {
         modelId: modelId ?? undefined,
         tags: selectedTags,
         imageKeys: images.map((image) => image.key),
-      });
-      toast.success(t('create.published'));
+      };
+      const advert = isEditing ? await api.updateAdvert(editId as string, body) : await api.createAdvert(body);
+      toast.success(isEditing ? t('create.saved') : t('create.published'));
       router.replace(`/advert/${advert.id}`);
     } catch (err) {
       if (err instanceof ApiError && err.fields && Object.keys(err.fields).length > 0) {
@@ -202,20 +240,22 @@ export default function CreateAdvertScreen() {
   return (
     <Page maxWidth={820}>
       <View style={{ gap: 4 }}>
-        <H1>{t('create.title')}</H1>
-        <Muted>{t('create.subtitle')}</Muted>
+        <H1>{isEditing ? t('create.editTitle') : t('create.title')}</H1>
+        <Muted>{isEditing ? t('create.editSubtitle') : t('create.subtitle')}</Muted>
       </View>
 
       {/* --------------------------------------------------- type */}
       <Card style={{ gap: spacing.md }}>
         <H3>{t('create.step1')}</H3>
+        {isEditing && <Muted>{t('create.typeLocked')}</Muted>}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
-          {ADVERT_TYPES.map((value) => {
+          {ADVERT_TYPES.filter((value) => !isEditing || value === type).map((value) => {
             const selected = value === type;
             const tone = advertTypeColor[value];
             return (
               <Pressable
                 key={value}
+                disabled={isEditing}
                 onPress={() => setType(value)}
                 style={{
                   flexGrow: 1,
@@ -481,7 +521,13 @@ export default function CreateAdvertScreen() {
 
       <Row style={{ justifyContent: 'flex-end' }} gap={spacing.sm}>
         <Button title={t('common.cancel')} variant="ghost" onPress={goBack} />
-        <Button title={t('create.publish')} icon="plus" size="lg" loading={busy} onPress={submit} />
+        <Button
+          title={isEditing ? t('common.save') : t('create.publish')}
+          icon={isEditing ? 'check' : 'plus'}
+          size="lg"
+          loading={busy || loadingAdvert}
+          onPress={submit}
+        />
       </Row>
     </Page>
   );
