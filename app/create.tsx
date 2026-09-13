@@ -24,6 +24,7 @@ import {
 } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
 import { useToast } from '../src/context/ToastContext';
+import { useGoBack } from '../src/hooks/useGoBack';
 import { useI18n } from '../src/i18n';
 import { advertTypeColor, colors, radius, spacing } from '../src/theme/theme';
 import { toCents } from '../src/utils/format';
@@ -38,6 +39,7 @@ const TYPE_ICONS: Record<AdvertType, 'print' | 'cube' | 'coins' | 'box'> = {
 
 export default function CreateAdvertScreen() {
   const router = useRouter();
+  const goBack = useGoBack('/');
   const { t, locale } = useI18n();
   const { user, booting } = useAuth();
   const toast = useToast();
@@ -62,6 +64,11 @@ export default function CreateAdvertScreen() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  /** Clears a field's error as soon as the visitor starts fixing it. */
+  const clearField = (field: string) =>
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: '' } : prev));
 
   const isRequest = type === 'PRINT_REQUEST' || type === 'MODEL_REQUEST';
 
@@ -127,12 +134,39 @@ export default function CreateAdvertScreen() {
     }
   };
 
+  /** Everything the backend would reject, checked up front and reported per field. */
+  const validate = () => {
+    const errors: Record<string, string> = {};
+    if (title.trim().length < 4) errors.title = t('create.titleTooShort');
+    if (description.trim().length < 10) errors.description = t('create.descriptionTooShort');
+    if (deadline.trim() && !isValidDate(deadline.trim())) errors.deadline = t('create.invalidDate');
+
+    const amounts: [string, string][] = isRequest
+      ? [['budgetMinCents', budgetMin], ['budgetMaxCents', budgetMax]]
+      : [['priceCents', price]];
+    amounts.forEach(([field, raw]) => {
+      if (!raw.trim()) return;
+      const cents = toCents(raw);
+      if (cents === undefined || cents < 0) errors[field] = t('create.invalidAmount');
+    });
+
+    const min = toCents(budgetMin);
+    const max = toCents(budgetMax);
+    if (isRequest && min !== undefined && max !== undefined && min > max) {
+      errors.budgetMaxCents = t('create.budgetOrder');
+    }
+    return errors;
+  };
+
   const submit = async () => {
     setError(null);
-    if (title.trim().length < 4 || description.trim().length < 10) {
-      setError(t('common.required'));
+    const errors = validate();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError(t('create.fixErrors'));
       return;
     }
+    setFieldErrors({});
     setBusy(true);
     try {
       const advert = await api.createAdvert({
@@ -153,7 +187,13 @@ export default function CreateAdvertScreen() {
       toast.success(t('create.published'));
       router.replace(`/advert/${advert.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('errors.generic'));
+      if (err instanceof ApiError && err.fields && Object.keys(err.fields).length > 0) {
+        // The backend names its fields exactly like the request body, so they map 1:1.
+        setFieldErrors(err.fields);
+        setError(t('create.fixErrors'));
+      } else {
+        setError(err instanceof ApiError ? err.message : t('errors.generic'));
+      }
     } finally {
       setBusy(false);
     }
@@ -217,14 +257,22 @@ export default function CreateAdvertScreen() {
         <Input
           label={t('create.advertTitle')}
           value={title}
-          onChangeText={setTitle}
+          error={fieldErrors.title}
+          onChangeText={(value) => {
+            setTitle(value);
+            clearField('title');
+          }}
           placeholder={t('create.advertTitlePlaceholder')}
           maxLength={140}
         />
         <Input
           label={t('advert.description')}
           value={description}
-          onChangeText={setDescription}
+          error={fieldErrors.description}
+          onChangeText={(value) => {
+            setDescription(value);
+            clearField('description');
+          }}
           placeholder={t('create.descriptionPlaceholder')}
           multiline
         />
@@ -236,8 +284,12 @@ export default function CreateAdvertScreen() {
             <Input
               label={t('create.deadline')}
               value={deadline}
-              onChangeText={setDeadline}
-              placeholder="2025-12-31"
+              error={fieldErrors.deadline}
+              onChangeText={(value) => {
+                setDeadline(value);
+                clearField('deadline');
+              }}
+              placeholder="2026-12-31"
               icon="calendar"
             />
           </View>
@@ -309,7 +361,11 @@ export default function CreateAdvertScreen() {
               <Input
                 label={t('create.budgetMin')}
                 value={budgetMin}
-                onChangeText={setBudgetMin}
+                error={fieldErrors.budgetMinCents}
+                onChangeText={(value) => {
+                  setBudgetMin(value);
+                  clearField('budgetMinCents');
+                }}
                 keyboardType="decimal-pad"
                 icon="euro"
               />
@@ -318,7 +374,11 @@ export default function CreateAdvertScreen() {
               <Input
                 label={t('create.budgetMax')}
                 value={budgetMax}
-                onChangeText={setBudgetMax}
+                error={fieldErrors.budgetMaxCents}
+                onChangeText={(value) => {
+                  setBudgetMax(value);
+                  clearField('budgetMaxCents');
+                }}
                 keyboardType="decimal-pad"
                 icon="euro"
               />
@@ -328,7 +388,11 @@ export default function CreateAdvertScreen() {
           <Input
             label={t('create.fixedPrice')}
             value={price}
-            onChangeText={setPrice}
+            error={fieldErrors.priceCents}
+            onChangeText={(value) => {
+              setPrice(value);
+              clearField('priceCents');
+            }}
             keyboardType="decimal-pad"
             icon="euro"
           />
@@ -393,12 +457,66 @@ export default function CreateAdvertScreen() {
         </View>
       </Card>
 
-      {error && <Body style={{ color: colors.danger }}>{error}</Body>}
+      {error && (
+        <Card
+          style={{
+            borderColor: colors.dangerSoft,
+            backgroundColor: colors.dangerSoft,
+            gap: 4,
+          }}
+        >
+          <Row gap={spacing.sm} style={{ alignItems: 'flex-start' }}>
+            <Icon name="warning" size={14} color={colors.danger} />
+            <Body style={{ color: colors.danger, fontWeight: '600', flex: 1 }}>{error}</Body>
+          </Row>
+          {Object.entries(fieldErrors)
+            .filter(([, message]) => !!message)
+            .map(([field, message]) => (
+              <Muted key={field} style={{ color: colors.danger }}>
+                {`${fieldLabel(field, t)}: ${message}`}
+              </Muted>
+            ))}
+        </Card>
+      )}
 
       <Row style={{ justifyContent: 'flex-end' }} gap={spacing.sm}>
-        <Button title={t('common.cancel')} variant="ghost" onPress={() => router.back()} />
+        <Button title={t('common.cancel')} variant="ghost" onPress={goBack} />
         <Button title={t('create.publish')} icon="plus" size="lg" loading={busy} onPress={submit} />
       </Row>
     </Page>
   );
+}
+
+/** Accepts an ISO date and checks it is a real calendar day (the backend parses LocalDate). */
+function isValidDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  );
+}
+
+/** Maps a request field name back to the label the visitor actually sees. */
+function fieldLabel(field: string, t: (key: string) => string) {
+  switch (field) {
+    case 'title':
+      return t('create.advertTitle');
+    case 'description':
+      return t('advert.description');
+    case 'deadline':
+      return t('create.deadline');
+    case 'priceCents':
+      return t('create.fixedPrice');
+    case 'budgetMinCents':
+      return t('create.budgetMin');
+    case 'budgetMaxCents':
+      return t('create.budgetMax');
+    case 'city':
+      return t('profile.city');
+    case 'tags':
+      return t('marketplace.tags');
+    default:
+      return field;
+  }
 }

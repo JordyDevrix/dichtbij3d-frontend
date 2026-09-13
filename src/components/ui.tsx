@@ -708,6 +708,28 @@ export function Segmented<T extends string>({
 
 /* ------------------------------------------------------------------ MenuItem */
 
+/** Unread counter shown on icons and rows. Caps at 99+ so it never grows wider. */
+export function CountBadge({ count, size = 18 }: { count: number; size?: number }) {
+  if (!count || count < 1) return null;
+  return (
+    <View
+      style={{
+        minWidth: size,
+        height: size,
+        paddingHorizontal: 5,
+        borderRadius: radius.pill,
+        backgroundColor: colors.orange,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ color: colors.white, fontSize: size <= 16 ? 9 : 10, fontWeight: '800' }}>
+        {count > 99 ? '99+' : count}
+      </Text>
+    </View>
+  );
+}
+
 export function MenuItem({
   icon,
   label,
@@ -715,6 +737,7 @@ export function MenuItem({
   onPress,
   trailing,
   tone,
+  badge,
 }: {
   icon: IconName;
   label: string;
@@ -722,6 +745,7 @@ export function MenuItem({
   onPress?: () => void;
   trailing?: React.ReactNode;
   tone?: 'default' | 'danger';
+  badge?: number;
 }) {
   const [hovered, setHovered] = useState(false);
   const fg = tone === 'danger' ? colors.danger : colors.text;
@@ -746,6 +770,7 @@ export function MenuItem({
         <Text style={{ ...typography.bodyStrong, color: fg }}>{label}</Text>
         {hint ? <Muted style={{ marginTop: 1 }}>{hint}</Muted> : null}
       </View>
+      {!!badge && <CountBadge count={badge} />}
       {trailing}
     </Pressable>
   );

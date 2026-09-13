@@ -3,6 +3,7 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../theme/theme';
+import { CountBadge } from './ui';
 import { Icon } from './Icon';
 import { isActive, TAB_ITEMS } from './AppHeader';
 import { useI18n } from '../i18n';
@@ -19,7 +20,10 @@ export function BottomBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const { unreadCount } = useAuth();
+  const { unreadCount, unreadMessages } = useAuth();
+
+  const badgeFor = (href: string) =>
+    href === '/notifications' ? unreadCount : href === '/messages' ? unreadMessages : 0;
 
   return (
     <View
@@ -82,24 +86,9 @@ export function BottomBar() {
           >
             <View style={{ alignItems: 'center', justifyContent: 'center', height: 20 }}>
               <Icon name={item.icon} size={17} color={color} />
-              {item.href === '/notifications' && unreadCount > 0 && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: -4,
-                    right: -9,
-                    minWidth: 15,
-                    height: 15,
-                    paddingHorizontal: 3,
-                    borderRadius: radius.pill,
-                    backgroundColor: colors.orange,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ color: colors.white, fontSize: 9, fontWeight: '800' }}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Text>
+              {badgeFor(item.href) > 0 && (
+                <View style={{ position: 'absolute', top: -5, right: -12 }}>
+                  <CountBadge count={badgeFor(item.href)} size={15} />
                 </View>
               )}
             </View>

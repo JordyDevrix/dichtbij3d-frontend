@@ -10,6 +10,8 @@ import type {
   AppNotification,
   AuditLogEntry,
   AuthResponse,
+  ChatMessage,
+  Conversation,
   Bid,
   CostEstimateRequest,
   CostEstimateResponse,
@@ -149,10 +151,24 @@ export const api = {
   /* ---------------------------------------------------------------- notifications */
   notifications: (page = 0, size = 30) =>
     request<PageResponse<AppNotification>>('/api/notifications', { query: { page, size } }),
-  unreadCount: () => request<{ unread: number }>('/api/notifications/unread-count'),
+  unreadCount: () => request<{ count: number }>('/api/notifications/unread-count'),
   markRead: (id: string) => request<MessageResponse>(`/api/notifications/${id}/read`, { method: 'POST' }),
   markAllRead: () => request<MessageResponse>('/api/notifications/read-all', { method: 'POST' }),
   deleteNotification: (id: string) => request<MessageResponse>(`/api/notifications/${id}`, { method: 'DELETE' }),
+
+  /* ---------------------------------------------------------------- chat */
+  conversations: (page = 0, size = 30) =>
+    request<PageResponse<Conversation>>('/api/conversations', { query: { page, size } }),
+  conversation: (id: string) => request<Conversation>(`/api/conversations/${id}`),
+  startConversation: (body: { userId: string; advertId?: string; message?: string }) =>
+    request<Conversation>('/api/conversations', { method: 'POST', body }),
+  chatMessages: (id: string, page = 0, size = 40) =>
+    request<PageResponse<ChatMessage>>(`/api/conversations/${id}/messages`, { query: { page, size } }),
+  sendChatMessage: (id: string, body: string) =>
+    request<ChatMessage>(`/api/conversations/${id}/messages`, { method: 'POST', body: { body } }),
+  markConversationRead: (id: string) =>
+    request<MessageResponse>(`/api/conversations/${id}/read`, { method: 'POST' }),
+  unreadMessageCount: () => request<{ count: number }>('/api/conversations/unread-count'),
 
   /* ---------------------------------------------------------------- calculator */
   printers: () => request<PrinterModel[]>('/api/printers', { auth: false }),

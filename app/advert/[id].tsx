@@ -27,10 +27,12 @@ import {
 } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
+import { useGoBack } from '../../src/hooks/useGoBack';
 import { useI18n } from '../../src/i18n';
 import { advertTypeColor, colors, radius, spacing, statusColor } from '../../src/theme/theme';
 import { formatDate, money, timeAgo, toCents } from '../../src/utils/format';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
+import { useStartChat } from '../../src/hooks/useStartChat';
 
 export default function AdvertDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,6 +41,8 @@ export default function AdvertDetailScreen() {
   const { user, isAdmin, requireAuth } = useAuth();
   const toast = useToast();
   const { isWide } = useBreakpoint();
+  const { startChat, starting } = useStartChat();
+  const goBack = useGoBack('/');
 
   const [advert, setAdvert] = useState<AdvertDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -180,7 +184,7 @@ export default function AdvertDetailScreen() {
   return (
     <Page onRefresh={() => void load()}>
       <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm }}>
-        <Button title={t('common.back')} icon="back" variant="ghost" size="sm" onPress={() => router.back()} />
+        <Button title={t('common.back')} icon="back" variant="ghost" size="sm" onPress={goBack} />
         <Row gap={spacing.sm}>
           {!isOwner && user && (
             <Button title={t('advert.report')} icon="flag" variant="ghost" size="sm" onPress={() => setReportOpen(true)} />
@@ -344,6 +348,15 @@ export default function AdvertDetailScreen() {
                           }
                         />
                       )}
+                      {user && reaction.author.id !== user.id && (
+                        <Button
+                          title={t('chat.contact')}
+                          icon="envelope"
+                          size="sm"
+                          variant="outline"
+                          onPress={() => void startChat(reaction.author.id, advert.id)}
+                        />
+                      )}
                       {reaction.canDelete && (
                         <Button
                           title={t('common.delete')}
@@ -462,6 +475,16 @@ export default function AdvertDetailScreen() {
                 <Chip key={role} label={t(`roles.${role}`)} size="sm" />
               ))}
             </Row>
+            {!isOwner && (
+              <Button
+                title={t('chat.contact')}
+                icon="envelope"
+                variant="outline"
+                size="sm"
+                loading={starting}
+                onPress={() => void startChat(advert.author.id, advert.id)}
+              />
+            )}
           </Card>
 
           {advert.acceptedBy && (
@@ -473,6 +496,15 @@ export default function AdvertDetailScreen() {
                 </Body>
               </Row>
               {advert.acceptedAt && <Muted>{formatDate(advert.acceptedAt, locale)}</Muted>}
+              {user && advert.acceptedBy.id !== user.id && (
+                <Button
+                  title={t('chat.contact')}
+                  icon="envelope"
+                  size="sm"
+                  variant="outline"
+                  onPress={() => void startChat(advert.acceptedBy!.id, advert.id)}
+                />
+              )}
             </Card>
           )}
 
@@ -490,6 +522,16 @@ export default function AdvertDetailScreen() {
                     <Body style={{ fontWeight: '700' }}>{money(bid.amountCents, locale)}</Body>
                   </Row>
                   {bid.message ? <Muted>{bid.message}</Muted> : null}
+                  {user && bid.bidder.id !== user.id && (
+                    <Button
+                      title={t('chat.contact')}
+                      icon="envelope"
+                      size="sm"
+                      variant="ghost"
+                      onPress={() => void startChat(bid.bidder.id, advert.id)}
+                      style={{ alignSelf: 'flex-start' }}
+                    />
+                  )}
                   {isOwner && bid.status === 'PENDING' && (
                     <Row gap={spacing.sm}>
                       <Button

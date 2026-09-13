@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, layout, radius, spacing, typography } from '../theme/theme';
 import { Icon, IconName } from './Icon';
-import { Avatar, Button, Divider, MenuItem, Muted, Row, Sheet } from './ui';
+import { Avatar, Button, CountBadge, Divider, MenuItem, Muted, Row, Sheet } from './ui';
 import { PreferencesSheet } from './PreferencesSheet';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n';
@@ -146,22 +146,14 @@ function HeaderAction({
         <View
           style={{
             position: 'absolute',
-            top: 3,
-            right: 2,
-            minWidth: 16,
-            height: 16,
-            borderRadius: 8,
-            paddingHorizontal: 4,
-            backgroundColor: colors.orange,
+            top: 1,
+            right: badge > 9 ? -4 : 0,
             borderWidth: 2,
             borderColor: colors.surface,
-            alignItems: 'center',
-            justifyContent: 'center',
+            borderRadius: radius.pill,
           }}
         >
-          <Text style={{ color: colors.white, fontSize: 9, fontWeight: '800' }}>
-            {badge > 99 ? '99+' : badge}
-          </Text>
+          <CountBadge count={badge} size={16} />
         </View>
       )}
     </Pressable>
@@ -173,7 +165,7 @@ export function AppHeader() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const { user, isAdmin, unreadCount, logout } = useAuth();
+  const { user, isAdmin, unreadCount, unreadMessages, logout } = useAuth();
   const { isWide } = useBreakpoint();
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -237,6 +229,12 @@ export function AppHeader() {
 
         {user ? (
           <>
+            <HeaderAction
+              icon="envelope"
+              label={t('chat.title')}
+              badge={unreadMessages}
+              onPress={() => router.push('/messages')}
+            />
             {isWide && (
               <HeaderAction
                 icon="bell"
@@ -271,6 +269,12 @@ export function AppHeader() {
         <Muted style={{ marginTop: -spacing.sm }}>{user?.email}</Muted>
         <View style={{ gap: 2, marginTop: spacing.sm }}>
           <MenuItem icon="user" label={t('nav.profile')} onPress={() => go('/profile')} />
+          <MenuItem
+            icon="envelope"
+            label={t('chat.title')}
+            badge={unreadMessages}
+            onPress={() => go('/messages')}
+          />
           <MenuItem icon="cubes" label={t('models.mine')} onPress={() => go('/models')} />
           <MenuItem icon="calculator" label={t('nav.calculator')} onPress={() => go('/calculator')} />
           <MenuItem icon="shield" label={t('nav.security')} onPress={() => go('/settings/security')} />

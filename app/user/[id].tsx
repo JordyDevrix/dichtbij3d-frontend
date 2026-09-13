@@ -7,7 +7,9 @@ import type { AdvertSummary, PublicUser } from '../../src/api/types';
 import { AdvertCard } from '../../src/components/AdvertCard';
 import { Icon } from '../../src/components/Icon';
 import { Page } from '../../src/components/Page';
-import { Avatar, Badge, Body, Card, EmptyState, H1, H2, Muted, Row, Spinner } from '../../src/components/ui';
+import { Avatar, Badge, Body, Button, Card, EmptyState, H1, H2, Muted, Row, Spinner } from '../../src/components/ui';
+import { useAuth } from '../../src/context/AuthContext';
+import { useStartChat } from '../../src/hooks/useStartChat';
 import { useI18n } from '../../src/i18n';
 import { colors, spacing } from '../../src/theme/theme';
 import { formatDate } from '../../src/utils/format';
@@ -15,6 +17,8 @@ import { formatDate } from '../../src/utils/format';
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, locale } = useI18n();
+  const { user: me } = useAuth();
+  const { startChat, starting } = useStartChat();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [adverts, setAdverts] = useState<AdvertSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +88,15 @@ export default function PublicProfileScreen() {
               </Row>
             </Row>
           </View>
+          {me?.id !== user.id && (
+            <Button
+              title={t('chat.contact')}
+              icon="envelope"
+              variant="outline"
+              loading={starting}
+              onPress={() => void startChat(user.id)}
+            />
+          )}
         </Row>
       </Card>
 

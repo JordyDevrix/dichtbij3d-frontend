@@ -20,6 +20,7 @@ const TYPE_ICON: Record<NotificationType, IconName> = {
   BID_REJECTED: 'ban',
   MODEL_PURCHASED: 'coins',
   MODEL_SHARED: 'share',
+  MESSAGE_RECEIVED: 'envelope',
   ACCOUNT_DISABLED: 'ban',
   ACCOUNT_ENABLED: 'checkCircle',
   SYSTEM: 'info',

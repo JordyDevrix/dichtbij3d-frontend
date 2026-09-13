@@ -22,6 +22,7 @@ import {
 } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
+import { useGoBack } from '../../src/hooks/useGoBack';
 import { useI18n } from '../../src/i18n';
 import { colors, radius, spacing } from '../../src/theme/theme';
 import { fileSize, formatDate, money } from '../../src/utils/format';
@@ -30,6 +31,7 @@ import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 export default function ModelDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const goBack = useGoBack('/models');
   const { t, locale } = useI18n();
   const { user, requireAuth } = useAuth();
   const toast = useToast();
@@ -114,7 +116,7 @@ export default function ModelDetailScreen() {
 
   return (
     <Page>
-      <Button title={t('common.back')} icon="back" variant="ghost" size="sm" onPress={() => router.back()} />
+      <Button title={t('common.back')} icon="back" variant="ghost" size="sm" onPress={goBack} />
 
       <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.lg, alignItems: 'flex-start' }}>
         <View style={{ flex: 2, gap: spacing.lg, width: '100%' }}>

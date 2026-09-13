@@ -26,7 +26,10 @@ interface AuthValue {
   refreshProfile: () => Promise<void>;
   /** Returns true when signed in; otherwise sends the visitor to the sign-up gate. */
   requireAuth: (redirectTo?: string) => boolean;
+  /** Unread notifications. */
   unreadCount: number;
+  /** Unread private messages. */
+  unreadMessages: number;
   refreshUnread: () => Promise<void>;
 }
 
@@ -37,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [booting, setBooting] = useState(true);
   const [busy, setBusy] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const router = useRouter();
   const { locale, setLocale } = useI18n();
   const localeRef = useRef(locale);
@@ -53,12 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const refreshUnread = useCallback(async () => {
-    try {
-      const result = await api.unreadCount();
-      setUnreadCount(result?.unread ?? 0);
-    } catch {
-      setUnreadCount(0);
-    }
+    const [notifications, messages] = await Promise.allSettled([api.unreadCount(), api.unreadMessageCount()]);
+    setUnreadCount(notifications.status === 'fulfilled' ? notifications.value?.count ?? 0 : 0);
+    setUnreadMessages(messages.status === 'fulfilled' ? messages.value?.count ?? 0 : 0);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onUnauthorized(() => {
       setUser(null);
       setUnreadCount(0);
+      setUnreadMessages(0);
     });
     (async () => {
       const { accessToken } = await loadTokens();
@@ -84,10 +86,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => onUnauthorized(null);
   }, [refreshProfile]);
 
-  // Poll notifications while signed in so the badge stays fresh.
+  // Poll while signed in so the notification and message badges stay fresh.
   useEffect(() => {
     if (!user) return;
-    const id = setInterval(() => void refreshUnread(), 45000);
+    const id = setInterval(() => void refreshUnread(), 25000);
     return () => clearInterval(id);
   }, [user, refreshUnread]);
 
@@ -159,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await clearTokens();
     setUser(null);
     setUnreadCount(0);
+    setUnreadMessages(0);
     router.replace('/');
   }, [router]);
 
@@ -187,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshProfile,
       requireAuth,
       unreadCount,
+      unreadMessages,
       refreshUnread,
     }),
     [
@@ -201,6 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshProfile,
       requireAuth,
       unreadCount,
+      unreadMessages,
       refreshUnread,
     ],
   );

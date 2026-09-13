@@ -20,6 +20,7 @@ export type NotificationType =
   | 'BID_REJECTED'
   | 'MODEL_PURCHASED'
   | 'MODEL_SHARED'
+  | 'MESSAGE_RECEIVED'
   | 'ACCOUNT_DISABLED'
   | 'ACCOUNT_ENABLED'
   | 'SYSTEM';
@@ -232,6 +233,33 @@ export interface AppNotification {
   body: string | null;
   link: string | null;
   readAt: string | null;
+  createdAt: string;
+}
+
+export interface ConversationAdvert {
+  id: string;
+  title: string;
+  type: AdvertType;
+  coverImageUrl: string | null;
+}
+
+export interface Conversation {
+  id: string;
+  peer: PublicUser;
+  advert: ConversationAdvert | null;
+  lastMessage: string | null;
+  lastMessageAt: string;
+  unreadCount: number;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  body: string;
+  kind: 'TEXT' | 'SYSTEM';
+  senderId: string;
+  mine: boolean;
   createdAt: string;
 }
 

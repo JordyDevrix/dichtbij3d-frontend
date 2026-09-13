@@ -207,8 +207,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     try {
       const payload = await response.json();
       message = payload.message || payload.error || message;
-      code = payload.code;
-      fields = payload.fields;
+      // The backend calls these `error` and `fieldErrors` (see ApiError.kt).
+      code = payload.code ?? payload.error;
+      fields = payload.fieldErrors ?? payload.fields;
     } catch {
       /* non-JSON error body */
     }
