@@ -8,6 +8,12 @@ import type { AuthResponse } from './types';
 function configuredUrl(): string {
   const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, unknown>;
   const fromExtra = typeof extra.apiUrl === 'string' ? extra.apiUrl : undefined;
+
+  // Injected at container start by env.js in the Docker image. An empty string is a
+  // valid value: it means "same origin", where the web server proxies /api upstream.
+  const runtime = typeof window !== 'undefined' ? (window as any).__DICHTBIJ3D_API_URL__ : undefined;
+  if (typeof runtime === 'string') return runtime.replace(/\/$/, '');
+
   return (process.env.EXPO_PUBLIC_API_URL || fromExtra || 'http://localhost:8080').replace(/\/$/, '');
 }
 
@@ -20,6 +26,7 @@ function configuredUrl(): string {
 function resolveBaseUrl(): string {
   const url = configuredUrl();
   if (Platform.OS === 'web') return url;
+  if (!url) return url;
 
   const isLoopback = /^(https?:\/\/)(localhost|127\.0\.0\.1)(:|\/|$)/.test(url);
   if (!isLoopback) return url;

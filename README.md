@@ -114,3 +114,29 @@ src/utils/           formatting, uploads, WebAuthn helpers
 
 Adding a translation key means adding it to **all four** files in `src/i18n` —
 `nl.ts` defines the `Translations` type, so `npm run typecheck` fails otherwise.
+
+## Container image
+
+`.github/workflows/release.yml` publishes a multi-arch nginx image to GHCR on every push
+to `main` and every `v*.*.*` tag:
+
+```
+ghcr.io/jordydevrix/dichtbij3d-frontend:latest
+ghcr.io/jordydevrix/dichtbij3d-frontend:1.2.3
+ghcr.io/jordydevrix/dichtbij3d-frontend:sha-<commit>
+```
+
+The API URL is **not** baked into the bundle. At container start `docker/env.sh` writes
+`/env.js`, which `index.html` loads before the app:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `API_URL` | *(empty)* | Empty means same origin — nginx proxies `/api` to `BACKEND_URL`, so there is no CORS. Set it only when the API lives on another origin. |
+| `BACKEND_URL` | `http://backend:8080` | Upstream the proxy forwards `/api` and `/actuator` to. |
+| `PORT` | `80` | Port nginx listens on inside the container. |
+
+```bash
+docker run -p 8088:80 -e BACKEND_URL=http://my-api:8080 ghcr.io/jordydevrix/dichtbij3d-frontend
+```
+
+For a full stack use the deployment repository: <https://github.com/JordyDevrix/dichtbij3d>.
