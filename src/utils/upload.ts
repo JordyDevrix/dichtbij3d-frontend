@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { api } from '../api';
+import { api, ApiError } from '../api';
 import type { UploadResponse } from '../api/types';
 
 async function toUploadable(uri: string, name: string, mime: string) {
@@ -45,6 +45,16 @@ export async function pickAndUploadAvatar() {
 export async function pickAndUploadFiles(folder = 'models'): Promise<UploadResponse[]> {
   const result = await DocumentPicker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true });
   if (result.canceled || !result.assets?.length) return [];
+  
+  const allowedExtensions = ['.3mf', '.obj', '.stl'];
+  for (const asset of result.assets) {
+    const lowerName = asset.name.toLowerCase();
+    const isValid = allowedExtensions.some(ext => lowerName.endsWith(ext));
+    if (!isValid) {
+      throw new ApiError(400, `Invalid file type: ${asset.name}. Only .3mf, .obj, and .stl files are allowed.`);
+    }
+  }
+
   const uploads: UploadResponse[] = [];
   for (const asset of result.assets) {
     const file = await toUploadable(asset.uri, asset.name, asset.mimeType || 'application/octet-stream');
