@@ -11,6 +11,28 @@ export type BidStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
 export type ModelVisibility = 'PUBLIC' | 'UNLISTED' | 'PRIVATE';
 export type ModelLicense = 'CC0' | 'CC_BY' | 'CC_BY_NC' | 'CC_BY_SA' | 'COMMERCIAL' | 'ALL_RIGHTS_RESERVED';
 export type ReportStatus = 'OPEN' | 'RESOLVED' | 'DISMISSED';
+
+/** Fixed platform taxonomy - mirrors nl.dichtbij3d.backend.domain.Category. */
+export type Category =
+  | 'HOME_LIVING'
+  | 'HOMELAB_IT'
+  | 'ELECTRONICS_CASES'
+  | 'TOOLS_WORKSHOP'
+  | 'SPARE_PARTS_REPAIR'
+  | 'AUTOMOTIVE'
+  | 'RC_DRONES'
+  | 'TOYS_GAMES'
+  | 'TABLETOP_MINIATURES'
+  | 'COSPLAY_PROPS'
+  | 'ART_DECOR'
+  | 'JEWELRY_FASHION'
+  | 'KITCHEN_DINING'
+  | 'GARDEN_OUTDOOR'
+  | 'SPORTS_OUTDOOR'
+  | 'PETS'
+  | 'EDUCATION_SCIENCE'
+  | 'MEDICAL_ASSISTIVE'
+  | 'OTHER';
 export type NotificationType =
   | 'ADVERT_REACTION'
   | 'ADVERT_ACCEPTED'
@@ -33,6 +55,27 @@ export const ADVERT_TYPES: AdvertType[] = ['PRINT_REQUEST', 'MODEL_REQUEST', 'MO
 export const SELECTABLE_ROLES: Role[] = ['CUSTOMER', 'PRINTER', 'MODELLER'];
 export const GENDERS: Gender[] = ['MALE', 'FEMALE', 'OTHER', 'RATHER_NOT_SAY'];
 export const LICENSES: ModelLicense[] = ['CC0', 'CC_BY', 'CC_BY_NC', 'CC_BY_SA', 'COMMERCIAL', 'ALL_RIGHTS_RESERVED'];
+export const CATEGORIES: Category[] = [
+  'HOME_LIVING',
+  'HOMELAB_IT',
+  'ELECTRONICS_CASES',
+  'TOOLS_WORKSHOP',
+  'SPARE_PARTS_REPAIR',
+  'AUTOMOTIVE',
+  'RC_DRONES',
+  'TOYS_GAMES',
+  'TABLETOP_MINIATURES',
+  'COSPLAY_PROPS',
+  'ART_DECOR',
+  'JEWELRY_FASHION',
+  'KITCHEN_DINING',
+  'GARDEN_OUTDOOR',
+  'SPORTS_OUTDOOR',
+  'PETS',
+  'EDUCATION_SCIENCE',
+  'MEDICAL_ASSISTIVE',
+  'OTHER',
+];
 export const VISIBILITIES: ModelVisibility[] = ['PUBLIC', 'UNLISTED', 'PRIVATE'];
 
 export interface UserProfile {
@@ -62,6 +105,7 @@ export interface PublicUser {
   city: string | null;
   bio?: string | null;
   memberSince?: string | null;
+  blocked?: boolean;
 }
 
 export interface AuthResponse {
@@ -98,6 +142,7 @@ export interface Tag {
 export interface AdvertSummary {
   id: string;
   type: AdvertType;
+  category: Category;
   title: string;
   excerpt: string;
   status: AdvertStatus;
@@ -139,6 +184,7 @@ export interface Bid {
 export interface AdvertDetail {
   id: string;
   type: AdvertType;
+  category: Category;
   title: string;
   description: string;
   status: AdvertStatus;
@@ -170,6 +216,7 @@ export interface AdvertDetail {
 
 export interface AdvertCreateRequest {
   type: AdvertType;
+  category?: Category;
   title: string;
   description: string;
   priceCents?: number | null;
@@ -189,6 +236,7 @@ export interface ModelSummary {
   id: string;
   title: string;
   description: string | null;
+  category: Category;
   license: ModelLicense;
   priceCents: number;
   currency: string;
@@ -245,8 +293,19 @@ export interface ModelCreateRequest {
   license?: ModelLicense;
   priceCents?: number;
   visibility?: ModelVisibility;
+  category?: Category;
   thumbnailKey?: string | null;
   files?: ModelFileRef[];
+  /** Also publish it as a marketplace advert straight away. */
+  listOnMarketplace?: boolean;
+  city?: string | null;
+  tags?: string[];
+}
+
+export interface BlockedUser {
+  user: PublicUser;
+  reason: string | null;
+  createdAt: string;
 }
 
 export interface AppNotification {
@@ -442,6 +501,7 @@ export type AdvertSort =
 export interface AdvertSearchParams {
   q?: string;
   type?: AdvertType[];
+  category?: Category[];
   tag?: string[];
   status?: AdvertStatus[];
   minPrice?: number;

@@ -10,6 +10,8 @@ import type {
   AppNotification,
   AuditLogEntry,
   AuthResponse,
+  BlockedUser,
+  Category,
   ChatMessage,
   Conversation,
   Bid,
@@ -88,6 +90,10 @@ export const api = {
   uploadAvatar: (file: FileLike) =>
     request<UserProfile>('/api/users/me/avatar', { method: 'POST', body: toFormData(file) }),
   publicProfile: (id: string) => request<PublicUser>(`/api/users/${id}`),
+  blockedUsers: () => request<BlockedUser[]>('/api/users/blocks'),
+  blockUser: (id: string, reason?: string) =>
+    request<MessageResponse>(`/api/users/${id}/block`, { method: 'POST', body: { reason } }),
+  unblockUser: (id: string) => request<MessageResponse>(`/api/users/${id}/block`, { method: 'DELETE' }),
 
   /* ---------------------------------------------------------------- tags */
   tags: (q?: string, limit = 60) => request<Tag[]>('/api/tags', { query: { q, limit }, auth: false }),
@@ -138,8 +144,8 @@ export const api = {
     request<AdvertDetail>(`/api/adverts/${id}/bids/${bidId}/reject`, { method: 'POST' }),
 
   /* ---------------------------------------------------------------- models */
-  models: (q?: string, page = 0, size = 20) =>
-    request<PageResponse<ModelSummary>>('/api/models', { query: { q, page, size } }),
+  models: (q?: string, category?: Category[], page = 0, size = 20) =>
+    request<PageResponse<ModelSummary>>('/api/models', { query: { q, category, page, size } }),
   myModels: () => request<ModelSummary[]>('/api/models/mine'),
   myLibrary: () => request<ModelSummary[]>('/api/models/library'),
   model: (id: string) => request<ModelDetail>(`/api/models/${id}`),

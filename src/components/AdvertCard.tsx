@@ -121,6 +121,9 @@ export function AdvertCard({ advert, onChanged }: Props) {
           <View style={{ position: 'absolute', top: spacing.md, left: spacing.md, flexDirection: 'row', gap: 6 }}>
             <Badge label={t(`advertTypes.${advert.type}`)} tone={typeTone} />
             {advert.status !== 'OPEN' && <Badge label={t(`status.${advert.status}`)} tone={statusTone} />}
+            {advert.category !== 'OTHER' && (
+              <Badge label={t(`categories.${advert.category}`)} tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }} />
+            )}
           </View>
         </View>
 

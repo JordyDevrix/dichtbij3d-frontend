@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { api, ApiError } from '../src/api';
 import { absoluteUrl } from '../src/api/client';
 import { GENDERS, SELECTABLE_ROLES } from '../src/api/types';
-import type { AdvertSummary, Gender, Role } from '../src/api/types';
+import type { AdvertSummary, BlockedUser, Gender, Role } from '../src/api/types';
 import { AdvertCard } from '../src/components/AdvertCard';
 import { Icon } from '../src/components/Icon';
 import { Page } from '../src/components/Page';
@@ -50,6 +50,26 @@ export default function ProfileScreen() {
   const [busy, setBusy] = useState(false);
   const [adverts, setAdverts] = useState<AdvertSummary[]>([]);
   const [loadingAdverts, setLoadingAdverts] = useState(true);
+  const [blocked, setBlocked] = useState<BlockedUser[]>([]);
+
+  const loadBlocked = useCallback(() => {
+    api.blockedUsers().then(setBlocked).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    loadBlocked();
+  }, [user, loadBlocked]);
+
+  const unblock = async (id: string) => {
+    try {
+      await api.unblockUser(id);
+      toast.success(t('block.unblockedDone'));
+      loadBlocked();
+    } catch {
+      toast.error(t('errors.generic'));
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -285,6 +305,31 @@ export default function ProfileScreen() {
         <Row style={{ justifyContent: 'flex-end' }}>
           <Button title={t('common.save')} icon="check" loading={busy} onPress={save} />
         </Row>
+      </Card>
+
+      <Card style={{ gap: spacing.md }}>
+        <H2>{t('block.blockedTitle')}</H2>
+        {blocked.length === 0 ? (
+          <Muted>{t('block.blockedEmpty')}</Muted>
+        ) : (
+          blocked.map((entry) => (
+            <Row key={entry.user.id} style={{ justifyContent: 'space-between' }} gap={spacing.md}>
+              <Row gap={spacing.sm} style={{ flex: 1 }}>
+                <Avatar name={entry.user.displayName} uri={absoluteUrl(entry.user.avatarUrl)} size={28} />
+                <Body numberOfLines={1} style={{ flex: 1 }}>
+                  {entry.user.displayName}
+                </Body>
+              </Row>
+              <Button
+                title={t('block.unblock')}
+                icon="ban"
+                size="sm"
+                variant="outline"
+                onPress={() => void unblock(entry.user.id)}
+              />
+            </Row>
+          ))
+        )}
       </Card>
 
       <View style={{ gap: spacing.md }}>

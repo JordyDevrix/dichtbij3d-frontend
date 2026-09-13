@@ -2,8 +2,16 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../src/api';
-import type { AdvertSearchParams, AdvertSort, AdvertSummary, AdvertType, PublicStats, Tag } from '../src/api/types';
-import { ADVERT_TYPES } from '../src/api/types';
+import type {
+  AdvertSearchParams,
+  AdvertSort,
+  AdvertSummary,
+  AdvertType,
+  Category,
+  PublicStats,
+  Tag,
+} from '../src/api/types';
+import { ADVERT_TYPES, CATEGORIES } from '../src/api/types';
 import { AdvertCard } from '../src/components/AdvertCard';
 import { Icon } from '../src/components/Icon';
 import { Page } from '../src/components/Page';
@@ -33,6 +41,7 @@ const PAGE_SIZE = 12;
 
 interface Filters {
   types: AdvertType[];
+  categories: Category[];
   tags: string[];
   minPrice: string;
   maxPrice: string;
@@ -44,6 +53,7 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = {
   types: [],
+  categories: [],
   tags: [],
   minPrice: '',
   maxPrice: '',
@@ -92,6 +102,7 @@ export default function MarketplaceScreen() {
     return {
       q: debounced || undefined,
       type: filters.types.length ? filters.types : undefined,
+      category: filters.categories.length ? filters.categories : undefined,
       tag: filters.tags.length ? filters.tags : undefined,
       minPrice: min,
       maxPrice: max,
@@ -131,6 +142,7 @@ export default function MarketplaceScreen() {
 
   const activeFilterCount =
     filters.types.length +
+    filters.categories.length +
     filters.tags.length +
     (filters.minPrice ? 1 : 0) +
     (filters.maxPrice ? 1 : 0) +
@@ -143,6 +155,14 @@ export default function MarketplaceScreen() {
     setDraft(filters);
     setFiltersOpen(true);
   };
+
+  const toggleCategory = (category: Category) =>
+    setDraft((d) => ({
+      ...d,
+      categories: d.categories.includes(category)
+        ? d.categories.filter((x) => x !== category)
+        : [...d.categories, category],
+    }));
 
   const toggleType = (type: AdvertType) =>
     setDraft((d) => ({
@@ -284,6 +304,21 @@ export default function MarketplaceScreen() {
           ))}
         </ScrollView>
 
+        {filters.categories.length > 0 && (
+          <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+            {filters.categories.map((category) => (
+              <Chip
+                key={category}
+                label={t(`categories.${category}`)}
+                tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
+                onRemove={() =>
+                  setFilters((f) => ({ ...f, categories: f.categories.filter((x) => x !== category) }))
+                }
+              />
+            ))}
+          </Row>
+        )}
+
         {filters.tags.length > 0 && (
           <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
             {filters.tags.map((slug) => (
@@ -362,6 +397,20 @@ export default function MarketplaceScreen() {
                       ? { bg: advertTypeColor[type].fg, fg: colors.white }
                       : undefined
                   }
+                />
+              ))}
+            </Row>
+          </View>
+
+          <View style={{ gap: spacing.sm }}>
+            <Muted>{t('marketplace.categories')}</Muted>
+            <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+              {CATEGORIES.map((category) => (
+                <Chip
+                  key={category}
+                  label={t(`categories.${category}`)}
+                  selected={draft.categories.includes(category)}
+                  onPress={() => toggleCategory(category)}
                 />
               ))}
             </Row>

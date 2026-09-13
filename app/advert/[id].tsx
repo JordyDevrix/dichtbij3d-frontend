@@ -272,6 +272,10 @@ export default function AdvertDetailScreen() {
               <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
                 <Badge label={t(`advertTypes.${advert.type}`)} tone={typeTone} />
                 <Badge label={t(`status.${advert.status}`)} tone={statusTone} />
+                <Badge
+                  label={t(`categories.${advert.category}`)}
+                  tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }}
+                />
               </Row>
               <H1>{advert.title}</H1>
               <Row gap={spacing.lg} style={{ flexWrap: 'wrap' }}>
@@ -326,10 +330,30 @@ export default function AdvertDetailScreen() {
                 <Pressable onPress={() => router.push(`/model/${advert.model!.id}`)}>
                   <Card style={{ marginTop: spacing.md, backgroundColor: colors.surfaceAlt }}>
                     <Row>
-                      <Icon name="cube" size={16} color={colors.orange} />
+                      {advert.model.thumbnailUrl ? (
+                        <Image
+                          source={{ uri: absoluteUrl(advert.model.thumbnailUrl) }}
+                          style={{ width: 56, height: 42, borderRadius: radius.sm }}
+                        />
+                      ) : (
+                        <Icon name="cube" size={16} color={colors.orange} />
+                      )}
                       <View style={{ flex: 1 }}>
                         <Muted>{t('advert.linkedModel')}</Muted>
                         <Body style={{ fontWeight: '700' }}>{advert.model.title}</Body>
+                        <Row gap={spacing.md}>
+                          <Row gap={4}>
+                            <Icon name="layers" size={11} color={colors.textFaint} />
+                            <Muted>{advert.model.fileCount}</Muted>
+                          </Row>
+                          <Row gap={4}>
+                            <Icon name="download" size={11} color={colors.textFaint} />
+                            <Muted>{advert.model.downloadCount}</Muted>
+                          </Row>
+                          {advert.model.hasAccess && (
+                            <Badge label={t('models.owned')} tone={{ bg: colors.successSoft, fg: colors.success }} />
+                          )}
+                        </Row>
                       </View>
                       <Icon name="external" size={13} color={colors.textFaint} />
                     </Row>

@@ -497,6 +497,7 @@ export function Select<T extends string>({
   onChange,
   placeholder,
   icon,
+  error,
 }: {
   label?: string;
   value?: T | null;
@@ -504,6 +505,7 @@ export function Select<T extends string>({
   onChange: (value: T) => void;
   placeholder?: string;
   icon?: IconName;
+  error?: string;
 }) {
   const [open, setOpen] = useState(false);
   const active = options.find((o) => o.value === value);
@@ -517,7 +519,7 @@ export function Select<T extends string>({
           alignItems: 'center',
           gap: spacing.sm,
           borderWidth: 1,
-          borderColor: colors.border,
+          borderColor: error ? colors.danger : colors.border,
           backgroundColor: colors.surface,
           borderRadius: radius.md,
           paddingHorizontal: spacing.md,
@@ -530,6 +532,7 @@ export function Select<T extends string>({
         </Text>
         <Icon name="chevronDown" size={14} color={colors.textFaint} />
       </Pressable>
+      {!!error && <Text style={{ fontSize: 12, color: colors.danger }}>{error}</Text>}
 
       <Sheet open={open} onClose={() => setOpen(false)} title={label}>
         <ScrollView style={{ maxHeight: 420 }}>

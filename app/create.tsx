@@ -3,9 +3,10 @@ import { Image, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../src/api';
 import { absoluteUrl } from '../src/api/client';
-import { ADVERT_TYPES } from '../src/api/types';
-import type { AdvertType, ModelSummary, Tag } from '../src/api/types';
+import { ADVERT_TYPES, CATEGORIES } from '../src/api/types';
+import type { AdvertType, Category, ModelSummary, Tag } from '../src/api/types';
 import { Icon } from '../src/components/Icon';
+import { ModelUploadSheet } from '../src/components/ModelUploadSheet';
 import { Page } from '../src/components/Page';
 import {
   Body,
@@ -47,6 +48,7 @@ export default function CreateAdvertScreen() {
   const toast = useToast();
 
   const [type, setType] = useState<AdvertType>('PRINT_REQUEST');
+  const [category, setCategory] = useState<Category>('OTHER');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -60,6 +62,7 @@ export default function CreateAdvertScreen() {
   const [customTag, setCustomTag] = useState('');
   const [images, setImages] = useState<{ key: string; url: string }[]>([]);
   const [modelId, setModelId] = useState<string | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const [tags, setTags] = useState<Tag[]>([]);
   const [loadingAdvert, setLoadingAdvert] = useState(false);
@@ -74,6 +77,8 @@ export default function CreateAdvertScreen() {
     setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: '' } : prev));
 
   const isRequest = type === 'PRINT_REQUEST' || type === 'MODEL_REQUEST';
+  // Selling a digital model means handing over files, so the advert must carry one.
+  const needsModel = type === 'MODEL_FOR_SALE';
 
   useEffect(() => {
     api.tags(undefined, 40).then(setTags).catch(() => undefined);
@@ -95,6 +100,7 @@ export default function CreateAdvertScreen() {
       .then((advert) => {
         if (cancelled) return;
         setType(advert.type);
+        setCategory(advert.category);
         setTitle(advert.title);
         setDescription(advert.description);
         setPrice(advert.priceCents != null ? (advert.priceCents / 100).toFixed(2) : '');
@@ -175,6 +181,7 @@ export default function CreateAdvertScreen() {
   const validate = () => {
     const errors: Record<string, string> = {};
     if (title.trim().length < 4) errors.title = t('create.titleTooShort');
+    if (needsModel && !modelId) errors.modelId = t('create.attachModelRequired');
     if (description.trim().length < 10) errors.description = t('create.descriptionTooShort');
     if (deadline.trim() && !isValidDate(deadline.trim())) errors.deadline = t('create.invalidDate');
 
@@ -208,6 +215,7 @@ export default function CreateAdvertScreen() {
     try {
       const body = {
         type,
+        category,
         title: title.trim(),
         description: description.trim(),
         priceCents: isRequest ? undefined : toCents(price),
@@ -316,6 +324,46 @@ export default function CreateAdvertScreen() {
           placeholder={t('create.descriptionPlaceholder')}
           multiline
         />
+        <Select
+          label={t('create.category')}
+          value={category}
+          options={CATEGORIES.map((value) => ({ value, label: t(`categories.${value}`) }))}
+          onChange={(value) => setCategory(value as Category)}
+          icon="tag"
+        />
+        <Muted>{t('create.categoryHint')}</Muted>
+
+        <View style={{ gap: spacing.sm }}>
+          <Body style={{ fontWeight: '600' }}>{needsModel ? t('create.attachModel') : t('create.linkModel')}</Body>
+          {needsModel && <Muted>{t('create.attachModelHint')}</Muted>}
+          {myModels.length > 0 ? (
+            <Select
+              label={t('create.pickFromLibrary')}
+              value={modelId ?? ''}
+              error={fieldErrors.modelId}
+              options={[
+                { value: '', label: '—' },
+                ...myModels.map((model) => ({ value: model.id, label: model.title })),
+              ]}
+              onChange={(value) => {
+                setModelId(value || null);
+                clearField('modelId');
+              }}
+              icon="cube"
+            />
+          ) : (
+            <Muted>{t('create.noModelsYet')}</Muted>
+          )}
+          <Row>
+            <Button
+              title={t('create.uploadNewModel')}
+              icon="upload"
+              size="sm"
+              variant="outline"
+              onPress={() => setUploadOpen(true)}
+            />
+          </Row>
+        </View>
         <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
           <View style={{ flexGrow: 1, flexBasis: 200 }}>
             <Input label={t('profile.city')} value={city} onChangeText={setCity} icon="location" />
@@ -377,18 +425,6 @@ export default function CreateAdvertScreen() {
           )}
         </View>
 
-        {myModels.length > 0 && (
-          <Select
-            label={t('create.linkModel')}
-            value={modelId ?? undefined}
-            options={[
-              { value: '', label: '—' },
-              ...myModels.map((model) => ({ value: model.id, label: model.title })),
-            ]}
-            onChange={(value) => setModelId(value || null)}
-            icon="cube"
-          />
-        )}
       </Card>
 
       {/* --------------------------------------------------- price & tags */}
@@ -519,6 +555,19 @@ export default function CreateAdvertScreen() {
         </Card>
       )}
 
+      <ModelUploadSheet
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        defaultCategory={category}
+        onCreated={(model) => {
+          // The advert itself is the listing, so the model is not published twice.
+          setMyModels((prev) => [model, ...prev]);
+          setModelId(model.id);
+          clearField('modelId');
+          toast.success(t('create.modelSelected'));
+        }}
+      />
+
       <Row style={{ justifyContent: 'flex-end' }} gap={spacing.sm}>
         <Button title={t('common.cancel')} variant="ghost" onPress={goBack} />
         <Button
@@ -562,6 +611,10 @@ function fieldLabel(field: string, t: (key: string) => string) {
       return t('profile.city');
     case 'tags':
       return t('marketplace.tags');
+    case 'modelId':
+      return t('create.attachModel');
+    case 'category':
+      return t('create.category');
     default:
       return field;
   }
