@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Dichtbij3D",
+    "slug": "dichtbij3d",
+    "version": "1.0.0",
+    "scheme": "dichtbij3d",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF6A00"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "nl.dichtbij3d.app"
+    },
+    "android": {
+      "package": "nl.dichtbij3d.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FF6A00",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Dichtbij3D gebruikt je fotos om afbeeldingen bij advertenties te plaatsen."
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "http://localhost:8080"
+    },
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
