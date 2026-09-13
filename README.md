@@ -59,14 +59,18 @@ you can side-load, and bakes in the deployed API URL (a native app cannot use th
 same-origin trick the web build relies on).
 
 ```bash
-npm i -g eas-cli          # or use npx eas-cli
-npx eas login             # free Expo account
-npx eas build --platform android --profile preview
+npx --yes eas-cli@latest login     # free Expo account
+npm run build:cloud:apk            # = eas build --platform android --profile preview
 ```
 
+> The npm package is called **eas-cli** while its binary is `eas`, so plain
+> `npx eas ...` fails with *"could not determine executable to run"*. Use
+> `npx --yes eas-cli@latest ...`, the `npm run eas -- <args>` shortcut, or install it
+> globally with `npm i -g eas-cli` and then call `eas` directly.
+
 The build runs on Expo's servers and ends with a QR code plus a download link — open
-it on the phone, allow "install unknown apps" and you have the real app. Use the
-`production` profile for an `.aab` to upload to Google Play.
+it on the phone, allow "install unknown apps" and you have the real app. Use
+`npm run build:cloud:aab` for an `.aab` to upload to Google Play.
 
 Change the URL a build points at in `eas.json` → `build.<profile>.env.EXPO_PUBLIC_API_URL`.
 

@@ -43,6 +43,9 @@
     "build:web": "expo export --platform web",
     "prebuild:android": "expo prebuild --platform android",
     "build:apk": "expo run:android --variant release",
+    "eas": "npx --yes eas-cli@latest",
+    "build:cloud:apk": "npx --yes eas-cli@latest build --platform android --profile preview",
+    "build:cloud:aab": "npx --yes eas-cli@latest build --platform android --profile production",
     "typecheck": "node --stack-size=4000 ./node_modules/typescript/lib/tsc.js --noEmit"
   },
   "private": true
