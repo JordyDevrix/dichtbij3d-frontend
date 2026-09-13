@@ -45,14 +45,41 @@ npm run build:apk          # release variant
 
 `npm run android` needs a local **Android SDK** (`ANDROID_HOME`) and JDK 17 or 21 —
 the Android Gradle Plugin does not support JDK 25. If you do not want to install the
-SDK locally, use a cloud build instead:
-
-```bash
-npx eas build --platform android --profile preview
-```
+SDK locally, use a cloud build instead — see below.
 
 The `android/` folder is generated output and is git-ignored; regenerate it any time
 with `npm run prebuild:android`.
+
+## Install it on a phone
+
+### Option A — APK via EAS Build (no local Android SDK needed)
+
+`eas.json` defines the build profiles. The `preview` profile produces a plain **APK**
+you can side-load, and bakes in the deployed API URL (a native app cannot use the
+same-origin trick the web build relies on).
+
+```bash
+npm i -g eas-cli          # or use npx eas-cli
+npx eas login             # free Expo account
+npx eas build --platform android --profile preview
+```
+
+The build runs on Expo's servers and ends with a QR code plus a download link — open
+it on the phone, allow "install unknown apps" and you have the real app. Use the
+`production` profile for an `.aab` to upload to Google Play.
+
+Change the URL a build points at in `eas.json` → `build.<profile>.env.EXPO_PUBLIC_API_URL`.
+
+### Option B — install the website as an app (PWA)
+
+The web build ships a `manifest.json`, maskable icons and a theme colour, so the
+deployed site is installable straight from the browser, no store or APK required:
+
+* **Android / Chrome** — open the site, menu (⋮) → *Add to Home screen* / *Install app*.
+* **iOS / Safari** — Share → *Add to Home Screen*.
+
+It then launches full-screen with its own icon and no browser chrome. This requires
+the site to be served over **HTTPS**.
 
 ## Pointing at another backend
 

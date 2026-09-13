@@ -1,0 +1,17 @@
+{
+  "name": "Dichtbij3D",
+  "short_name": "Dichtbij3D",
+  "description": "3D printen dichtbij huis: print- en modelaanvragen, modellen kopen en verkopen.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F2EF",
+  "theme_color": "#FF6A00",
+  "lang": "nl",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

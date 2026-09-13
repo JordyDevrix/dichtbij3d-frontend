@@ -10,7 +10,7 @@ RUN npm ci
 COPY . .
 # No API URL is baked in: the container resolves it at runtime (see docker/env.sh).
 RUN npx expo export --platform web --output-dir dist \
- && sed -i 's#<head>#<head><script src="/env.js"></script>#' dist/index.html
+ && sed -i 's|<head>|<head><script src="/env.js"></script><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#FF6A00"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Dichtbij3D">|' dist/index.html
 
 # ---------------------------------------------------------------- runtime stage
 FROM docker.io/library/nginx:1.27-alpine AS runtime
