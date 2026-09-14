@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, layout, spacing } from '../theme/theme';
 import { HEADER_HEIGHT } from './AppHeader';
+import { Footer } from './Footer';
 import { useHeaderScroll } from '../context/HeaderScrollContext';
 
 export function Page({
@@ -20,6 +21,7 @@ export function Page({
   onRefresh,
   contentStyle,
   onScroll,
+  hideFooter = false,
 }: {
   children: React.ReactNode;
   maxWidth?: number;
@@ -27,6 +29,7 @@ export function Page({
   onRefresh?: () => void;
   contentStyle?: ViewStyle;
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  hideFooter?: boolean;
 }) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -37,7 +40,12 @@ export function Page({
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: spacing.xxxl }}
+      contentContainerStyle={{
+        paddingTop: headerHeight,
+        paddingBottom: spacing.xl,
+        flexGrow: 1,
+        justifyContent: 'space-between',
+      }}
       keyboardShouldPersistTaps="handled"
       scrollEventThrottle={16}
       onScroll={(e) => {
@@ -64,12 +72,14 @@ export function Page({
             paddingHorizontal: gutter,
             paddingTop: gutter,
             gap: spacing.lg,
+            flexGrow: 1,
           },
           contentStyle,
         ]}
       >
         {children}
       </View>
+      {!hideFooter && <Footer />}
     </ScrollView>
   );
 }
