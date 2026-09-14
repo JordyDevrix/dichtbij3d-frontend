@@ -156,8 +156,14 @@ export default function ModelDetailScreen() {
     <Page>
       <Button title={t('common.back')} icon="back" variant="ghost" size="sm" onPress={goBack} />
 
-      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.lg, alignItems: 'flex-start' }}>
-        <View style={{ flex: 2, gap: spacing.lg, width: '100%' }}>
+      <View
+        style={{
+          flexDirection: isWide ? 'row' : 'column',
+          gap: spacing.lg,
+          alignItems: isWide ? 'flex-start' : 'stretch',
+        }}
+      >
+        <View style={{ flex: isWide ? 2 : undefined, gap: spacing.lg, width: '100%' }}>
           <Card padded={false} style={{ overflow: 'hidden' }}>
             <View style={{ height: isWide ? 340 : 200, backgroundColor: colors.orangeSofter }}>
               {model.thumbnailUrl ? (
@@ -249,7 +255,14 @@ export default function ModelDetailScreen() {
           </Card>
         </View>
 
-        <View style={{ flex: 1, gap: spacing.lg, width: '100%', minWidth: 280 }}>
+        <View
+          style={{
+            flex: isWide ? 1 : undefined,
+            gap: spacing.lg,
+            width: '100%',
+            minWidth: isWide ? 280 : undefined,
+          }}
+        >
           <Card style={{ gap: spacing.md }}>
             <H1 style={{ color: colors.orange }}>
               {model.priceCents > 0 ? money(model.priceCents, locale, model.currency) : t('common.free')}

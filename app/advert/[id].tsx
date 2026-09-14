@@ -234,9 +234,15 @@ export default function AdvertDetailScreen() {
         </Row>
       </Row>
 
-      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.lg, alignItems: 'flex-start' }}>
+      <View
+        style={{
+          flexDirection: isWide ? 'row' : 'column',
+          gap: spacing.lg,
+          alignItems: isWide ? 'flex-start' : 'stretch',
+        }}
+      >
         {/* ------------------------------------------------ main column */}
-        <View style={{ flex: 2, gap: spacing.lg, width: '100%' }}>
+        <View style={{ flex: isWide ? 2 : undefined, gap: spacing.lg, width: '100%' }}>
           <Card padded={false} style={{ overflow: 'hidden' }}>
             <View style={{ height: isWide ? 380 : 220, backgroundColor: colors.orangeSofter }}>
               {images.length > 0 ? (
@@ -499,7 +505,14 @@ export default function AdvertDetailScreen() {
         </View>
 
         {/* ------------------------------------------------ side column */}
-        <View style={{ flex: 1, gap: spacing.lg, width: '100%', minWidth: 280 }}>
+        <View
+          style={{
+            flex: isWide ? 1 : undefined,
+            gap: spacing.lg,
+            width: '100%',
+            minWidth: isWide ? 280 : undefined,
+          }}
+        >
           <Card style={{ gap: spacing.md }}>
             {priceBlock()}
             {isSale && modelRemoved && !isOwner && (
@@ -584,9 +597,9 @@ export default function AdvertDetailScreen() {
           <Card style={{ gap: spacing.md }}>
             <Muted>{t('advert.postedBy')}</Muted>
             <Pressable onPress={() => router.push(`/user/${advert.author.id}`)}>
-              <Row>
+              <Row style={{ flexWrap: 'wrap', gap: spacing.sm }}>
                 <Avatar name={advert.author.displayName} uri={absoluteUrl(advert.author.avatarUrl)} size={44} />
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 120 }}>
                   <H3>{advert.author.displayName}</H3>
                   <Muted>{advert.author.city ?? ''}</Muted>
                 </View>
@@ -604,6 +617,7 @@ export default function AdvertDetailScreen() {
                 icon="envelope"
                 variant="outline"
                 size="sm"
+                full={!isWide}
                 loading={starting}
                 onPress={() => void startChat(advert.author.id, advert.id)}
               />
@@ -637,10 +651,10 @@ export default function AdvertDetailScreen() {
               {advert.bids.map((bid) => (
                 <View key={bid.id} style={{ gap: 4 }}>
                   <Divider />
-                  <Row style={{ justifyContent: 'space-between' }}>
-                    <Row gap={spacing.sm}>
+                  <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.xs }}>
+                    <Row gap={spacing.sm} style={{ flexShrink: 1, minWidth: 120 }}>
                       <Avatar name={bid.bidder.displayName} uri={absoluteUrl(bid.bidder.avatarUrl)} size={26} />
-                      <Muted>{bid.bidder.displayName}</Muted>
+                      <Muted numberOfLines={1}>{bid.bidder.displayName}</Muted>
                     </Row>
                     <Body style={{ fontWeight: '700' }}>{money(bid.amountCents, locale)}</Body>
                   </Row>

@@ -120,8 +120,14 @@ export default function CalculatorScreen() {
         <Muted>{t('calculator.subtitle')}</Muted>
       </View>
 
-      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.lg, alignItems: 'flex-start' }}>
-        <Card style={{ flex: 3, gap: spacing.md, width: '100%' }}>
+      <View
+        style={{
+          flexDirection: isWide ? 'row' : 'column',
+          gap: spacing.lg,
+          alignItems: isWide ? 'flex-start' : 'stretch',
+        }}
+      >
+        <Card style={{ flex: isWide ? 3 : undefined, gap: spacing.md, width: '100%' }}>
           <H3>{t('calculator.printer')}</H3>
           <Select
             label={t('calculator.printerPick')}
@@ -134,37 +140,39 @@ export default function CalculatorScreen() {
             <Input label={t('calculator.watts')} value={watts} onChangeText={setWatts} keyboardType="number-pad" icon="bolt" />
           )}
 
-          <Divider style={{ marginVertical: spacing.sm }} />
+          <Divider style={{ marginVertical: spacing.xs }} />
           <H3>{t('calculator.duration')}</H3>
-          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            <View style={{ flex: 1 }}>
               <Input label={t('calculator.hours')} value={hours} onChangeText={setHours} keyboardType="decimal-pad" icon="clock" />
             </View>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
+            <View style={{ flex: 1 }}>
               <Input label={t('calculator.minutes')} value={minutes} onChangeText={setMinutes} keyboardType="number-pad" icon="clock" />
             </View>
           </View>
 
-          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
-              <Input
-                label={t('calculator.filamentPrice')}
-                value={filamentPrice}
-                onChangeText={setFilamentPrice}
-                keyboardType="decimal-pad"
-                icon="euro"
-              />
-            </View>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
+          <Divider style={{ marginVertical: spacing.xs }} />
+          <H3>{t('calculator.lineFilament')}</H3>
+          <Input
+            label={t('calculator.filamentPrice')}
+            value={filamentPrice}
+            onChangeText={setFilamentPrice}
+            keyboardType="decimal-pad"
+            icon="euro"
+          />
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            <View style={{ flex: 1 }}>
               <Input label={t('calculator.weight')} value={weight} onChangeText={setWeight} keyboardType="decimal-pad" icon="weight" />
             </View>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
+            <View style={{ flex: 1 }}>
               <Input label={t('calculator.waste')} value={waste} onChangeText={setWaste} keyboardType="decimal-pad" icon="weight" />
             </View>
           </View>
 
+          <Divider style={{ marginVertical: spacing.xs }} />
+          <H3>{t('calculator.lineEnergy')}</H3>
           <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
+            <View style={{ flex: 1 }}>
               <Input
                 label={t('calculator.electricity')}
                 value={electricity}
@@ -173,7 +181,7 @@ export default function CalculatorScreen() {
                 icon="bolt"
               />
             </View>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
+            <View style={{ flex: 1 }}>
               <Input
                 label={t('calculator.failureRate')}
                 value={failureRate}
@@ -184,8 +192,10 @@ export default function CalculatorScreen() {
             </View>
           </View>
 
+          <Divider style={{ marginVertical: spacing.xs }} />
+          <H3>{t('calculator.lineLabour')}</H3>
           <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
+            <View style={{ flex: 1 }}>
               <Input
                 label={t('calculator.labourMinutes')}
                 value={labourMinutes}
@@ -194,7 +204,7 @@ export default function CalculatorScreen() {
                 icon="clock"
               />
             </View>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
+            <View style={{ flex: 1 }}>
               <Input
                 label={t('calculator.labourRate')}
                 value={labourRate}
@@ -203,21 +213,22 @@ export default function CalculatorScreen() {
                 icon="euro"
               />
             </View>
-            <View style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%' }}>
+            <View style={{ flex: 1 }}>
               <Input label={t('calculator.margin')} value={margin} onChangeText={setMargin} keyboardType="decimal-pad" icon="chart" />
             </View>
           </View>
 
+          <Divider style={{ marginVertical: spacing.xs }} />
           <SwitchRow label={t('calculator.depreciation')} value={depreciation} onValueChange={setDepreciation} />
           <SwitchRow label={t('calculator.vat')} value={includeVat} onValueChange={setIncludeVat} />
           {includeVat && (
-            <Input label={t('calculator.vatPercent')} value={vatPercent} onChangeText={setVatPercent} keyboardType="decimal-pad" />
+            <Input label={t('calculator.vatPercent')} value={vatPercent} onChangeText={setVatPercent} keyboardType="decimal-pad" icon="chart" />
           )}
 
           <Button title={t('calculator.calculate')} icon="calculator" size="lg" full loading={busy} onPress={calculate} />
         </Card>
 
-        <View style={{ flex: 2, gap: spacing.lg, width: '100%', minWidth: 280 }}>
+        <View style={{ flex: isWide ? 2 : undefined, gap: spacing.lg, width: '100%' }}>
           {result ? (
             <>
               <Card style={{ gap: spacing.sm, backgroundColor: colors.orangeSofter, borderColor: colors.orangeBorder }}>
