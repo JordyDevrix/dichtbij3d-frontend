@@ -106,7 +106,7 @@ export function Pagination({
   style,
 }: PaginationProps) {
   const { t } = useI18n();
-  const { isPhone } = useBreakpoint();
+  const { width, isPhone } = useBreakpoint();
 
   if (totalPages <= 1) {
     return null;
@@ -115,12 +115,13 @@ export function Pagination({
   const hasPrev = page > 0;
   const hasNext = page < totalPages - 1;
   const currentDisplayPage = page + 1;
+  const isNarrow = width < 380;
 
   if (isPhone) {
     return (
       <View style={[styles.containerMobile, style]}>
         <Button
-          title={t('common.previous')}
+          title={isNarrow ? '' : t('common.previous')}
           icon="chevronLeft"
           variant="outline"
           size="sm"
@@ -131,7 +132,7 @@ export function Pagination({
           {t('common.pageOf', { current: currentDisplayPage, total: totalPages })}
         </Text>
         <Button
-          title={t('common.next')}
+          title={isNarrow ? '' : t('common.next')}
           iconRight="chevronRight"
           variant="outline"
           size="sm"

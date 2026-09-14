@@ -96,7 +96,7 @@ export default function MyAdvertsScreen() {
           style={{
             flexDirection: isPhone ? 'column' : 'row',
             justifyContent: 'space-between',
-            alignItems: isPhone ? 'flex-start' : 'center',
+            alignItems: isPhone ? 'stretch' : 'center',
             gap: spacing.md,
           }}
         >
@@ -119,6 +119,7 @@ export default function MyAdvertsScreen() {
           <Button
             title={t('marketplace.heroCtaCreate')}
             icon="plus"
+            full={isPhone}
             onPress={() => router.push('/create')}
           />
         </View>
