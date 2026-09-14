@@ -121,7 +121,24 @@ export function ModelUploadSheet({
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title={t('models.upload')} width={560}>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={t('models.upload')}
+      width={560}
+      footer={
+        <Row style={{ justifyContent: 'flex-end', gap: spacing.sm }}>
+          <Button title={t('common.cancel')} variant="ghost" onPress={onClose} />
+          <Button
+            title={t('models.upload')}
+            icon="upload"
+            loading={busy}
+            disabled={files.length === 0 || title.trim().length < 3}
+            onPress={submit}
+          />
+        </Row>
+      }
+    >
       <View style={{ gap: spacing.md }}>
         <Input label={t('create.advertTitle')} value={title} onChangeText={setTitle} icon="cube" />
         <Input label={t('advert.description')} value={description} onChangeText={setDescription} multiline />
@@ -199,17 +216,6 @@ export function ModelUploadSheet({
         ))}
 
         {files.length === 0 && <Body style={{ color: colors.textFaint }}>{t('models.uploadFiles')}</Body>}
-
-        <Row style={{ justifyContent: 'flex-end' }}>
-          <Button title={t('common.cancel')} variant="ghost" onPress={onClose} />
-          <Button
-            title={t('models.upload')}
-            icon="upload"
-            loading={busy}
-            disabled={files.length === 0 || title.trim().length < 3}
-            onPress={submit}
-          />
-        </Row>
       </View>
     </Sheet>
   );

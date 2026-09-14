@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -14,6 +15,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { colors, radius, shadow, spacing, typography } from '../theme/theme';
@@ -537,7 +539,7 @@ export function Select<T extends string>({
       {!!error && <Text style={{ fontSize: 12, color: colors.danger }}>{error}</Text>}
 
       <Sheet open={open} onClose={() => setOpen(false)} title={label}>
-        <ScrollView style={{ maxHeight: 420 }}>
+        <View style={{ gap: 2 }}>
           {options.map((option) => {
             const selected = option.value === value;
             return (
@@ -567,7 +569,7 @@ export function Select<T extends string>({
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
       </Sheet>
     </View>
   );
@@ -580,84 +582,160 @@ export function Sheet({
   onClose,
   title,
   children,
+  footer,
   width = 520,
+  scrollable = true,
+  contentContainerStyle,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   width?: number;
+  scrollable?: boolean;
+  contentContainerStyle?: ViewStyle;
 }) {
   const { width: screenWidth } = useWindowDimensions();
   const { scheme } = useTheme();
+  const insets = useSafeAreaInsets();
   // Phones get a bottom sheet (thumb-reachable); wider screens get a dialog.
   const asBottomSheet = screenWidth < 640;
 
   return (
     <Modal visible={open} transparent animationType={asBottomSheet ? 'slide' : 'fade'} onRequestClose={onClose}>
-      <Pressable
-        onPress={onClose}
-        style={{
-          flex: 1,
-          backgroundColor: colors.overlay,
-          alignItems: 'center',
-          justifyContent: asBottomSheet ? 'flex-end' : 'center',
-          padding: asBottomSheet ? 0 : spacing.lg,
-        }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
       >
         <Pressable
-          onPress={(e) => e.stopPropagation()}
-          style={[
-            {
-              width: '100%',
-              maxWidth: asBottomSheet ? undefined : width,
-              maxHeight: '92%',
-              borderRadius: asBottomSheet ? 0 : radius.xl,
-              borderTopLeftRadius: radius.xl,
-              borderTopRightRadius: radius.xl,
-            },
-            shadow.raised,
-          ]}
+          onPress={onClose}
+          style={{
+            flex: 1,
+            backgroundColor: colors.overlay,
+            alignItems: 'center',
+            justifyContent: asBottomSheet ? 'flex-end' : 'center',
+            padding: asBottomSheet ? 0 : spacing.lg,
+          }}
         >
-          <BlurView
-            intensity={80}
-            tint={scheme === 'dark' ? 'dark' : 'light'}
-            style={{
-              width: '100%',
-              backgroundColor: colors.elevated,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: asBottomSheet ? 0 : radius.xl,
-              borderTopLeftRadius: radius.xl,
-              borderTopRightRadius: radius.xl,
-              paddingHorizontal: spacing.xl,
-              paddingTop: asBottomSheet ? spacing.md : spacing.xl,
-              paddingBottom: spacing.xl,
-              gap: spacing.md,
-            }}
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={[
+              {
+                width: '100%',
+                maxWidth: asBottomSheet ? undefined : width,
+                maxHeight: asBottomSheet ? '92%' : '88%',
+                borderRadius: asBottomSheet ? 0 : radius.xl,
+                borderTopLeftRadius: radius.xl,
+                borderTopRightRadius: radius.xl,
+                overflow: 'hidden',
+                flexShrink: 1,
+              },
+              shadow.raised,
+            ]}
           >
-          {asBottomSheet && (
-            <View
+            <BlurView
+              intensity={80}
+              tint={scheme === 'dark' ? 'dark' : 'light'}
               style={{
-                alignSelf: 'center',
-                width: 38,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: colors.borderStrong,
-                marginBottom: spacing.sm,
+                width: '100%',
+                maxHeight: '100%',
+                backgroundColor: colors.elevated,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: asBottomSheet ? 0 : radius.xl,
+                borderTopLeftRadius: radius.xl,
+                borderTopRightRadius: radius.xl,
+                overflow: 'hidden',
+                flexDirection: 'column',
+                flexShrink: 1,
               }}
-            />
-          )}
-          {title && (
-            <Row style={{ justifyContent: 'space-between' }}>
-              <H2>{title}</H2>
-              <IconButton name="close" onPress={onClose} />
-            </Row>
-          )}
-          {children}
-          </BlurView>
+            >
+              {asBottomSheet && (
+                <View
+                  style={{
+                    alignSelf: 'center',
+                    width: 38,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: colors.borderStrong,
+                    marginTop: spacing.sm,
+                    marginBottom: spacing.xs,
+                  }}
+                />
+              )}
+              {title && (
+                <Row
+                  style={{
+                    justifyContent: 'space-between',
+                    paddingHorizontal: spacing.xl,
+                    paddingTop: asBottomSheet ? spacing.xs : spacing.lg,
+                    paddingBottom: spacing.sm,
+                  }}
+                >
+                  <H2>{title}</H2>
+                  <IconButton name="close" onPress={onClose} />
+                </Row>
+              )}
+              {scrollable ? (
+                <ScrollView
+                  style={{ flexShrink: 1 }}
+                  contentContainerStyle={[
+                    {
+                      paddingHorizontal: spacing.xl,
+                      paddingTop: title ? spacing.xs : spacing.md,
+                      paddingBottom: footer
+                        ? spacing.md
+                        : asBottomSheet
+                        ? Math.max(insets.bottom, spacing.xl)
+                        : spacing.xl,
+                      gap: spacing.md,
+                    },
+                    contentContainerStyle,
+                  ]}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={true}
+                >
+                  {children}
+                </ScrollView>
+              ) : (
+                <View
+                  style={[
+                    {
+                      flexShrink: 1,
+                      paddingHorizontal: spacing.xl,
+                      paddingTop: title ? spacing.xs : spacing.md,
+                      paddingBottom: footer
+                        ? spacing.md
+                        : asBottomSheet
+                        ? Math.max(insets.bottom, spacing.xl)
+                        : spacing.xl,
+                      gap: spacing.md,
+                    },
+                    contentContainerStyle,
+                  ]}
+                >
+                  {children}
+                </View>
+              )}
+              {footer && (
+                <View
+                  style={{
+                    borderTopWidth: 1,
+                    borderTopColor: colors.border,
+                    paddingHorizontal: spacing.xl,
+                    paddingTop: spacing.md,
+                    paddingBottom: asBottomSheet ? Math.max(insets.bottom, spacing.md) : spacing.xl,
+                    backgroundColor: colors.elevated,
+                  }}
+                >
+                  {footer}
+                </View>
+              )}
+            </BlurView>
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
