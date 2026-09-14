@@ -276,10 +276,10 @@ export function AppHeader() {
             onPress={() => go('/messages')}
           />
           <MenuItem icon="cubes" label={t('models.mine')} onPress={() => go('/models')} />
-          <MenuItem icon="heart" label={t('nav.favourites', 'Favourites')} onPress={() => go('/favourites')} />
+          <MenuItem icon="star" label={t('nav.favourites')} onPress={() => go('/favourites')} />
           <MenuItem icon="calculator" label={t('nav.calculator')} onPress={() => go('/calculator')} />
           <MenuItem icon="shield" label={t('nav.security')} onPress={() => go('/settings/security')} />
-          <MenuItem icon="bell" label={t('notifications.settingsTitle', 'Notification Settings')} onPress={() => go('/settings/notifications')} />
+          <MenuItem icon="bell" label={t('notifications.settingsTitle')} onPress={() => go('/settings/notifications')} />
           {isAdmin && <MenuItem icon="userShield" label={t('nav.admin')} onPress={() => go('/admin')} />}
           <Divider style={{ marginVertical: spacing.sm }} />
           <MenuItem

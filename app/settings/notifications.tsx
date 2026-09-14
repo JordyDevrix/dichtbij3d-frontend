@@ -64,7 +64,7 @@ export default function NotificationsSettingsScreen() {
     <Page maxWidth={600}>
       <Card style={{ gap: spacing.lg }}>
         <View>
-          <H1>{t('notifications.settingsTitle', 'Notification Settings')}</H1>
+          <H1>{t('notifications.settingsTitle')}</H1>
           <Muted>Choose which notifications you want to receive.</Muted>
         </View>
 

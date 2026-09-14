@@ -12,7 +12,7 @@ import { advertTypeColor, colors, radius, shadow, spacing, statusColor, typograp
 import { money, timeAgo } from '../utils/format';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { Icon } from './Icon';
-import { Avatar, Badge, Body, Button, Chip, H3, Input, Muted, Row, Sheet } from './ui';
+import { Avatar, Badge, Body, Button, Chip, H2, H3, Input, Muted, Row, Sheet } from './ui';
 
 interface Props {
   advert: AdvertSummary;
@@ -140,7 +140,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
                 if (isFavorite) {
                   void removeFromList(defaultList!.id, advert.id);
                 } else {
-                  void addToList(defaultList!.id, advert.id).then(() => toast.success(t('lists.addedToFavorites', 'Added to Favorites')));
+                  void addToList(defaultList!.id, advert.id).then(() => toast.success(t('lists.addedToFavorites')));
                 }
               }}
               style={{
@@ -150,7 +150,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
                 ...shadow.card,
               }}
             >
-              <Icon name="heart" solid={isFavorite} size={14} color={isFavorite ? colors.danger : colors.textMuted} />
+              <Icon name="star" size={14} color={isFavorite ? colors.danger : colors.textMuted} />
             </Pressable>
             <Pressable
               onPress={(e) => {
@@ -180,17 +180,18 @@ export function AdvertCard({ advert, onChanged }: Props) {
               {advert.tags.slice(0, 3).map((tag) => (
                 <Chip key={tag.id} label={tag.label} size="sm" />
               ))}
-              {advert.tags.length > 3 && <Muted>+{advert.tags.length - 3}</Muted>}
+              {advert.tags.length > 3 && (
+                <Muted style={typography.tiny}>+{advert.tags.length - 3}</Muted>
+              )}
             </Row>
           )}
 
-          <Row style={{ justifyContent: 'space-between', marginTop: 2 }}>
-            <Body style={{ fontSize: 17, fontWeight: '700', color: colors.ink, letterSpacing: -0.3 }}>
-              {priceLabel()}
-            </Body>
+          <Row style={{ marginTop: spacing.xs, justifyContent: 'space-between' }}>
+            <H2>{priceLabel()}</H2>
             {advert.allowBidding && (
-              <Row gap={5}>
-                <Icon name="gavel" size={12} color={colors.textFaint} />
+              <Row gap={spacing.xs}>
+                <Muted>{t('advert.highestBid')}</Muted>
+                <H3>{advert.highestBidCents ? money(advert.highestBidCents, locale, advert.currency) : '—'}</H3>
                 <Muted>
                   {advert.bidCount} {t('advert.bids')}
                 </Muted>
@@ -291,7 +292,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
         </Row>
       </Sheet>
 
-      <Sheet open={listMenuOpen} onClose={() => setListMenuOpen(false)} title={t('lists.saveToList', 'Save to List')} width={400}>
+      <Sheet open={listMenuOpen} onClose={() => setListMenuOpen(false)} title={t('lists.saveToList')} width={400}>
         <View style={{ gap: spacing.md }}>
           <View style={{ gap: spacing.xs }}>
             {lists.map((list) => {
@@ -313,7 +314,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
                   }}
                 >
                   <H3>{list.name}</H3>
-                  <Icon name={inList ? 'checkCircle' : 'circle'} solid={inList} color={inList ? colors.primary : colors.textMuted} size={18} />
+                  <Icon name={inList ? 'checkCircle' : 'plus'} color={inList ? colors.orange : colors.textMuted} size={18} />
                 </Pressable>
               );
             })}
@@ -324,7 +325,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
               <Input
                 value={newListTitle}
                 onChangeText={setNewListTitle}
-                placeholder={t('lists.newListName', 'New List Name...')}
+                placeholder={t('lists.newListName')}
               />
             </View>
             <Button

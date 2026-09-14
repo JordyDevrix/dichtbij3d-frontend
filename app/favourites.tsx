@@ -101,7 +101,7 @@ export default function FavouritesScreen() {
     <Page maxWidth={1200}>
       <Row gap={spacing.xl} style={{ alignItems: 'flex-start' }}>
         <Card style={{ flex: 1, minWidth: 250, maxWidth: 300, gap: spacing.md }}>
-          <H2>{t('nav.favourites', 'Favourites & Lists')}</H2>
+          <H2>{t('nav.favourites')}</H2>
           <View style={{ gap: spacing.xs }}>
             {lists.map(list => (
               <Pressable
@@ -118,13 +118,13 @@ export default function FavouritesScreen() {
               >
                 <View style={{ flex: 1 }}>
                   <H3>{list.name}</H3>
-                  <Muted>{list.advertIds.length} {t('common.results', 'items')}</Muted>
+                  <Muted>{list.advertIds.length} {t('common.results')}</Muted>
                 </View>
                 {!list.isDefault && (
                   <Pressable
                     onPress={async (e) => {
                       e.stopPropagation();
-                      if (confirm(t('common.confirm', 'Are you sure?'))) {
+                      if (confirm(t('common.confirm'))) {
                         await deleteList(list.id);
                         if (selectedListId === list.id) setSelectedListId(null);
                       }
@@ -144,7 +144,7 @@ export default function FavouritesScreen() {
               <Input
                 value={newListTitle}
                 onChangeText={setNewListTitle}
-                placeholder={t('lists.newListName', 'New List Name...')}
+                placeholder={t('lists.newListName')}
               />
             </View>
             <Button

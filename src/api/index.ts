@@ -5,6 +5,7 @@ import type {
   AdminUser,
   AdvertCreateRequest,
   AdvertDetail,
+  AdvertList,
   AdvertSearchParams,
   AdvertSummary,
   AppNotification,
