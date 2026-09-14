@@ -413,6 +413,11 @@ const en: Translations = {
     categorySales: 'Sales & Purchases',
     categorySystem: 'System & Other',
   },
+  lists: {
+    addedToFavorites: 'Added to favorites',
+    saveToList: 'Save to list',
+    newListName: 'New list name...',
+  },
   admin: {
     title: 'Admin panel',
     subtitle: 'Metrics, user management and moderation.',

@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { I18nProvider } from '../src/i18n';
 import { AuthProvider } from '../src/context/AuthContext';
+import { ListsProvider } from '../src/context/ListsContext';
 import { ToastProvider } from '../src/context/ToastContext';
 import { AppHeader } from '../src/components/AppHeader';
 import { BottomBar } from '../src/components/BottomBar';
@@ -44,7 +45,9 @@ export default function RootLayout() {
           <I18nProvider>
             <ToastProvider>
               <AuthProvider>
-                <Shell />
+                <ListsProvider>
+                  <Shell />
+                </ListsProvider>
               </AuthProvider>
             </ToastProvider>
           </I18nProvider>

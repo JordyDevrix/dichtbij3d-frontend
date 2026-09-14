@@ -5,6 +5,7 @@ import { api, ApiError } from '../api';
 import { absoluteUrl } from '../api/client';
 import type { AdvertSummary } from '../api/types';
 import { useAuth } from '../context/AuthContext';
+import { useLists } from '../context/ListsContext';
 import { useToast } from '../context/ToastContext';
 import { useI18n } from '../i18n';
 import { advertTypeColor, colors, radius, shadow, spacing, statusColor, typography } from '../theme/theme';
@@ -22,6 +23,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
   const router = useRouter();
   const { t, locale } = useI18n();
   const { user, isAdmin } = useAuth();
+  const { lists, defaultList, addToList, removeFromList, createList } = useLists();
   const toast = useToast();
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -31,7 +33,11 @@ export function AdvertCard({ advert, onChanged }: Props) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
 
+  const [listMenuOpen, setListMenuOpen] = useState(false);
+  const [newListTitle, setNewListTitle] = useState('');
+
   const isOwner = user?.id === advert.author.id;
+  const isFavorite = defaultList?.advertIds.includes(advert.id) ?? false;
   const openMenu = useCallback(() => setMenuOpen(true), []);
   const ref = useContextMenu(openMenu);
 
@@ -124,6 +130,44 @@ export function AdvertCard({ advert, onChanged }: Props) {
             {advert.category !== 'OTHER' && (
               <Badge label={t(`categories.${advert.category}`)} tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }} />
             )}
+          </View>
+          <View style={{ position: 'absolute', top: spacing.md, right: spacing.md, flexDirection: 'row', gap: 6 }}>
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (!user) return toast.error(t('common.signInRequired'));
+                if (isFavorite) {
+                  void removeFromList(defaultList!.id, advert.id);
+                } else {
+                  void addToList(defaultList!.id, advert.id).then(() => toast.success(t('lists.addedToFavorites', 'Added to Favorites')));
+                }
+              }}
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                padding: 6,
+                ...shadow.card,
+              }}
+            >
+              <Icon name="heart" solid={isFavorite} size={14} color={isFavorite ? colors.danger : colors.textMuted} />
+            </Pressable>
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (!user) return toast.error(t('common.signInRequired'));
+                setListMenuOpen(true);
+              }}
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                padding: 6,
+                ...shadow.card,
+              }}
+            >
+              <Icon name="plus" size={14} color={colors.textMuted} />
+            </Pressable>
           </View>
         </View>
 
@@ -245,6 +289,60 @@ export function AdvertCard({ advert, onChanged }: Props) {
           <Button title={t('common.cancel')} variant="ghost" onPress={() => setReportOpen(false)} />
           <Button title={t('common.submit')} loading={busy} onPress={submitReport} />
         </Row>
+      </Sheet>
+
+      <Sheet open={listMenuOpen} onClose={() => setListMenuOpen(false)} title={t('lists.saveToList', 'Save to List')} width={400}>
+        <View style={{ gap: spacing.md }}>
+          <View style={{ gap: spacing.xs }}>
+            {lists.map((list) => {
+              const inList = list.advertIds.includes(advert.id);
+              return (
+                <Pressable
+                  key={list.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: spacing.sm,
+                    backgroundColor: colors.surfaceAlt,
+                    borderRadius: radius.md,
+                    justifyContent: 'space-between',
+                  }}
+                  onPress={() => {
+                    if (inList) void removeFromList(list.id, advert.id);
+                    else void addToList(list.id, advert.id);
+                  }}
+                >
+                  <H3>{list.name}</H3>
+                  <Icon name={inList ? 'checkCircle' : 'circle'} solid={inList} color={inList ? colors.primary : colors.textMuted} size={18} />
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={{ height: 1, backgroundColor: colors.border }} />
+          <Row gap={spacing.sm}>
+            <View style={{ flex: 1 }}>
+              <Input
+                value={newListTitle}
+                onChangeText={setNewListTitle}
+                placeholder={t('lists.newListName', 'New List Name...')}
+              />
+            </View>
+            <Button
+              title={t('common.save')}
+              disabled={!newListTitle.trim()}
+              onPress={async () => {
+                try {
+                  setBusy(true);
+                  await createList(newListTitle.trim());
+                  setNewListTitle('');
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              loading={busy}
+            />
+          </Row>
+        </View>
       </Sheet>
     </View>
   );

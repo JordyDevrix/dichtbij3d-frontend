@@ -411,6 +411,11 @@ const nl = {
     categorySales: 'Verkopen & Aankopen',
     categorySystem: 'Systeem & Overige',
   },
+  lists: {
+    addedToFavorites: 'Toegevoegd aan favorieten',
+    saveToList: 'Opslaan in lijst',
+    newListName: 'Nieuwe lijstnaam...',
+  },
   admin: {
     title: 'Beheerpaneel',
     subtitle: 'Statistieken, gebruikersbeheer en moderatie.',

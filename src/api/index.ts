@@ -98,6 +98,15 @@ export const api = {
   /* ---------------------------------------------------------------- tags */
   tags: (q?: string, limit = 60) => request<Tag[]>('/api/tags', { query: { q, limit }, auth: false }),
 
+  /* ---------------------------------------------------------------- lists */
+  getLists: () => request<AdvertList[]>('/api/users/me/lists'),
+  createList: (name: string) => request<AdvertList>('/api/users/me/lists', { method: 'POST', body: { name } }),
+  deleteList: (id: string) => request<void>(`/api/users/me/lists/${id}`, { method: 'DELETE' }),
+  addToList: (listId: string, advertId: string) =>
+    request<void>(`/api/users/me/lists/${listId}/items/${advertId}`, { method: 'POST' }),
+  removeFromList: (listId: string, advertId: string) =>
+    request<void>(`/api/users/me/lists/${listId}/items/${advertId}`, { method: 'DELETE' }),
+
   /* ---------------------------------------------------------------- adverts */
   adverts: (params: AdvertSearchParams = {}) =>
     request<PageResponse<AdvertSummary>>('/api/adverts', { query: params as any }),

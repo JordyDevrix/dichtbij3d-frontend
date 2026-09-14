@@ -414,6 +414,11 @@ const de: Translations = {
     categorySales: 'Verkäufe & Einkäufe',
     categorySystem: 'System & Sonstiges',
   },
+  lists: {
+    addedToFavorites: 'Zu Favoriten hinzugefügt',
+    saveToList: 'In Liste speichern',
+    newListName: 'Neuer Listenname...',
+  },
   admin: {
     title: 'Verwaltungsbereich',
     subtitle: 'Kennzahlen, Benutzerverwaltung und Moderation.',

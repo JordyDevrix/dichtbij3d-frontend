@@ -518,3 +518,11 @@ export interface AdvertSearchParams {
   page?: number;
   size?: number;
 }
+
+export interface AdvertList {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  advertIds: string[];
+  createdAt: string;
+}
