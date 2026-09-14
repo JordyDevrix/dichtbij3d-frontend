@@ -205,6 +205,8 @@ export interface AdvertDetail {
   acceptedBy: PublicUser | null;
   acceptedAt: string | null;
   model: ModelSummary | null;
+  /** The attached model was deleted by its owner, so the advert has no files behind it. */
+  modelRemoved?: boolean;
   reactions: Reaction[];
   bids: Bid[];
   highestBidCents: number | null;

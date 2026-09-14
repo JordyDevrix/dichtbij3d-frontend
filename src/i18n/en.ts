@@ -126,6 +126,10 @@ const en: Translations = {
     activeFilters: '{n} filters active',
   },
   advert: {
+    modelRemoved: 'Model is no longer available',
+    modelRemovedBody: 'The seller removed the model, so this advert can no longer be bought.',
+    modelRemovedOwner: 'You removed the attached model. Attach another one or close the advert.',
+    attachOtherModel: 'Attach another model',
     reactionsTitle: 'Reactions',
     questionsTitle: 'Questions',
     questions: 'questions',

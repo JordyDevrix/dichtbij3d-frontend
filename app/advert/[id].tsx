@@ -115,7 +115,9 @@ export default function AdvertDetailScreen() {
   const isOwner = user?.id === advert.author.id;
   // A sale advert is bought; a request advert is applied for. The page follows that split.
   const isSale = advert.type === 'MODEL_FOR_SALE' || advert.type === 'PRINT_FOR_SALE';
-  const canBuy = isSale && advert.priceCents != null && advert.status === 'OPEN' && !isOwner;
+  // The seller can delete the model behind a sale advert; the advert stays up but is unbuyable.
+  const modelRemoved = advert.modelRemoved === true;
+  const canBuy = isSale && advert.priceCents != null && advert.status === 'OPEN' && !isOwner && !modelRemoved;
   const typeTone = advertTypeColor[advert.type];
   const statusTone = statusColor[advert.status] ?? statusColor.OPEN;
   const images = advert.imageUrls.map((url) => absoluteUrl(url)!).filter(Boolean);
@@ -326,6 +328,29 @@ export default function AdvertDetailScreen() {
                 </Row>
               )}
 
+              {modelRemoved && (
+                <Card style={{ marginTop: spacing.md, backgroundColor: colors.dangerSoft, borderColor: colors.dangerSoft }}>
+                  <Row style={{ alignItems: 'flex-start' }}>
+                    <Icon name="warning" size={15} color={colors.danger} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Body style={{ fontWeight: '700', color: colors.danger }}>{t('advert.modelRemoved')}</Body>
+                      <Muted style={{ color: colors.danger }}>
+                        {isOwner ? t('advert.modelRemovedOwner') : t('advert.modelRemovedBody')}
+                      </Muted>
+                    </View>
+                    {isOwner && (
+                      <Button
+                        title={t('advert.attachOtherModel')}
+                        icon="cube"
+                        size="sm"
+                        variant="outline"
+                        onPress={() => router.push({ pathname: '/create', params: { edit: advert.id } })}
+                      />
+                    )}
+                  </Row>
+                </Card>
+              )}
+
               {advert.model && (
                 <Pressable onPress={() => router.push(`/model/${advert.model!.id}`)}>
                   <Card style={{ marginTop: spacing.md, backgroundColor: colors.surfaceAlt }}>
@@ -474,6 +499,9 @@ export default function AdvertDetailScreen() {
         <View style={{ flex: 1, gap: spacing.lg, width: '100%', minWidth: 280 }}>
           <Card style={{ gap: spacing.md }}>
             {priceBlock()}
+            {isSale && modelRemoved && !isOwner && (
+              <Muted style={{ color: colors.danger }}>{t('advert.modelRemovedBody')}</Muted>
+            )}
             {isSale && advert.priceCents == null && !advert.allowBidding && (
               <Muted>{t('advert.priceOnRequest')}</Muted>
             )}

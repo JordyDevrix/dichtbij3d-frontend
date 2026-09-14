@@ -127,6 +127,10 @@ const de: Translations = {
     activeFilters: '{n} Filter aktiv',
   },
   advert: {
+    modelRemoved: 'Modell ist nicht mehr verfügbar',
+    modelRemovedBody: 'Der Verkäufer hat das Modell entfernt, daher kann diese Anzeige nicht mehr gekauft werden.',
+    modelRemovedOwner: 'Du hast das verknüpfte Modell entfernt. Verknüpfe ein anderes oder schließe die Anzeige.',
+    attachOtherModel: 'Anderes Modell verknüpfen',
     reactionsTitle: 'Reaktionen',
     questionsTitle: 'Fragen',
     questions: 'Fragen',

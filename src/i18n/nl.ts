@@ -124,6 +124,10 @@ const nl = {
     activeFilters: '{n} filters actief',
   },
   advert: {
+    modelRemoved: 'Model is niet meer beschikbaar',
+    modelRemovedBody: 'De verkoper heeft het model verwijderd, dus deze advertentie kan niet meer gekocht worden.',
+    modelRemovedOwner: 'Je hebt het gekoppelde model verwijderd. Koppel een ander model of sluit de advertentie.',
+    attachOtherModel: 'Ander model koppelen',
     reactionsTitle: 'Reacties',
     questionsTitle: 'Vragen',
     questions: 'vragen',
