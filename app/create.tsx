@@ -171,7 +171,7 @@ export default function CreateAdvertScreen() {
   const addImage = async () => {
     setUploading(true);
     try {
-      const upload = await pickAndUploadImage('adverts');
+      const upload = await pickAndUploadImage('listings');
       if (upload) setImages((prev) => [...prev, { key: upload.objectKey, url: upload.url }]);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : t('errors.generic'));

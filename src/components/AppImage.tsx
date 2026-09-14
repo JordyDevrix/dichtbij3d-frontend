@@ -28,7 +28,11 @@ export function AppImage({
 }: AppImageProps) {
   const [hasError, setHasError] = useState(false);
 
-  const resolvedUri = uri || (typeof source === 'object' && source !== null && 'uri' in source ? (source as any).uri : undefined);
+  const rawUri = uri || (typeof source === 'object' && source !== null && 'uri' in source ? (source as any).uri : undefined);
+  // Neutralize ad-blocker filters (EasyList blocks any URL matching */adverts/*)
+  const resolvedUri = typeof rawUri === 'string'
+    ? rawUri.replace('/api/files/adverts/', '/api/files/listings/')
+    : rawUri;
 
   if (hasError || (!resolvedUri && !source)) {
     return fallback ? <>{fallback}</> : null;
@@ -51,6 +55,7 @@ export function AppImage({
       borderBottomRightRadius,
       borderWidth,
       borderColor,
+      backgroundColor,
       opacity,
       zIndex,
       transform,
@@ -72,6 +77,7 @@ export function AppImage({
       borderBottomRightRadius: borderBottomRightRadius ?? undefined,
       borderWidth: borderWidth ?? undefined,
       borderColor: borderColor ?? undefined,
+      backgroundColor: backgroundColor ?? undefined,
       opacity: opacity ?? undefined,
       zIndex: zIndex ?? undefined,
       display: 'block',
@@ -82,7 +88,7 @@ export function AppImage({
     return React.createElement('img', {
       src: resolvedUri,
       alt,
-      loading: 'lazy',
+      loading: 'eager',
       decoding: 'async',
       style: imgStyle,
       onError: (e: any) => {

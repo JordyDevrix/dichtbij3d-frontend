@@ -20,7 +20,6 @@ import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { colors, radius, shadow, spacing, typography } from '../theme/theme';
 import { Icon, IconName } from './Icon';
-import { AppImage } from './AppImage';
 import { avatarColor, initials } from '../utils/format';
 
 /* ------------------------------------------------------------------ Button */
@@ -371,7 +370,15 @@ export function Badge({ label, tone }: { label: string; tone: { bg: string; fg: 
 /* ------------------------------------------------------------------ Avatar */
 
 export function Avatar({ name, uri, size = 40 }: { name: string; uri?: string | null; size?: number }) {
-  const fallback = (
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.surfaceAlt }}
+      />
+    );
+  }
+  return (
     <View
       style={{
         width: size,
@@ -385,18 +392,6 @@ export function Avatar({ name, uri, size = 40 }: { name: string; uri?: string | 
       <Text style={{ color: colors.white, fontWeight: '700', fontSize: size * 0.38 }}>{initials(name)}</Text>
     </View>
   );
-
-  if (uri) {
-    return (
-      <AppImage
-        uri={uri}
-        alt={name}
-        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.surfaceAlt }}
-        fallback={fallback}
-      />
-    );
-  }
-  return fallback;
 }
 
 /* ------------------------------------------------------------------ Misc */

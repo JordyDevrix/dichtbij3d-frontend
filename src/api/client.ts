@@ -45,8 +45,10 @@ export const API_BASE_URL = resolveBaseUrl();
 /** Turns a backend-relative path such as `/api/files/x.png` into a full URL. */
 export function absoluteUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
-  if (/^https?:\/\//.test(path)) return path;
-  return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+  // Neutralize ad-blocker filters (EasyList blocks any URL matching */adverts/*)
+  const safePath = path.replace('/api/files/adverts/', '/api/files/listings/');
+  if (/^https?:\/\//.test(safePath)) return safePath;
+  return `${API_BASE_URL}${safePath.startsWith('/') ? '' : '/'}${safePath}`;
 }
 
 /* ------------------------------------------------------------------ errors */
