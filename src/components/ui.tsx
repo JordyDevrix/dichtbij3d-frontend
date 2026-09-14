@@ -15,6 +15,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useTheme } from '../theme/ThemeContext';
 import { colors, radius, shadow, spacing, typography } from '../theme/theme';
 import { Icon, IconName } from './Icon';
 import { avatarColor, initials } from '../utils/format';
@@ -588,6 +589,7 @@ export function Sheet({
   width?: number;
 }) {
   const { width: screenWidth } = useWindowDimensions();
+  const { scheme } = useTheme();
   // Phones get a bottom sheet (thumb-reachable); wider screens get a dialog.
   const asBottomSheet = screenWidth < 640;
 
@@ -619,7 +621,7 @@ export function Sheet({
         >
           <BlurView
             intensity={80}
-            tint="default"
+            tint={scheme === 'dark' ? 'dark' : 'light'}
             style={{
               width: '100%',
               backgroundColor: colors.elevated,

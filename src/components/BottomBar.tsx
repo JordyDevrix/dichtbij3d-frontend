@@ -22,6 +22,7 @@ export function BottomBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const { scheme } = useTheme();
   const { unreadCount, unreadMessages } = useAuth();
 
   const badgeFor = (href: string) =>
@@ -30,7 +31,7 @@ export function BottomBar() {
   return (
     <BlurView
       intensity={80}
-      tint="default"
+      tint={scheme === 'dark' ? 'dark' : 'light'}
       style={{
         flexDirection: 'row',
         alignItems: 'flex-end',

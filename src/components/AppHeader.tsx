@@ -181,7 +181,7 @@ export function AppHeader() {
   return (
     <BlurView
       intensity={80}
-      tint="default"
+      tint={scheme === 'dark' ? 'dark' : 'light'}
       style={[
         {
           backgroundColor: colors.surface,
