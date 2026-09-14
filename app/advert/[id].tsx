@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../src/api';
 import { absoluteUrl } from '../../src/api/client';
@@ -7,6 +7,7 @@ import type { AdvertDetail } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
 import { AppImage } from '../../src/components/AppImage';
 import { Page } from '../../src/components/Page';
+import { ShareModal, shareAdvert } from '../../src/components/ShareModal';
 import {
   Avatar,
   Badge,
@@ -61,6 +62,7 @@ export default function AdvertDetailScreen() {
   const [deleteReason, setDeleteReason] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
 
   const openedAt = useRef(Date.now());
@@ -98,6 +100,17 @@ export default function AdvertDetailScreen() {
     }, 2200);
     return () => clearTimeout(timer);
   }, [id, advert]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && advert?.title) {
+      document.title = `${advert.title} | Dichtbij3D`;
+    }
+  }, [advert?.title]);
+
+  const handleShare = () => {
+    if (!advert) return;
+    void shareAdvert({ id: advert.id, title: advert.title }, () => setShareOpen(true));
+  };
 
   if (loading) return <Spinner label={t('common.loading')} />;
   if (notFound || !advert)
@@ -215,6 +228,13 @@ export default function AdvertDetailScreen() {
       <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm }}>
         <Button title={t('common.back')} icon="back" variant="ghost" size="sm" onPress={goBack} />
         <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+          <Button
+            title={t('common.share')}
+            icon="share"
+            variant="outline"
+            size="sm"
+            onPress={handleShare}
+          />
           {isOwner && advert.status !== 'REMOVED' && (
             <Button
               title={t('advert.edit')}
@@ -597,6 +617,14 @@ export default function AdvertDetailScreen() {
                 )}
               </View>
             )}
+
+            <Button
+              title={t('common.share')}
+              icon="share"
+              variant="outline"
+              full
+              onPress={handleShare}
+            />
           </Card>
 
           <Card style={{ gap: spacing.md }}>
@@ -764,6 +792,12 @@ export default function AdvertDetailScreen() {
           <Button title={t('common.submit')} loading={busy} onPress={submitReport} />
         </Row>
       </Sheet>
+
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        advert={{ id: advert.id, title: advert.title }}
+      />
     </Page>
   );
 }

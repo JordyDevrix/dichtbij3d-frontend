@@ -187,6 +187,10 @@ const en: Translations = {
     markCompleted: 'Mark as completed',
     markCancelled: 'Close advert',
     share: 'Share',
+    shareTitle: 'Share advert',
+    shareDesc: 'Share this advert via social media or copy the direct link.',
+    linkCopied: 'Link copied to clipboard!',
+    systemShare: 'More options...',
   },
   create: {
     category: 'Category',

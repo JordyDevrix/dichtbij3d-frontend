@@ -185,6 +185,10 @@ const nl = {
     markCompleted: 'Markeer als afgerond',
     markCancelled: 'Advertentie sluiten',
     share: 'Delen',
+    shareTitle: 'Advertentie delen',
+    shareDesc: 'Deel deze advertentie via sociale media of kopieer de directe link.',
+    linkCopied: 'Link gekopieerd naar klembord!',
+    systemShare: 'Meer opties...',
   },
   create: {
     category: 'Categorie',

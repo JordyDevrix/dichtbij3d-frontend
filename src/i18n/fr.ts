@@ -188,6 +188,10 @@ const fr: Translations = {
     markCompleted: 'Marquer comme terminée',
     markCancelled: "Fermer l'annonce",
     share: 'Partager',
+    shareTitle: "Partager l'annonce",
+    shareDesc: 'Partagez cette annonce sur les réseaux sociaux ou copiez le lien direct.',
+    linkCopied: 'Lien copié dans le presse-papiers !',
+    systemShare: "Plus d'options...",
   },
   create: {
     category: 'Catégorie',

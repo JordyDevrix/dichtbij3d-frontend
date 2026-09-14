@@ -188,6 +188,10 @@ const de: Translations = {
     markCompleted: 'Als abgeschlossen markieren',
     markCancelled: 'Anzeige schließen',
     share: 'Teilen',
+    shareTitle: 'Anzeige teilen',
+    shareDesc: 'Teile diese Anzeige über soziale Medien oder kopiere den direkten Link.',
+    linkCopied: 'Link in Zwischenablage kopiert!',
+    systemShare: 'Mehr Optionen...',
   },
   create: {
     category: 'Kategorie',

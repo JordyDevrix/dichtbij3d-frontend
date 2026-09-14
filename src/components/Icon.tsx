@@ -76,12 +76,22 @@ import {
   faWeightHanging,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
+import {
+  faFacebook,
+  faLinkedin,
+  faWhatsapp,
+  faXTwitter,
+} from '@fortawesome/free-brands-svg-icons';
 import { colors } from '../theme/theme';
 
 /**
  * Central icon registry. The app uses Font Awesome only — never emoji.
  */
 export const ICONS = {
+  whatsapp: faWhatsapp,
+  xTwitter: faXTwitter,
+  facebook: faFacebook,
+  linkedin: faLinkedin,
   home: faHouse,
   search: faMagnifyingGlass,
   filter: faFilter,

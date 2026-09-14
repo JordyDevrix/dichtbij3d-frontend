@@ -14,6 +14,7 @@ import { useContextMenu } from '../hooks/useContextMenu';
 import { Icon } from './Icon';
 import { AppImage } from './AppImage';
 import { Avatar, Badge, Body, Button, Chip, H2, H3, Input, Muted, Row, Sheet } from './ui';
+import { ShareModal, shareAdvert } from './ShareModal';
 
 interface Props {
   advert: AdvertSummary;
@@ -33,6 +34,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
   const [busy, setBusy] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
 
   const [listMenuOpen, setListMenuOpen] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
@@ -41,6 +43,10 @@ export function AdvertCard({ advert, onChanged }: Props) {
   const isFavorite = defaultList?.advertIds.includes(advert.id) ?? false;
   const openMenu = useCallback(() => setMenuOpen(true), []);
   const ref = useContextMenu(openMenu);
+
+  const handleShare = () => {
+    void shareAdvert({ id: advert.id, title: advert.title }, () => setShareOpen(true));
+  };
 
   const cover = absoluteUrl(advert.coverImageUrl);
   const typeTone = advertTypeColor[advert.type];
@@ -180,6 +186,22 @@ export function AdvertCard({ advert, onChanged }: Props) {
             >
               <Icon name="plus" size={14} color={colors.textMuted} />
             </Pressable>
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleShare();
+              }}
+              accessibilityLabel={t('common.share')}
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                padding: 6,
+                ...shadow.card,
+              }}
+            >
+              <Icon name="share" size={14} color={colors.textMuted} />
+            </Pressable>
           </View>
         </View>
 
@@ -252,6 +274,16 @@ export function AdvertCard({ advert, onChanged }: Props) {
             onPress={() => {
               setMenuOpen(false);
               router.push(`/advert/${advert.id}`);
+            }}
+          />
+          <Button
+            title={t('common.share')}
+            icon="share"
+            variant="outline"
+            full
+            onPress={() => {
+              setMenuOpen(false);
+              handleShare();
             }}
           />
           {user && !isOwner && (
@@ -357,6 +389,12 @@ export function AdvertCard({ advert, onChanged }: Props) {
           </Row>
         </View>
       </Sheet>
+
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        advert={{ id: advert.id, title: advert.title }}
+      />
     </View>
   );
 }
