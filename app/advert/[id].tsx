@@ -209,7 +209,7 @@ export default function AdvertDetailScreen() {
     <Page onRefresh={() => void load()}>
       <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm }}>
         <Button title={t('common.back')} icon="back" variant="ghost" size="sm" onPress={goBack} />
-        <Row gap={spacing.sm}>
+        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
           {isOwner && advert.status !== 'REMOVED' && (
             <Button
               title={t('advert.edit')}
@@ -330,14 +330,16 @@ export default function AdvertDetailScreen() {
 
               {modelRemoved && (
                 <Card style={{ marginTop: spacing.md, backgroundColor: colors.dangerSoft, borderColor: colors.dangerSoft }}>
-                  <Row style={{ alignItems: 'flex-start' }}>
-                    <Icon name="warning" size={15} color={colors.danger} />
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Body style={{ fontWeight: '700', color: colors.danger }}>{t('advert.modelRemoved')}</Body>
-                      <Muted style={{ color: colors.danger }}>
-                        {isOwner ? t('advert.modelRemovedOwner') : t('advert.modelRemovedBody')}
-                      </Muted>
-                    </View>
+                  <View style={{ flexDirection: isWide ? 'row' : 'column', alignItems: isWide ? 'center' : 'flex-start', gap: spacing.sm }}>
+                    <Row style={{ flex: 1, alignItems: 'flex-start' }}>
+                      <Icon name="warning" size={15} color={colors.danger} />
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Body style={{ fontWeight: '700', color: colors.danger }}>{t('advert.modelRemoved')}</Body>
+                        <Muted style={{ color: colors.danger }}>
+                          {isOwner ? t('advert.modelRemovedOwner') : t('advert.modelRemovedBody')}
+                        </Muted>
+                      </View>
+                    </Row>
                     {isOwner && (
                       <Button
                         title={t('advert.attachOtherModel')}
@@ -345,9 +347,10 @@ export default function AdvertDetailScreen() {
                         size="sm"
                         variant="outline"
                         onPress={() => router.push({ pathname: '/create', params: { edit: advert.id } })}
+                        style={{ width: isWide ? undefined : '100%' }}
                       />
                     )}
-                  </Row>
+                  </View>
                 </Card>
               )}
 
@@ -405,7 +408,7 @@ export default function AdvertDetailScreen() {
                 <Row style={{ alignItems: 'flex-start' }}>
                   <Avatar name={reaction.author.displayName} uri={absoluteUrl(reaction.author.avatarUrl)} size={36} />
                   <View style={{ flex: 1, gap: 3 }}>
-                    <Row style={{ justifyContent: 'space-between' }}>
+                    <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
                       <Pressable onPress={() => router.push(`/user/${reaction.author.id}`)}>
                         <Body style={{ fontWeight: '700' }}>{reaction.author.displayName}</Body>
                       </Pressable>
@@ -415,7 +418,7 @@ export default function AdvertDetailScreen() {
                       <Badge label={t('advert.reactAsApplication')} tone={{ bg: colors.successSoft, fg: colors.success }} />
                     )}
                     <Body>{reaction.body}</Body>
-                    <Row gap={spacing.sm} style={{ marginTop: 4 }}>
+                    <Row gap={spacing.sm} style={{ marginTop: 4, flexWrap: 'wrap' }}>
                       {isOwner && !isSale && advert.status === 'OPEN' && (
                         <Button
                           title={t('advert.acceptHelper')}
@@ -484,7 +487,7 @@ export default function AdvertDetailScreen() {
                   <Card style={{ backgroundColor: colors.orangeSofter, borderColor: colors.orangeBorder }}>
                     <H3>{t('common.signInRequired')}</H3>
                     <Muted style={{ marginVertical: spacing.sm }}>{t('common.signInRequiredBody')}</Muted>
-                    <Row gap={spacing.sm}>
+                    <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
                       <Button title={t('common.createAccount')} onPress={() => router.push('/auth/register')} />
                       <Button title={t('common.orSignIn')} variant="outline" onPress={() => router.push('/auth/login')} />
                     </Row>
@@ -653,7 +656,7 @@ export default function AdvertDetailScreen() {
                     />
                   )}
                   {isOwner && bid.status === 'PENDING' && (
-                    <Row gap={spacing.sm}>
+                    <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
                       <Button
                         title={t('advert.acceptBid')}
                         size="sm"

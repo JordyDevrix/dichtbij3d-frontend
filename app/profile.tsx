@@ -27,6 +27,7 @@ import {
 } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
 import { useToast } from '../src/context/ToastContext';
+import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { LOCALE_LABELS, LOCALES, useI18n } from '../src/i18n';
 import type { Locale } from '../src/i18n';
 import { colors, spacing } from '../src/theme/theme';
@@ -43,6 +44,7 @@ const NOTIFICATION_CATEGORIES: { labelKey: string; types: NotificationType[] }[]
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { isWide } = useBreakpoint();
   const { t, locale, setLocale } = useI18n();
   const { user, booting, refreshProfile, logout, isAdmin } = useAuth();
   const toast = useToast();
@@ -173,8 +175,8 @@ export default function ProfileScreen() {
   return (
     <Page maxWidth={980}>
       <Card style={{ gap: spacing.lg }}>
-        <Row style={{ flexWrap: 'wrap', gap: spacing.lg }}>
-          <Pressable onPress={changeAvatar}>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.lg }}>
+          <Pressable onPress={changeAvatar} style={{ alignSelf: isWide ? 'auto' : 'center' }}>
             <Avatar name={user.displayName} uri={absoluteUrl(user.avatarUrl)} size={78} />
             <View
               style={{
@@ -194,10 +196,10 @@ export default function ProfileScreen() {
               <Icon name="camera" size={11} color={colors.white} />
             </View>
           </Pressable>
-          <View style={{ flex: 1, gap: 4, minWidth: 200 }}>
+          <View style={{ flex: 1, gap: 4, minWidth: 200, alignItems: isWide ? 'flex-start' : 'center' }}>
             <H1>{user.displayName}</H1>
             <Muted>{user.email}</Muted>
-            <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 4 }}>
+            <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 4, justifyContent: isWide ? 'flex-start' : 'center' }}>
               {user.roles.map((role) => (
                 <Badge
                   key={role}
@@ -214,7 +216,7 @@ export default function ProfileScreen() {
               {t('profile.memberSince')}: {user.createdAt ? formatDate(user.createdAt, locale) : '—'}
             </Muted>
           </View>
-          <Row gap={spacing.sm}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.sm }}>
             <Button
               title={t('nav.security')}
               icon="shield"
@@ -232,20 +234,20 @@ export default function ProfileScreen() {
               />
             )}
             <Button title={t('nav.logout')} icon="logout" variant="ghost" size="sm" onPress={() => void logout()} />
-          </Row>
-        </Row>
+          </View>
+        </View>
       </Card>
 
       <Card style={{ gap: spacing.md }}>
         <H2>{t('profile.editProfile')}</H2>
-        <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
-          <View style={{ flexGrow: 1, flexBasis: 240 }}>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
+          <View style={{ flexGrow: 1, flexBasis: isWide ? 240 : 'auto' }}>
             <Input label={t('auth.displayName')} value={displayName} onChangeText={setDisplayName} icon="user" />
           </View>
-          <View style={{ flexGrow: 1, flexBasis: 240 }}>
+          <View style={{ flexGrow: 1, flexBasis: isWide ? 240 : 'auto' }}>
             <Input label={t('profile.city')} value={city} onChangeText={setCity} icon="location" />
           </View>
-        </Row>
+        </View>
         <Input
           label={t('profile.bio')}
           value={bio}
@@ -253,8 +255,8 @@ export default function ProfileScreen() {
           placeholder={t('profile.bioPlaceholder')}
           multiline
         />
-        <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
-          <View style={{ flexGrow: 1, flexBasis: 220 }}>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
+          <View style={{ flexGrow: 1, flexBasis: isWide ? 220 : 'auto' }}>
             <Select
               label={t('profile.gender')}
               value={gender}
@@ -263,7 +265,7 @@ export default function ProfileScreen() {
               icon="user"
             />
           </View>
-          <View style={{ flexGrow: 1, flexBasis: 220 }}>
+          <View style={{ flexGrow: 1, flexBasis: isWide ? 220 : 'auto' }}>
             <Select
               label={t('common.language')}
               value={locale}
@@ -272,9 +274,9 @@ export default function ProfileScreen() {
               icon="globe"
             />
           </View>
-        </Row>
-        <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
-          <View style={{ flexGrow: 1, flexBasis: 220 }}>
+        </View>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
+          <View style={{ flexGrow: 1, flexBasis: isWide ? 220 : 'auto' }}>
             <Input
               label={t('profile.contactEmail')}
               value={contactEmail}
@@ -283,10 +285,10 @@ export default function ProfileScreen() {
               autoCapitalize="none"
             />
           </View>
-          <View style={{ flexGrow: 1, flexBasis: 200 }}>
+          <View style={{ flexGrow: 1, flexBasis: isWide ? 200 : 'auto' }}>
             <Input label={t('profile.contactPhone')} value={contactPhone} onChangeText={setContactPhone} icon="phone" />
           </View>
-          <View style={{ flexGrow: 1, flexBasis: 220 }}>
+          <View style={{ flexGrow: 1, flexBasis: isWide ? 220 : 'auto' }}>
             <Input
               label={t('profile.website')}
               value={website}
@@ -295,7 +297,7 @@ export default function ProfileScreen() {
               autoCapitalize="none"
             />
           </View>
-        </Row>
+        </View>
 
         <View style={{ gap: spacing.sm }}>
           <H3>{t('roles.pickRoles')}</H3>
@@ -314,9 +316,9 @@ export default function ProfileScreen() {
         </View>
 
 
-        <Row style={{ justifyContent: 'flex-end' }}>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', justifyContent: 'flex-end' }}>
           <Button title={t('common.save')} icon="check" loading={busy} onPress={save} />
-        </Row>
+        </View>
       </Card>
 
       <Card style={{ gap: spacing.md }}>
@@ -325,7 +327,7 @@ export default function ProfileScreen() {
           <Muted>{t('block.blockedEmpty')}</Muted>
         ) : (
           blocked.map((entry) => (
-            <Row key={entry.user.id} style={{ justifyContent: 'space-between' }} gap={spacing.md}>
+            <View key={entry.user.id} style={{ flexDirection: isWide ? 'row' : 'column', justifyContent: 'space-between', gap: spacing.md }}>
               <Row gap={spacing.sm} style={{ flex: 1 }}>
                 <Avatar name={entry.user.displayName} uri={absoluteUrl(entry.user.avatarUrl)} size={28} />
                 <Body numberOfLines={1} style={{ flex: 1 }}>
@@ -339,7 +341,7 @@ export default function ProfileScreen() {
                 variant="outline"
                 onPress={() => void unblock(entry.user.id)}
               />
-            </Row>
+            </View>
           ))
         )}
       </Card>
@@ -357,7 +359,7 @@ export default function ProfileScreen() {
             />
           </Card>
         ) : (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: isWide ? 'wrap' : 'nowrap', gap: spacing.lg }}>
             {adverts.map((advert) => (
               <AdvertCard key={advert.id} advert={advert} onChanged={() => void loadAdverts()} />
             ))}

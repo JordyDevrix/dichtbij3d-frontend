@@ -8,6 +8,7 @@ import { Button, Card, Chip, H1, H2, H3, Muted, Row } from '../../src/components
 import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
+import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { spacing } from '../../src/theme/theme';
 
 const NOTIFICATION_CATEGORIES: { labelKey: string; types: NotificationType[] }[] = [
@@ -22,6 +23,7 @@ export default function NotificationsSettingsScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const { user, booting, refreshProfile } = useAuth();
+  const { isWide } = useBreakpoint();
   const toast = useToast();
 
   const [mutedNotifications, setMutedNotifications] = useState<string[]>([]);
@@ -90,9 +92,9 @@ export default function NotificationsSettingsScreen() {
           </Row>
         </View>
 
-        <Row style={{ justifyContent: 'flex-end', marginTop: spacing.md }}>
+        <View style={{ alignItems: isWide ? 'flex-end' : 'stretch', marginTop: spacing.md }}>
           <Button title={t('common.save')} icon="check" loading={busy} onPress={save} />
-        </Row>
+        </View>
       </Card>
     </Page>
   );

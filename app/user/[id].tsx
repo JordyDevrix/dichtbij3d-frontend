@@ -25,6 +25,7 @@ import {
 import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useStartChat } from '../../src/hooks/useStartChat';
+import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { useI18n } from '../../src/i18n';
 import { colors, spacing } from '../../src/theme/theme';
 import { formatDate } from '../../src/utils/format';
@@ -32,6 +33,7 @@ import { formatDate } from '../../src/utils/format';
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, locale } = useI18n();
+  const { isWide } = useBreakpoint();
   const { user: me, booting } = useAuth();
   const { startChat, starting } = useStartChat();
   const toast = useToast();
@@ -145,7 +147,13 @@ export default function PublicProfileScreen() {
             </Row>
           </View>
           {me && me.id !== user.id && (
-            <View style={{ gap: spacing.sm, alignItems: 'flex-end' }}>
+            <View
+              style={{
+                gap: spacing.sm,
+                alignItems: isWide ? 'flex-end' : 'stretch',
+                width: isWide ? undefined : '100%',
+              }}
+            >
               {!user.blocked && (
                 <Button
                   title={t('chat.contact')}
@@ -155,24 +163,28 @@ export default function PublicProfileScreen() {
                   onPress={() => void startChat(user.id)}
                 />
               )}
-              <Row gap={spacing.sm}>
-                <Button
-                  title={t('block.report')}
-                  icon="flag"
-                  size="sm"
-                  variant="ghost"
-                  onPress={() => setReportOpen(true)}
-                />
-                <Button
-                  title={user.blocked ? t('block.unblock') : t('block.block')}
-                  icon="ban"
-                  size="sm"
-                  variant={user.blocked ? 'outline' : 'ghost'}
-                  loading={busy}
-                  onPress={() => void toggleBlock()}
-                />
-              </Row>
-              {user.blocked && <Muted style={{ maxWidth: 260, textAlign: 'right' }}>{t('block.blockedHint')}</Muted>}
+              <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title={t('block.report')}
+                    icon="flag"
+                    size="sm"
+                    variant="ghost"
+                    onPress={() => setReportOpen(true)}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title={user.blocked ? t('block.unblock') : t('block.block')}
+                    icon="ban"
+                    size="sm"
+                    variant={user.blocked ? 'outline' : 'ghost'}
+                    loading={busy}
+                    onPress={() => void toggleBlock()}
+                  />
+                </View>
+              </View>
+              {user.blocked && <Muted style={{ maxWidth: 260, textAlign: isWide ? 'right' : 'left' }}>{t('block.blockedHint')}</Muted>}
             </View>
           )}
         </Row>

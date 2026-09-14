@@ -26,11 +26,13 @@ import { useI18n } from '../../src/i18n';
 import { colors, radius, spacing } from '../../src/theme/theme';
 import { formatDate } from '../../src/utils/format';
 import { passkeysSupported, registerPasskey } from '../../src/utils/authHelpers';
+import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 
 export default function SecurityScreen() {
   const router = useRouter();
   const { t, locale } = useI18n();
   const { user, booting, refreshProfile, logout } = useAuth();
+  const { isWide } = useBreakpoint();
   const toast = useToast();
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -130,8 +132,8 @@ export default function SecurityScreen() {
           secureTextEntry
           icon="lock"
         />
-        <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
-          <View style={{ flexGrow: 1, flexBasis: 220 }}>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
+          <View style={{ flex: 1 }}>
             <Input
               label={t('security.newPassword')}
               value={newPassword}
@@ -140,7 +142,7 @@ export default function SecurityScreen() {
               icon="key"
             />
           </View>
-          <View style={{ flexGrow: 1, flexBasis: 220 }}>
+          <View style={{ flex: 1 }}>
             <Input
               label={t('security.repeatPassword')}
               value={repeatPassword}
@@ -149,10 +151,10 @@ export default function SecurityScreen() {
               icon="key"
             />
           </View>
-        </Row>
-        <Row style={{ justifyContent: 'flex-end' }}>
+        </View>
+        <View style={{ alignItems: isWide ? 'flex-end' : 'stretch' }}>
           <Button title={t('security.changePassword')} icon="check" loading={busy} onPress={changePassword} />
-        </Row>
+        </View>
       </Card>
 
       <Card style={{ gap: spacing.md }}>
@@ -170,8 +172,8 @@ export default function SecurityScreen() {
         <Muted>{t('security.totpHelp')}</Muted>
 
         {user.totpEnabled ? (
-          <Row gap={spacing.md} style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <View style={{ flexGrow: 1, flexBasis: 200 }}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md, alignItems: isWide ? 'flex-end' : 'stretch' }}>
+            <View style={{ flex: 1 }}>
               <Input
                 label={t('security.codeFromApp')}
                 value={disableCode}
@@ -195,7 +197,7 @@ export default function SecurityScreen() {
                 })
               }
             />
-          </Row>
+          </View>
         ) : setup ? (
           <View style={{ gap: spacing.md }}>
             <View
@@ -217,8 +219,8 @@ export default function SecurityScreen() {
                 {setup.otpauthUri}
               </Body>
             </View>
-            <Row gap={spacing.md} style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <View style={{ flexGrow: 1, flexBasis: 200 }}>
+            <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md, alignItems: isWide ? 'flex-end' : 'stretch' }}>
+              <View style={{ flex: 1 }}>
                 <Input
                   label={t('security.codeFromApp')}
                   value={totpCode}
@@ -242,10 +244,10 @@ export default function SecurityScreen() {
                   })
                 }
               />
-            </Row>
+            </View>
           </View>
         ) : (
-          <Row>
+          <View style={{ alignItems: isWide ? 'flex-start' : 'stretch' }}>
             <Button
               title={t('security.setupTotp')}
               icon="shield"
@@ -253,7 +255,7 @@ export default function SecurityScreen() {
               loading={busy}
               onPress={() => wrap(async () => setSetup(await api.totpSetup()))}
             />
-          </Row>
+          </View>
         )}
       </Card>
 
@@ -306,8 +308,8 @@ export default function SecurityScreen() {
         )}
 
         {passkeysSupported() ? (
-          <Row gap={spacing.md} style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <View style={{ flexGrow: 1, flexBasis: 220 }}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md, alignItems: isWide ? 'flex-end' : 'stretch' }}>
+            <View style={{ flex: 1 }}>
               <Input
                 label={t('security.passkeyLabel')}
                 value={passkeyLabel}
@@ -329,7 +331,7 @@ export default function SecurityScreen() {
                 })
               }
             />
-          </Row>
+          </View>
         ) : (
           <Muted>{t('security.passkeysUnsupported')}</Muted>
         )}
@@ -339,7 +341,7 @@ export default function SecurityScreen() {
         <H3>{t('security.sessions')}</H3>
         <Muted>{t('security.sessionsHelp')}</Muted>
         <Divider />
-        <Row style={{ justifyContent: 'flex-end' }}>
+        <View style={{ alignItems: isWide ? 'flex-end' : 'stretch' }}>
           <Button
             title={t('security.signOutEverywhere')}
             icon="logout"
@@ -353,7 +355,7 @@ export default function SecurityScreen() {
               })
             }
           />
-        </Row>
+        </View>
       </Card>
     </Page>
   );

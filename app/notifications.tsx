@@ -8,6 +8,7 @@ import { Page } from '../src/components/Page';
 import { Badge, Body, Button, Card, EmptyState, H1, Muted, Row, Spinner } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
 import { useI18n } from '../src/i18n';
+import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { colors, radius, spacing } from '../src/theme/theme';
 import { timeAgo } from '../src/utils/format';
 
@@ -42,6 +43,7 @@ const TYPE_TONE: Partial<Record<NotificationType, string>> = {
 export default function NotificationsScreen() {
   const router = useRouter();
   const { t, locale } = useI18n();
+  const { isWide } = useBreakpoint();
   const { user, booting, refreshUnread } = useAuth();
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +101,7 @@ export default function NotificationsScreen() {
 
   return (
     <Page maxWidth={820} refreshing={loading} onRefresh={() => void load()}>
-      <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.md }}>
+      <View style={{ flexDirection: isWide ? 'row' : 'column', justifyContent: 'space-between', gap: spacing.md, alignItems: isWide ? 'center' : 'stretch' }}>
         <Row gap={spacing.sm}>
           <H1>{t('notifications.title')}</H1>
           {unread > 0 && (
@@ -119,7 +121,7 @@ export default function NotificationsScreen() {
             }}
           />
         )}
-      </Row>
+      </View>
 
       {loading ? (
         <Spinner />

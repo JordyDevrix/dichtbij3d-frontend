@@ -25,6 +25,7 @@ import {
 } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
 import { useToast } from '../src/context/ToastContext';
+import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { useI18n } from '../src/i18n';
 import { colors, radius, shadow, spacing } from '../src/theme/theme';
 import { money } from '../src/utils/format';
@@ -98,6 +99,7 @@ function ModelCard({ model, onPress }: { model: ModelSummary; onPress: () => voi
 export default function ModelsScreen() {
   const router = useRouter();
   const { t, locale } = useI18n();
+  const { isWide } = useBreakpoint();
   const { user } = useAuth();
   const toast = useToast();
 
@@ -140,13 +142,13 @@ export default function ModelsScreen() {
 
   return (
     <Page refreshing={loading} onRefresh={() => void load()}>
-      <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.md }}>
+      <View style={{ flexDirection: isWide ? 'row' : 'column', justifyContent: 'space-between', gap: spacing.md, alignItems: isWide ? 'flex-end' : 'stretch' }}>
         <View style={{ gap: 4 }}>
           <H1>{t('models.title')}</H1>
           <Muted>{t('models.subtitle')}</Muted>
         </View>
         {user && <Button title={t('models.upload')} icon="upload" onPress={() => setUploadOpen(true)} />}
-      </Row>
+      </View>
 
       {tabs.filter((entry) => !entry.auth || user).length > 1 && (
         <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>

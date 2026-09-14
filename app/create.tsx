@@ -26,6 +26,7 @@ import {
 import { useAuth } from '../src/context/AuthContext';
 import { useToast } from '../src/context/ToastContext';
 import { useGoBack } from '../src/hooks/useGoBack';
+import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { useI18n } from '../src/i18n';
 import { advertTypeColor, colors, radius, spacing } from '../src/theme/theme';
 import { toCents } from '../src/utils/format';
@@ -46,6 +47,7 @@ export default function CreateAdvertScreen() {
   const { t, locale } = useI18n();
   const { user, booting } = useAuth();
   const toast = useToast();
+  const { isWide } = useBreakpoint();
 
   const [type, setType] = useState<AdvertType>('PRINT_REQUEST');
   const [category, setCategory] = useState<Category>('OTHER');
@@ -136,7 +138,7 @@ export default function CreateAdvertScreen() {
             title={t('common.signInRequired')}
             body={t('common.signInRequiredBody')}
             action={
-              <Row gap={spacing.sm}>
+              <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.sm }}>
                 <Button
                   title={t('common.createAccount')}
                   onPress={() => router.push({ pathname: '/auth/register', params: { redirect: '/create' } })}
@@ -146,7 +148,7 @@ export default function CreateAdvertScreen() {
                   variant="outline"
                   onPress={() => router.push({ pathname: '/auth/login', params: { redirect: '/create' } })}
                 />
-              </Row>
+              </View>
             }
           />
         </Card>
@@ -256,7 +258,7 @@ export default function CreateAdvertScreen() {
       <Card style={{ gap: spacing.md }}>
         <H3>{t('create.step1')}</H3>
         {isEditing && <Muted>{t('create.typeLocked')}</Muted>}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: spacing.md }}>
           {ADVERT_TYPES.filter((value) => !isEditing || value === type).map((value) => {
             const selected = value === type;
             const tone = advertTypeColor[value];
@@ -364,7 +366,7 @@ export default function CreateAdvertScreen() {
             />
           </Row>
         </View>
-        <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
           <View style={{ flexGrow: 1, flexBasis: 200 }}>
             <Input label={t('profile.city')} value={city} onChangeText={setCity} icon="location" />
           </View>
@@ -381,7 +383,7 @@ export default function CreateAdvertScreen() {
               icon="calendar"
             />
           </View>
-        </Row>
+        </View>
 
         <View style={{ gap: spacing.sm }}>
           <Row style={{ justifyContent: 'space-between' }}>
@@ -432,7 +434,7 @@ export default function CreateAdvertScreen() {
         <H3>{t('create.step3')}</H3>
 
         {isRequest ? (
-          <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md }}>
             <View style={{ flexGrow: 1, flexBasis: 180 }}>
               <Input
                 label={t('create.budgetMin')}
@@ -459,7 +461,7 @@ export default function CreateAdvertScreen() {
                 icon="euro"
               />
             </View>
-          </Row>
+          </View>
         ) : (
           <Input
             label={t('create.fixedPrice')}
@@ -568,7 +570,7 @@ export default function CreateAdvertScreen() {
         }}
       />
 
-      <Row style={{ justifyContent: 'flex-end' }} gap={spacing.sm}>
+      <View style={{ flexDirection: isWide ? 'row' : 'column-reverse', justifyContent: isWide ? 'flex-end' : undefined, gap: spacing.sm }}>
         <Button title={t('common.cancel')} variant="ghost" onPress={goBack} />
         <Button
           title={isEditing ? t('common.save') : t('create.publish')}
@@ -577,7 +579,7 @@ export default function CreateAdvertScreen() {
           loading={busy || loadingAdvert}
           onPress={submit}
         />
-      </Row>
+      </View>
     </Page>
   );
 }
