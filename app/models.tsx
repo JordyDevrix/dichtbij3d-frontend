@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../src/api';
 import { absoluteUrl } from '../src/api/client';
 import { CATEGORIES } from '../src/api/types';
 import type { Category, ModelSummary } from '../src/api/types';
 import { Icon } from '../src/components/Icon';
+import { AppImage } from '../src/components/AppImage';
 import { ModelUploadSheet } from '../src/components/ModelUploadSheet';
 import { Page } from '../src/components/Page';
 import {
@@ -54,12 +55,18 @@ function ModelCard({ model, onPress }: { model: ModelSummary; onPress: () => voi
         shadow.card,
       ]}
     >
-      <View style={{ aspectRatio: 16 / 10, backgroundColor: colors.surfaceAlt, overflow: 'hidden', position: 'relative' }}>
+      <View style={{ width: '100%', aspectRatio: 16 / 10, backgroundColor: colors.surfaceAlt, overflow: 'hidden', position: 'relative' }}>
         {model.thumbnailUrl ? (
-          <Image
-            source={{ uri: absoluteUrl(model.thumbnailUrl) }}
+          <AppImage
+            uri={absoluteUrl(model.thumbnailUrl)}
+            alt={model.title}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
             resizeMode="cover"
+            fallback={
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="cubes" size={32} color={colors.borderStrong} />
+              </View>
+            }
           />
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

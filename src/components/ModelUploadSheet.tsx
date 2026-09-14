@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { api, ApiError } from '../api';
 import { absoluteUrl } from '../api/client';
 import { CATEGORIES, LICENSES, VISIBILITIES } from '../api/types';
@@ -11,6 +11,7 @@ import type {
   UploadResponse,
 } from '../api/types';
 import { Icon } from './Icon';
+import { AppImage } from './AppImage';
 import { Body, Button, Input, Muted, Row, Select, Sheet, SwitchRow } from './ui';
 import { useToast } from '../context/ToastContext';
 import { useI18n } from '../i18n';
@@ -194,8 +195,8 @@ export function ModelUploadSheet({
         </Row>
 
         {thumbnail && (
-          <Image
-            source={{ uri: absoluteUrl(thumbnail.url) }}
+          <AppImage
+            uri={absoluteUrl(thumbnail.url)}
             style={{ width: 120, height: 90, borderRadius: radius.sm }}
           />
         )}

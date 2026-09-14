@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Image, Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../src/api';
 import { absoluteUrl, request } from '../../src/api/client';
 import type { ModelDetail } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
+import { AppImage } from '../../src/components/AppImage';
 import { Page } from '../../src/components/Page';
 import {
   Avatar,
@@ -167,8 +168,8 @@ export default function ModelDetailScreen() {
           <Card padded={false} style={{ overflow: 'hidden' }}>
             <View style={{ height: isWide ? 340 : 200, backgroundColor: colors.orangeSofter }}>
               {model.thumbnailUrl ? (
-                <Image
-                  source={{ uri: absoluteUrl(model.thumbnailUrl) }}
+                <AppImage
+                  uri={absoluteUrl(model.thumbnailUrl)}
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"
                 />

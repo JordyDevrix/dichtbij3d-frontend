@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Image, Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../api';
 import { absoluteUrl } from '../api/client';
@@ -12,6 +12,7 @@ import { advertTypeColor, colors, radius, shadow, spacing, statusColor, typograp
 import { money, timeAgo } from '../utils/format';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { Icon } from './Icon';
+import { AppImage } from './AppImage';
 import { Avatar, Badge, Body, Button, Chip, H2, H3, Input, Muted, Row, Sheet } from './ui';
 
 interface Props {
@@ -110,18 +111,25 @@ export function AdvertCard({ advert, onChanged }: Props) {
               ? ({
                   transitionDuration: '180ms',
                   transitionProperty: 'transform, border-color, box-shadow',
+                  willChange: 'transform',
                 } as any)
               : null),
           },
           hovered ? shadow.raised : shadow.card,
         ]}
       >
-        <View style={{ aspectRatio: 16 / 10, backgroundColor: colors.surfaceAlt, overflow: 'hidden', position: 'relative' }}>
+        <View style={{ width: '100%', aspectRatio: 16 / 10, backgroundColor: colors.surfaceAlt, overflow: 'hidden', position: 'relative' }}>
           {cover ? (
-            <Image
-              source={{ uri: cover }}
+            <AppImage
+              uri={cover}
+              alt={advert.title}
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
               resizeMode="cover"
+              fallback={
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="cube" size={34} color={colors.borderStrong} />
+                </View>
+              }
             />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

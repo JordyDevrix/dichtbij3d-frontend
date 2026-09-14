@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../src/api';
 import { absoluteUrl } from '../src/api/client';
 import { ADVERT_TYPES, CATEGORIES } from '../src/api/types';
 import type { AdvertType, Category, ModelSummary, Tag } from '../src/api/types';
 import { Icon } from '../src/components/Icon';
+import { AppImage } from '../src/components/AppImage';
 import { ModelUploadSheet } from '../src/components/ModelUploadSheet';
 import { Page } from '../src/components/Page';
 import {
@@ -408,8 +409,8 @@ export default function CreateAdvertScreen() {
             <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
               {images.map((image, index) => (
                 <View key={image.key}>
-                  <Image
-                    source={{ uri: absoluteUrl(image.url) }}
+                  <AppImage
+                    uri={absoluteUrl(image.url)}
                     style={{ width: 96, height: 72, borderRadius: radius.sm }}
                   />
                   <Pressable

@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../src/api';
 import { absoluteUrl } from '../../src/api/client';
 import type { AdvertDetail } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
+import { AppImage } from '../../src/components/AppImage';
 import { Page } from '../../src/components/Page';
 import {
   Avatar,
@@ -250,7 +251,7 @@ export default function AdvertDetailScreen() {
           <Card padded={false} style={{ overflow: 'hidden' }}>
             <View style={{ height: isWide ? 380 : 220, backgroundColor: colors.orangeSofter }}>
               {images.length > 0 ? (
-                <Image source={{ uri: images[activeImage] }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                <AppImage uri={images[activeImage]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               ) : (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                   <Icon name="cube" size={52} color={colors.orangeBorder} />
@@ -265,8 +266,8 @@ export default function AdvertDetailScreen() {
               >
                 {images.map((uri, index) => (
                   <Pressable key={uri} onPress={() => setActiveImage(index)}>
-                    <Image
-                      source={{ uri }}
+                    <AppImage
+                      uri={uri}
                       style={{
                         width: 72,
                         height: 56,
@@ -369,8 +370,8 @@ export default function AdvertDetailScreen() {
                   <Card style={{ marginTop: spacing.md, backgroundColor: colors.surfaceAlt }}>
                     <Row>
                       {advert.model.thumbnailUrl ? (
-                        <Image
-                          source={{ uri: absoluteUrl(advert.model.thumbnailUrl) }}
+                        <AppImage
+                          uri={absoluteUrl(advert.model.thumbnailUrl)}
                           style={{ width: 56, height: 42, borderRadius: radius.sm }}
                         />
                       ) : (
