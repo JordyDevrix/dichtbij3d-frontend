@@ -21,6 +21,7 @@ import {
   Input,
   Muted,
   Chip,
+  Pagination,
   Row,
   Spinner,
 } from '../src/components/ui';
@@ -118,6 +119,9 @@ export default function ModelsScreen() {
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [items, setItems] = useState<ModelSummary[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -128,22 +132,42 @@ export default function ModelsScreen() {
     return () => clearTimeout(handle);
   }, [query]);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    setPage(0);
+  }, [tab, debounced, categories]);
+
+  const load = useCallback(async (targetPage = page) => {
     setLoading(true);
     try {
-      if (tab === 'mine') setItems(await api.myModels());
-      else if (tab === 'library') setItems(await api.myLibrary());
-      else setItems((await api.models(debounced || undefined, categories, 0, 30)).content);
+      if (tab === 'mine') {
+        const all = await api.myModels();
+        setTotalElements(all.length);
+        setTotalPages(Math.ceil(all.length / 12));
+        setItems(all.slice(targetPage * 12, (targetPage + 1) * 12));
+      } else if (tab === 'library') {
+        const all = await api.myLibrary();
+        setTotalElements(all.length);
+        setTotalPages(Math.ceil(all.length / 12));
+        setItems(all.slice(targetPage * 12, (targetPage + 1) * 12));
+      } else {
+        const res = await api.models(debounced || undefined, categories, targetPage, 12);
+        setItems(res.content);
+        setTotalElements(res.totalElements);
+        setTotalPages(res.totalPages);
+        setPage(res.page);
+      }
     } catch {
       setItems([]);
+      setTotalElements(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
-  }, [tab, debounced, categories]);
+  }, [tab, debounced, categories, page]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load(page);
+  }, [page, tab, debounced, categories]);
 
   const tabs: { key: TabKey; label: string; auth?: boolean }[] = [
     { key: 'browse', label: t('models.title') },
@@ -223,11 +247,20 @@ export default function ModelsScreen() {
           />
         </Card>
       ) : (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
-          {items.map((model) => (
-            <ModelCard key={model.id} model={model} onPress={() => router.push(`/model/${model.id}`)} />
-          ))}
-        </View>
+        <>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
+            {items.map((model) => (
+              <ModelCard key={model.id} model={model} onPress={() => router.push(`/model/${model.id}`)} />
+            ))}
+          </View>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            onChange={(newPage) => setPage(newPage)}
+            loading={loading}
+          />
+        </>
       )}
 
       <ModelUploadSheet

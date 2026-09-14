@@ -28,6 +28,10 @@ const en: Translations = {
     showMore: 'Show more',
     showLess: 'Show less',
     readMore: 'Read more',
+    previous: 'Previous',
+    next: 'Next',
+    page: 'Page',
+    pageOf: 'Page {current} of {total}',
     of: 'of',
     or: 'or',
     results: 'results',
@@ -67,6 +71,7 @@ const en: Translations = {
     register: 'Sign up',
     logout: 'Sign out',
     favourites: 'Favourites',
+    myAdverts: 'My adverts',
   },
   roles: {
     CUSTOMER: 'Client',

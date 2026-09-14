@@ -8,7 +8,7 @@ import { useI18n } from '../src/i18n';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { Page } from '../src/components/Page';
 import { Icon } from '../src/components/Icon';
-import { Button, Card, H1, H2, H3, Input, Muted, Row, Badge } from '../src/components/ui';
+import { Button, Card, H1, H2, H3, Input, Muted, Pagination, Row, Badge } from '../src/components/ui';
 import { spacing, colors, radius, typography } from '../src/theme/theme';
 import { api, ApiError } from '../src/api';
 import type { AdvertSummary } from '../src/api/types';
@@ -25,10 +25,19 @@ export default function FavouritesScreen() {
   
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [adverts, setAdverts] = useState<AdvertSummary[]>([]);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   
   const [newListTitle, setNewListTitle] = useState('');
   const [busy, setBusy] = useState(false);
+
+  const PAGE_SIZE = 12;
+  const totalPages = Math.ceil(adverts.length / PAGE_SIZE);
+  const pagedAdverts = adverts.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  React.useEffect(() => {
+    setPage(0);
+  }, [selectedListId]);
 
   // When a list is selected, we want to fetch the adverts
   React.useEffect(() => {
@@ -174,11 +183,20 @@ export default function FavouritesScreen() {
             ) : adverts.length === 0 ? (
               <Muted>{t('common.noResults')}</Muted>
             ) : (
-              <Row gap={spacing.lg} style={{ flexWrap: 'wrap' }}>
-                {adverts.map((adv) => (
-                  <AdvertCard key={adv.id} advert={adv} />
-                ))}
-              </Row>
+              <>
+                <Row gap={spacing.lg} style={{ flexWrap: 'wrap' }}>
+                  {pagedAdverts.map((adv) => (
+                    <AdvertCard key={adv.id} advert={adv} />
+                  ))}
+                </Row>
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  totalElements={adverts.length}
+                  onChange={(newPage) => setPage(newPage)}
+                  loading={loading}
+                />
+              </>
             )
           ) : (
             <Muted>{t('common.loading')}</Muted>

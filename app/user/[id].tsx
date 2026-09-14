@@ -19,6 +19,7 @@ import {
   H3,
   Input,
   Muted,
+  Pagination,
   Row,
   Sheet,
   Spinner,
@@ -41,32 +42,44 @@ export default function PublicProfileScreen() {
   const toast = useToast();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [adverts, setAdverts] = useState<AdvertSummary[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalAdverts, setTotalAdverts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (targetPage = page) => {
     if (!id) return;
     setLoading(true);
     try {
-      const [profile, page] = await Promise.all([api.publicProfile(id), api.adverts({ authorId: id, size: 24 })]);
+      const [profile, pageRes] = await Promise.all([
+        api.publicProfile(id),
+        api.adverts({ authorId: id, page: targetPage, size: 12 }),
+      ]);
       setUser(profile);
-      setAdverts(page.content);
+      setAdverts(pageRes.content);
+      setPage(pageRes.page);
+      setTotalPages(pageRes.totalPages);
+      setTotalAdverts(pageRes.totalElements);
     } catch {
       setUser(null);
+      setAdverts([]);
+      setTotalPages(0);
+      setTotalAdverts(0);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, page]);
 
   useEffect(() => {
     // The profile carries "did I block this person", which only the backend knows
     // once the stored tokens are loaded.
     if (booting) return;
-    void load();
-  }, [load, booting]);
+    void load(page);
+  }, [load, booting, page]);
 
   const toggleBlock = async () => {
     if (!user) return;
@@ -281,11 +294,20 @@ export default function PublicProfileScreen() {
           <EmptyState icon="layers" title={t('profile.noAdverts')} />
         </Card>
       ) : (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
-          {adverts.map((advert) => (
-            <AdvertCard key={advert.id} advert={advert} onChanged={() => void load()} />
-          ))}
-        </View>
+        <>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
+            {adverts.map((advert) => (
+              <AdvertCard key={advert.id} advert={advert} onChanged={() => void load(page)} />
+            ))}
+          </View>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalAdverts}
+            onChange={(newPage) => setPage(newPage)}
+            loading={loading}
+          />
+        </>
       )}
     </Page>
   );

@@ -26,6 +26,10 @@ const nl = {
     showMore: 'Meer tonen',
     showLess: 'Minder tonen',
     readMore: 'Lees verder',
+    previous: 'Vorige',
+    next: 'Volgende',
+    page: 'Pagina',
+    pageOf: 'Pagina {current} van {total}',
     of: 'van',
     or: 'of',
     results: 'resultaten',
@@ -65,6 +69,7 @@ const nl = {
     register: 'Registreren',
     logout: 'Uitloggen',
     favourites: 'Favorieten',
+    myAdverts: 'Mijn advertenties',
   },
   roles: {
     CUSTOMER: 'Opdrachtgever',

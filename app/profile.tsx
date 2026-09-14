@@ -60,6 +60,7 @@ export default function ProfileScreen() {
   const [mutedNotifications, setMutedNotifications] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [adverts, setAdverts] = useState<AdvertSummary[]>([]);
+  const [totalAdverts, setTotalAdverts] = useState(0);
   const [loadingAdverts, setLoadingAdverts] = useState(true);
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
 
@@ -99,10 +100,12 @@ export default function ProfileScreen() {
     if (!user) return;
     setLoadingAdverts(true);
     try {
-      const page = await api.adverts({ authorId: user.id, size: 24 });
+      const page = await api.adverts({ authorId: user.id, size: 3 });
       setAdverts(page.content);
+      setTotalAdverts(page.totalElements);
     } catch {
       setAdverts([]);
+      setTotalAdverts(0);
     } finally {
       setLoadingAdverts(false);
     }
@@ -347,7 +350,18 @@ export default function ProfileScreen() {
       </Card>
 
       <View style={{ gap: spacing.md }}>
-        <H2>{t('profile.myAdverts')}</H2>
+        <Row style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
+          <H2>{t('profile.myAdverts')}</H2>
+          {totalAdverts > 3 && (
+            <Button
+              title={`${t('common.seeAll')} (${totalAdverts})`}
+              variant="outline"
+              size="sm"
+              iconRight="arrowRight"
+              onPress={() => router.push('/my-adverts')}
+            />
+          )}
+        </Row>
         {loadingAdverts ? (
           <Spinner />
         ) : adverts.length === 0 ? (
@@ -359,11 +373,22 @@ export default function ProfileScreen() {
             />
           </Card>
         ) : (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
-            {adverts.map((advert) => (
-              <AdvertCard key={advert.id} advert={advert} onChanged={() => void loadAdverts()} />
-            ))}
-          </View>
+          <>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
+              {adverts.map((advert) => (
+                <AdvertCard key={advert.id} advert={advert} onChanged={() => void loadAdverts()} />
+              ))}
+            </View>
+            {totalAdverts > 3 && (
+              <Button
+                title={`${t('common.seeAll')} (${totalAdverts})`}
+                variant="outline"
+                iconRight="arrowRight"
+                full
+                onPress={() => router.push('/my-adverts')}
+              />
+            )}
+          </>
         )}
       </View>
     </Page>

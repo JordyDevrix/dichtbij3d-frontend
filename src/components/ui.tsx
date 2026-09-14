@@ -895,3 +895,7 @@ export function Stat({ icon, value, label }: { icon: IconName; value: string; la
     </Card>
   );
 }
+
+export { Pagination } from './Pagination';
+export type { PaginationProps } from './Pagination';
+

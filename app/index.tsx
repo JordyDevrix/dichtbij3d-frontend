@@ -25,6 +25,7 @@ import {
   H2,
   Input,
   Muted,
+  Pagination,
   Row,
   Select,
   Sheet,
@@ -79,6 +80,7 @@ export default function MarketplaceScreen() {
   const [items, setItems] = useState<AdvertSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +126,7 @@ export default function MarketplaceScreen() {
         const result = await api.adverts({ ...params, page: nextPage });
         setTotal(result.totalElements);
         setPage(result.page);
+        setTotalPages(result.totalPages);
         setItems((prev) => (append ? [...prev, ...result.content] : result.content));
       } catch (err) {
         setError(err instanceof ApiError && err.isNetwork ? t('errors.network') : t('errors.generic'));
@@ -185,8 +188,6 @@ export default function MarketplaceScreen() {
     { value: 'price_desc', label: t('marketplace.sortPriceDesc') },
     { value: 'deadline', label: t('marketplace.sortDeadline') },
   ];
-
-  const hasMore = items.length < total;
 
   return (
     <Page refreshing={loading} onRefresh={() => void load(0, false)}>
@@ -362,13 +363,13 @@ export default function MarketplaceScreen() {
         </View>
       )}
 
-      {hasMore && !loading && (
-        <Button
-          title={t('common.showMore')}
-          variant="outline"
-          loading={loadingMore}
-          full
-          onPress={() => void load(page + 1, true)}
+      {!loading && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={total}
+          onChange={(newPage) => void load(newPage, false)}
+          loading={loading || loadingMore}
         />
       )}
 

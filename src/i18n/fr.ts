@@ -28,6 +28,10 @@ const fr: Translations = {
     showMore: 'Afficher plus',
     showLess: 'Afficher moins',
     readMore: 'Lire la suite',
+    previous: 'Précédent',
+    next: 'Suivant',
+    page: 'Page',
+    pageOf: 'Page {current} sur {total}',
     of: 'sur',
     or: 'ou',
     results: 'résultats',
@@ -68,6 +72,7 @@ const fr: Translations = {
     register: "S'inscrire",
     logout: 'Se déconnecter',
     favourites: 'Favoris',
+    myAdverts: 'Mes annonces',
   },
   roles: {
     CUSTOMER: 'Client',

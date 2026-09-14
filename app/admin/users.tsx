@@ -17,6 +17,7 @@ import {
   H3,
   Input,
   Muted,
+  Pagination,
   Row,
   Sheet,
   Spinner,
@@ -33,25 +34,33 @@ export default function AdminUsersScreen() {
 
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [disabling, setDisabling] = useState<AdminUser | null>(null);
   const [reason, setReason] = useState('');
 
-  const load = useCallback(async (q: string) => {
+  const load = useCallback(async (q: string, targetPage = 0) => {
     setLoading(true);
     try {
-      const page = await api.adminUsers(q || undefined, 0, 50);
-      setUsers(page.content);
+      const res = await api.adminUsers(q || undefined, targetPage, 20);
+      setUsers(res.content);
+      setPage(res.page);
+      setTotalPages(res.totalPages);
+      setTotal(res.totalElements);
     } catch {
       setUsers([]);
+      setTotalPages(0);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const handle = setTimeout(() => void load(query.trim()), 250);
+    const handle = setTimeout(() => void load(query.trim(), 0), 250);
     return () => clearTimeout(handle);
   }, [query, load]);
 
@@ -59,7 +68,7 @@ export default function AdminUsersScreen() {
     setBusyId(id);
     try {
       await fn();
-      await load(query.trim());
+      await load(query.trim(), page);
       toast.success(message);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : t('errors.generic'));
@@ -197,6 +206,13 @@ export default function AdminUsersScreen() {
               </Row>
             </Card>
           ))}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={total}
+            onChange={(newPage) => void load(query.trim(), newPage)}
+            loading={loading}
+          />
         </View>
       )}
 

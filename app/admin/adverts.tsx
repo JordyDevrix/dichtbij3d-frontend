@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../src/api';
 import type { AdminAdvert } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
-import { Badge, Body, Button, Card, Muted, Row, Spinner } from '../../src/components/ui';
+import { Badge, Body, Button, Card, Muted, Pagination, Row, Spinner } from '../../src/components/ui';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
 import { advertTypeColor, colors, spacing, statusColor } from '../../src/theme/theme';
@@ -17,17 +17,21 @@ export default function AdminAdvertsScreen() {
   const [adverts, setAdverts] = useState<AdminAdvert[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
-  const [last, setLast] = useState(true);
+  const [totalPages, setTotalPages] = useState(0);
+  const [total, setTotal] = useState(0);
 
   const load = useCallback(async (nextPage: number) => {
     setLoading(true);
     try {
-      const result = await api.adminAdverts(nextPage, 25);
-      setAdverts((prev) => (nextPage === 0 ? result.content : [...prev, ...result.content]));
+      const result = await api.adminAdverts(nextPage, 20);
+      setAdverts(result.content);
       setPage(result.page);
-      setLast(result.page + 1 >= result.totalPages);
+      setTotalPages(result.totalPages);
+      setTotal(result.totalElements);
     } catch {
-      if (nextPage === 0) setAdverts([]);
+      setAdverts([]);
+      setTotalPages(0);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -40,7 +44,7 @@ export default function AdminAdvertsScreen() {
   const restore = async (advert: AdminAdvert) => {
     try {
       await api.adminRestoreAdvert(advert.id);
-      await load(0);
+      await load(page);
       toast.success(t('admin.advertRestored'));
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : t('errors.generic'));
@@ -109,16 +113,13 @@ export default function AdminAdvertsScreen() {
             </Card>
           ))}
 
-          {!last && (
-            <Button
-              title={t('common.showMore')}
-              icon="chevronDown"
-              variant="outline"
-              full
-              loading={loading}
-              onPress={() => void load(page + 1)}
-            />
-          )}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={total}
+            onChange={(newPage) => void load(newPage)}
+            loading={loading}
+          />
         </View>
       )}
     </AdminShell>

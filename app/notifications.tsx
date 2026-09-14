@@ -5,7 +5,7 @@ import { api } from '../src/api';
 import type { AppNotification, NotificationType } from '../src/api/types';
 import { Icon, IconName } from '../src/components/Icon';
 import { Page } from '../src/components/Page';
-import { Badge, Body, Button, Card, EmptyState, H1, Muted, Row, Spinner } from '../src/components/ui';
+import { Badge, Body, Button, Card, EmptyState, H1, Muted, Pagination, Row, Spinner } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
 import { useI18n } from '../src/i18n';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
@@ -46,26 +46,35 @@ export default function NotificationsScreen() {
   const { isWide } = useBreakpoint();
   const { user, booting, refreshUnread } = useAuth();
   const [items, setItems] = useState<AppNotification[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (targetPage = page) => {
     if (!user) {
       setLoading(false);
       return;
     }
+    setLoading(true);
     try {
-      const page = await api.notifications(0, 50);
-      setItems(page.content);
+      const res = await api.notifications(targetPage, 15);
+      setItems(res.content);
+      setPage(res.page);
+      setTotalPages(res.totalPages);
+      setTotal(res.totalElements);
     } catch {
       setItems([]);
+      setTotalPages(0);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, page]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load(page);
+  }, [user, page]);
 
   if (booting) return null;
 
@@ -178,6 +187,13 @@ export default function NotificationsScreen() {
               </Pressable>
             );
           })}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={total}
+            onChange={(newPage) => setPage(newPage)}
+            loading={loading}
+          />
         </View>
       )}
     </Page>

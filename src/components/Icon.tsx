@@ -2,6 +2,7 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
   faArrowLeft,
+  faArrowRight,
   faArrowRightFromBracket,
   faArrowUpRightFromSquare,
   faBan,
@@ -14,6 +15,8 @@ import {
   faCaretDown,
   faChartLine,
   faCheck,
+  faChevronLeft,
+  faChevronRight,
   faCircleCheck,
   faCircleExclamation,
   faCircleInfo,
@@ -104,8 +107,11 @@ export const ICONS = {
   warning: faTriangleExclamation,
   error: faCircleExclamation,
   back: faArrowLeft,
+  arrowRight: faArrowRight,
   external: faArrowUpRightFromSquare,
   chevronDown: faCaretDown,
+  chevronLeft: faChevronLeft,
+  chevronRight: faChevronRight,
   more: faEllipsisVertical,
   trash: faTrash,
   edit: faPen,

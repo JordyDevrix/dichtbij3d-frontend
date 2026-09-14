@@ -5,7 +5,7 @@ import { api, ApiError } from '../../src/api';
 import type { Report } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
 import { Icon } from '../../src/components/Icon';
-import { Badge, Body, Button, Card, Muted, Row, Spinner } from '../../src/components/ui';
+import { Badge, Body, Button, Card, Muted, Pagination, Row, Spinner } from '../../src/components/ui';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
 import { colors, spacing } from '../../src/theme/theme';
@@ -16,8 +16,13 @@ export default function AdminReportsScreen() {
   const { t, locale } = useI18n();
   const toast = useToast();
   const [reports, setReports] = useState<Report[]>([]);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const PAGE_SIZE = 15;
+  const totalPages = Math.ceil(reports.length / PAGE_SIZE);
+  const pagedReports = reports.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,7 +65,7 @@ export default function AdminReportsScreen() {
         </Card>
       ) : (
         <View style={{ gap: spacing.sm }}>
-          {reports.map((report) => (
+          {pagedReports.map((report) => (
             <Card key={report.id} style={{ gap: spacing.sm, opacity: busyId === report.id ? 0.6 : 1 }}>
               <Row style={{ flexWrap: 'wrap', gap: spacing.md, alignItems: 'flex-start' }}>
                 <View style={{ flex: 1, minWidth: 220, gap: 4 }}>
@@ -123,6 +128,13 @@ export default function AdminReportsScreen() {
               </Row>
             </Card>
           ))}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={reports.length}
+            onChange={(newPage) => setPage(newPage)}
+            loading={loading}
+          />
         </View>
       )}
     </AdminShell>

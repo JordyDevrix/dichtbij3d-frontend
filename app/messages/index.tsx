@@ -6,7 +6,7 @@ import { absoluteUrl } from '../../src/api/client';
 import type { Conversation } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
 import { Page } from '../../src/components/Page';
-import { Avatar, Body, Button, Card, EmptyState, H1, Muted, Row, Spinner } from '../../src/components/ui';
+import { Avatar, Body, Button, Card, EmptyState, H1, Muted, Pagination, Row, Spinner } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
 import { useI18n } from '../../src/i18n';
 import { colors, radius, spacing } from '../../src/theme/theme';
@@ -17,30 +17,39 @@ export default function ConversationsScreen() {
   const { t, locale } = useI18n();
   const { user, booting, refreshUnread } = useAuth();
   const [items, setItems] = useState<Conversation[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (targetPage = page) => {
     if (!user) {
       setLoading(false);
       return;
     }
+    setLoading(true);
     try {
-      const page = await api.conversations(0, 50);
-      setItems(page.content);
+      const res = await api.conversations(targetPage, 15);
+      setItems(res.content);
+      setPage(res.page);
+      setTotalPages(res.totalPages);
+      setTotal(res.totalElements);
     } catch {
       setItems([]);
+      setTotalPages(0);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, page]);
 
   // Runs on mount and every time the tab regains focus, so coming back from a
   // thread immediately shows the freshly read state.
   useFocusEffect(
     useCallback(() => {
-      void load();
+      void load(page);
       void refreshUnread();
-    }, [load, refreshUnread]),
+    }, [load, page, refreshUnread]),
   );
 
   if (booting) return null;
@@ -78,17 +87,26 @@ export default function ConversationsScreen() {
           <EmptyState icon="envelope" title={t('chat.empty')} body={t('chat.emptyBody')} />
         </Card>
       ) : (
-        <Card flat style={{ padding: 0, overflow: 'hidden' }}>
-          {items.map((item, index) => (
-            <ConversationRow
-              key={item.id}
-              conversation={item}
-              first={index === 0}
-              onPress={() => router.push(`/messages/${item.id}` as any)}
-              timeLabel={timeAgo(item.lastMessageAt, t, locale)}
-            />
-          ))}
-        </Card>
+        <>
+          <Card flat style={{ padding: 0, overflow: 'hidden' }}>
+            {items.map((item, index) => (
+              <ConversationRow
+                key={item.id}
+                conversation={item}
+                first={index === 0}
+                onPress={() => router.push(`/messages/${item.id}` as any)}
+                timeLabel={timeAgo(item.lastMessageAt, t, locale)}
+              />
+            ))}
+          </Card>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={total}
+            onChange={(newPage) => setPage(newPage)}
+            loading={loading}
+          />
+        </>
       )}
     </Page>
   );

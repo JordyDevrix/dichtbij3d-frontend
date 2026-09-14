@@ -297,6 +297,7 @@ export function AppHeader() {
         <Muted style={{ marginTop: -spacing.sm }}>{user?.email}</Muted>
         <View style={{ gap: 2, marginTop: spacing.sm }}>
           <MenuItem icon="user" label={t('nav.profile')} onPress={() => go('/profile')} />
+          <MenuItem icon="layers" label={t('profile.myAdverts')} onPress={() => go('/my-adverts')} />
           <MenuItem
             icon="envelope"
             label={t('chat.title')}
