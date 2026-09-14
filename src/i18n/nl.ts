@@ -63,6 +63,7 @@ const nl = {
     login: 'Inloggen',
     register: 'Registreren',
     logout: 'Uitloggen',
+    favourites: 'Favorieten',
   },
   roles: {
     CUSTOMER: 'Opdrachtgever',
@@ -134,8 +135,9 @@ const nl = {
     noQuestions: 'Nog geen vragen. Stel de eerste!',
     askTitle: 'Stel een vraag aan de verkoper',
     askPlaceholder: 'Vraag naar afmetingen, materiaal, verzending…',
-    askSend: 'Vraag plaatsen',
+    askSend: 'Verstuur',
     buyHint: 'Je wordt met de verkoper in gesprek gebracht om de betaling en levering af te spreken.',
+    highestBid: 'Hoogste bod',
     buyIntro: 'Dichtbij3D regelt de betaling niet. Je krijgt een privégesprek met de verkoper om af te spreken hoe je betaalt en ontvangt.',
     buyMessage: 'Bericht aan de verkoper',
     buyMessagePlaceholder: 'Bijv. kan ik het deze week ophalen?',

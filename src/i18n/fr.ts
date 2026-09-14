@@ -66,6 +66,7 @@ const fr: Translations = {
     login: 'Se connecter',
     register: "S'inscrire",
     logout: 'Se déconnecter',
+    favourites: 'Favoris',
   },
   roles: {
     CUSTOMER: 'Client',
@@ -137,8 +138,9 @@ const fr: Translations = {
     noQuestions: 'Aucune question pour le moment. Posez la première !',
     askTitle: 'Posez une question au vendeur',
     askPlaceholder: 'Dimensions, matériau, livraison…',
-    askSend: 'Publier la question',
+    askSend: 'Poser la question',
     buyHint: 'Vous serez mis en relation avec le vendeur pour convenir du paiement et de la livraison.',
+    highestBid: 'Meilleure offre',
     buyIntro: 'Dichtbij3D ne gère pas les paiements. Vous obtenez une conversation privée avec le vendeur pour convenir du paiement et de la remise.',
     buyMessage: 'Message au vendeur',
     buyMessagePlaceholder: 'ex. puis-je le récupérer cette semaine ?',

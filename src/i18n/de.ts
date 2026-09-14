@@ -66,6 +66,7 @@ const de: Translations = {
     login: 'Anmelden',
     register: 'Registrieren',
     logout: 'Abmelden',
+    favourites: 'Favoriten',
   },
   roles: {
     CUSTOMER: 'Auftraggeber',
@@ -139,6 +140,7 @@ const de: Translations = {
     askPlaceholder: 'Frage nach Maßen, Material, Versand…',
     askSend: 'Frage stellen',
     buyHint: 'Du wirst mit dem Verkäufer verbunden, um Zahlung und Lieferung zu klären.',
+    highestBid: 'Höchstes Gebot',
     buyIntro: 'Dichtbij3D wickelt keine Zahlungen ab. Du bekommst einen privaten Chat mit dem Verkäufer, um Zahlung und Übergabe zu vereinbaren.',
     buyMessage: 'Nachricht an den Verkäufer',
     buyMessagePlaceholder: 'z. B. kann ich es diese Woche abholen?',

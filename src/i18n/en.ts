@@ -65,6 +65,7 @@ const en: Translations = {
     login: 'Sign in',
     register: 'Sign up',
     logout: 'Sign out',
+    favourites: 'Favourites',
   },
   roles: {
     CUSTOMER: 'Client',
@@ -138,6 +139,7 @@ const en: Translations = {
     askPlaceholder: 'Ask about size, material, shipping…',
     askSend: 'Post question',
     buyHint: 'You will be put in touch with the seller to arrange payment and delivery.',
+    highestBid: 'Highest bid',
     buyIntro: 'Dichtbij3D does not handle payments. You get a private thread with the seller to agree on how you pay and receive the item.',
     buyMessage: 'Message to the seller',
     buyMessagePlaceholder: 'e.g. can I pick it up this week?',

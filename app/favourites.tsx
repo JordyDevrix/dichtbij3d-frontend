@@ -5,6 +5,7 @@ import { useAuth } from '../src/context/AuthContext';
 import { useLists } from '../src/context/ListsContext';
 import { useToast } from '../src/context/ToastContext';
 import { useI18n } from '../src/i18n';
+import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { Page } from '../src/components/Page';
 import { Icon } from '../src/components/Icon';
 import { Button, Card, H1, H2, H3, Input, Muted, Row, Badge } from '../src/components/ui';
@@ -19,6 +20,8 @@ export default function FavouritesScreen() {
   const { user } = useAuth();
   const { lists, createList, deleteList } = useLists();
   const toast = useToast();
+  
+  const { isWide } = useBreakpoint();
   
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [adverts, setAdverts] = useState<AdvertSummary[]>([]);
@@ -99,8 +102,8 @@ export default function FavouritesScreen() {
 
   return (
     <Page maxWidth={1200}>
-      <Row gap={spacing.xl} style={{ alignItems: 'flex-start' }}>
-        <Card style={{ flex: 1, minWidth: 250, maxWidth: 300, gap: spacing.md }}>
+      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.xl, alignItems: 'flex-start' }}>
+        <Card style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%', minWidth: 250, maxWidth: isWide ? 300 : undefined, gap: spacing.md }}>
           <H2>{t('nav.favourites')}</H2>
           <View style={{ gap: spacing.xs }}>
             {lists.map(list => (
@@ -164,7 +167,7 @@ export default function FavouritesScreen() {
           </Row>
         </Card>
         
-        <View style={{ flex: 3 }}>
+        <View style={{ flex: isWide ? 3 : undefined, width: isWide ? undefined : '100%' }}>
           {selectedListId ? (
             loading ? (
               <Muted>{t('common.loading')}</Muted>
@@ -181,7 +184,7 @@ export default function FavouritesScreen() {
             <Muted>{t('common.loading')}</Muted>
           )}
         </View>
-      </Row>
+      </View>
     </Page>
   );
 }
