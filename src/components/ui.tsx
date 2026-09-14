@@ -14,6 +14,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { colors, radius, shadow, spacing, typography } from '../theme/theme';
 import { Icon, IconName } from './Icon';
 import { avatarColor, initials } from '../utils/format';
@@ -609,6 +610,18 @@ export function Sheet({
               width: '100%',
               maxWidth: asBottomSheet ? undefined : width,
               maxHeight: '92%',
+              borderRadius: asBottomSheet ? 0 : radius.xl,
+              borderTopLeftRadius: radius.xl,
+              borderTopRightRadius: radius.xl,
+            },
+            shadow.raised,
+          ]}
+        >
+          <BlurView
+            intensity={80}
+            tint="default"
+            style={{
+              width: '100%',
               backgroundColor: colors.elevated,
               borderWidth: 1,
               borderColor: colors.border,
@@ -619,10 +632,8 @@ export function Sheet({
               paddingTop: asBottomSheet ? spacing.md : spacing.xl,
               paddingBottom: spacing.xl,
               gap: spacing.md,
-            },
-            shadow.raised,
-          ]}
-        >
+            }}
+          >
           {asBottomSheet && (
             <View
               style={{
@@ -642,6 +653,7 @@ export function Sheet({
             </Row>
           )}
           {children}
+          </BlurView>
         </Pressable>
       </Pressable>
     </Modal>

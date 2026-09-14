@@ -2,6 +2,8 @@ import React from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
+import { useTheme } from '../theme/ThemeContext';
 import { colors, radius, spacing } from '../theme/theme';
 import { CountBadge } from './ui';
 import { Icon } from './Icon';
@@ -26,7 +28,9 @@ export function BottomBar() {
     href === '/notifications' ? unreadCount : href === '/messages' ? unreadMessages : 0;
 
   return (
-    <View
+    <BlurView
+      intensity={80}
+      tint="default"
       style={{
         flexDirection: 'row',
         alignItems: 'flex-end',
@@ -98,7 +102,7 @@ export function BottomBar() {
           </Pressable>
         );
       })}
-    </View>
+    </BlurView>
   );
 }
 

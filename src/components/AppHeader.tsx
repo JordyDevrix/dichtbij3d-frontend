@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
+import { useTheme } from '../theme/ThemeContext';
 import { colors, layout, radius, spacing, typography } from '../theme/theme';
 import { Icon, IconName } from './Icon';
 import { Avatar, Button, CountBadge, Divider, MenuItem, Muted, Row, Sheet } from './ui';
@@ -167,6 +169,7 @@ export function AppHeader() {
   const { t } = useI18n();
   const { user, isAdmin, unreadCount, unreadMessages, logout } = useAuth();
   const { isWide } = useBreakpoint();
+  const { scheme } = useTheme();
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -176,7 +179,9 @@ export function AppHeader() {
   };
 
   return (
-    <View
+    <BlurView
+      intensity={80}
+      tint="default"
       style={[
         {
           backgroundColor: colors.surface,
@@ -301,7 +306,7 @@ export function AppHeader() {
           />
         </View>
       </Sheet>
-    </View>
+    </BlurView>
   );
 }
 
