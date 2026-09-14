@@ -358,6 +358,8 @@ const nl = {
     saved: 'Profiel bijgewerkt',
     noAdverts: 'Je hebt nog geen advertenties geplaatst.',
     publicAdverts: 'Advertenties van deze gebruiker',
+    guestBannerTitle: 'Maak een gratis account aan',
+    guestBannerBody: 'Meld je aan om contact op te nemen met {name}, advertenties op te slaan of zelf 3D-prints aan te vragen.',
   },
   security: {
     title: 'Beveiliging',

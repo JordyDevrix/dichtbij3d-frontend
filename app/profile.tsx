@@ -359,7 +359,7 @@ export default function ProfileScreen() {
             />
           </Card>
         ) : (
-          <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: isWide ? 'wrap' : 'nowrap', gap: spacing.lg }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
             {adverts.map((advert) => (
               <AdvertCard key={advert.id} advert={advert} onChanged={() => void loadAdverts()} />
             ))}

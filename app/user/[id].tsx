@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Pressable, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../src/api';
 import { absoluteUrl } from '../../src/api/client';
 import type { AdvertSummary, PublicUser } from '../../src/api/types';
@@ -16,6 +16,7 @@ import {
   EmptyState,
   H1,
   H2,
+  H3,
   Input,
   Muted,
   Row,
@@ -32,9 +33,10 @@ import { formatDate } from '../../src/utils/format';
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { t, locale } = useI18n();
   const { isWide } = useBreakpoint();
-  const { user: me, booting } = useAuth();
+  const { user: me, booting, requireAuth } = useAuth();
   const { startChat, starting } = useStartChat();
   const toast = useToast();
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -43,6 +45,7 @@ export default function PublicProfileScreen() {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -187,8 +190,68 @@ export default function PublicProfileScreen() {
               {user.blocked && <Muted style={{ maxWidth: 260, textAlign: isWide ? 'right' : 'left' }}>{t('block.blockedHint')}</Muted>}
             </View>
           )}
+          {!me && (
+            <View
+              style={{
+                gap: spacing.sm,
+                alignItems: isWide ? 'flex-end' : 'stretch',
+                width: isWide ? undefined : '100%',
+              }}
+            >
+              <Button
+                title={t('chat.contact')}
+                icon="envelope"
+                variant="outline"
+                onPress={() => {
+                  requireAuth(`/user/${user.id}`);
+                }}
+              />
+            </View>
+          )}
         </Row>
       </Card>
+
+      {!me && !bannerDismissed && (
+        <Card style={{ backgroundColor: colors.orangeSofter, borderColor: colors.orangeBorder, gap: spacing.md }}>
+          <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Row gap={spacing.md} style={{ flex: 1, alignItems: 'center' }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.orange,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="userPlus" size={18} color={colors.white} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <H3>{t('profile.guestBannerTitle')}</H3>
+                <Muted>{t('profile.guestBannerBody', { name: user.displayName })}</Muted>
+              </View>
+            </Row>
+            <Pressable onPress={() => setBannerDismissed(true)} hitSlop={10} style={{ padding: spacing.xs }}>
+              <Icon name="close" size={16} color={colors.textFaint} />
+            </Pressable>
+          </Row>
+          <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+            <Button
+              title={t('common.createAccount')}
+              icon="userPlus"
+              size="sm"
+              onPress={() => router.push('/auth/register')}
+            />
+            <Button
+              title={t('common.orSignIn')}
+              variant="outline"
+              size="sm"
+              onPress={() => router.push('/auth/login')}
+            />
+          </Row>
+        </Card>
+      )}
 
       <Sheet open={reportOpen} onClose={() => setReportOpen(false)} title={t('block.report')} width={480}>
         <View style={{ gap: spacing.md }}>

@@ -11,6 +11,7 @@ import { useI18n } from '../i18n';
 import { advertTypeColor, colors, radius, shadow, spacing, statusColor, typography } from '../theme/theme';
 import { money, timeAgo } from '../utils/format';
 import { useContextMenu } from '../hooks/useContextMenu';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 import { Icon } from './Icon';
 import { AppImage } from './AppImage';
 import { Avatar, Badge, Body, Button, Chip, H2, H3, Input, Muted, Row, Sheet } from './ui';
@@ -41,6 +42,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
 
   const isOwner = user?.id === advert.author.id;
   const isFavorite = defaultList?.advertIds.includes(advert.id) ?? false;
+  const { isPhone } = useBreakpoint();
   const openMenu = useCallback(() => setMenuOpen(true), []);
   const ref = useContextMenu(openMenu);
 
@@ -98,7 +100,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
   };
 
   return (
-    <View ref={ref} style={{ flexGrow: 1, flexBasis: 320, maxWidth: 460 }}>
+    <View ref={ref} style={{ flexGrow: 1, flexShrink: 1, flexBasis: isPhone ? '100%' : 300, maxWidth: isPhone ? '100%' : 460 }}>
       <Pressable
         onPress={() => router.push(`/advert/${advert.id}`)}
         onLongPress={openMenu}

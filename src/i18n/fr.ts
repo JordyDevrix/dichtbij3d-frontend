@@ -361,6 +361,8 @@ const fr: Translations = {
     saved: 'Profil mis à jour',
     noAdverts: "Vous n'avez pas encore publié d'annonces.",
     publicAdverts: 'Annonces de cet utilisateur',
+    guestBannerTitle: 'Créez un compte gratuit',
+    guestBannerBody: 'Inscrivez-vous pour contacter {name}, enregistrer des annonces ou demander des impressions 3D.',
   },
   security: {
     title: 'Sécurité',

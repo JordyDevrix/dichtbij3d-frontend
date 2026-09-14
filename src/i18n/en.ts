@@ -360,6 +360,8 @@ const en: Translations = {
     saved: 'Profile updated',
     noAdverts: 'You have not posted any adverts yet.',
     publicAdverts: 'Adverts by this user',
+    guestBannerTitle: 'Create a free account',
+    guestBannerBody: 'Sign up to contact {name}, save adverts, or request 3D prints yourself.',
   },
   security: {
     title: 'Security',
