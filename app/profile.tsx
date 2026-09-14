@@ -313,28 +313,6 @@ export default function ProfileScreen() {
           </Row>
         </View>
 
-        <View style={{ gap: spacing.sm }}>
-          <H3>{t('notifications.settingsTitle')}</H3>
-          <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-            {NOTIFICATION_CATEGORIES.map((cat) => {
-              const isEnabled = !cat.types.every((type) => mutedNotifications.includes(type));
-              return (
-                <Chip
-                  key={cat.labelKey}
-                  label={t(`notifications.${cat.labelKey}` as any)}
-                  selected={isEnabled}
-                  onPress={() => {
-                    if (isEnabled) {
-                      setMutedNotifications((prev) => Array.from(new Set([...prev, ...cat.types])));
-                    } else {
-                      setMutedNotifications((prev) => prev.filter((t) => !cat.types.includes(t as any)));
-                    }
-                  }}
-                />
-              );
-            })}
-          </Row>
-        </View>
 
         <Row style={{ justifyContent: 'flex-end' }}>
           <Button title={t('common.save')} icon="check" loading={busy} onPress={save} />
