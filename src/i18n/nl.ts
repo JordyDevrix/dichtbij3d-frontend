@@ -404,6 +404,12 @@ const nl = {
     empty: 'Je hebt nog geen meldingen.',
     markAllRead: 'Alles gelezen',
     unread: 'ongelezen',
+    settingsTitle: 'Notificatie Instellingen',
+    categoryBids: 'Biedingen & Aanbiedingen',
+    categoryChat: 'Chatberichten',
+    categoryReactions: 'Reacties',
+    categorySales: 'Verkopen & Aankopen',
+    categorySystem: 'Systeem & Overige',
   },
   admin: {
     title: 'Beheerpaneel',

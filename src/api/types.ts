@@ -91,6 +91,7 @@ export interface UserProfile {
   city?: string | null;
   locale?: string | null;
   roles: Role[];
+  mutedNotifications: NotificationType[];
   enabled: boolean;
   totpEnabled: boolean;
   passkeyCount: number;

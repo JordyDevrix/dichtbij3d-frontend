@@ -404,9 +404,15 @@ const de: Translations = {
   },
   notifications: {
     title: 'Mitteilungen',
-    empty: 'Du hast noch keine Mitteilungen.',
-    markAllRead: 'Alle als gelesen',
+    empty: 'Sie haben noch keine Mitteilungen.',
+    markAllRead: 'Alle als gelesen markieren',
     unread: 'ungelesen',
+    settingsTitle: 'Benachrichtigungseinstellungen',
+    categoryBids: 'Gebote & Angebote',
+    categoryChat: 'Chat-Nachrichten',
+    categoryReactions: 'Reaktionen',
+    categorySales: 'Verkäufe & Einkäufe',
+    categorySystem: 'System & Sonstiges',
   },
   admin: {
     title: 'Verwaltungsbereich',

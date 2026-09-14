@@ -406,6 +406,12 @@ const en: Translations = {
     empty: 'You have no notifications yet.',
     markAllRead: 'Mark all read',
     unread: 'unread',
+    settingsTitle: 'Notification Settings',
+    categoryBids: 'Bids & Offers',
+    categoryChat: 'Chat Messages',
+    categoryReactions: 'Reactions',
+    categorySales: 'Sales & Purchases',
+    categorySystem: 'System & Other',
   },
   admin: {
     title: 'Admin panel',

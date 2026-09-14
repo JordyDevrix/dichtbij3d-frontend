@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { api, ApiError } from '../src/api';
 import { absoluteUrl } from '../src/api/client';
 import { GENDERS, SELECTABLE_ROLES } from '../src/api/types';
-import type { AdvertSummary, BlockedUser, Gender, Role } from '../src/api/types';
+import type { AdvertSummary, BlockedUser, Gender, Role, NotificationType } from '../src/api/types';
 import { AdvertCard } from '../src/components/AdvertCard';
 import { Icon } from '../src/components/Icon';
 import { Page } from '../src/components/Page';
@@ -33,6 +33,14 @@ import { colors, spacing } from '../src/theme/theme';
 import { formatDate } from '../src/utils/format';
 import { pickAndUploadAvatar } from '../src/utils/upload';
 
+const NOTIFICATION_CATEGORIES: { labelKey: string; types: NotificationType[] }[] = [
+  { labelKey: 'categoryBids', types: ['BID_PLACED', 'BID_ACCEPTED', 'BID_REJECTED'] },
+  { labelKey: 'categoryChat', types: ['MESSAGE_RECEIVED'] },
+  { labelKey: 'categoryReactions', types: ['ADVERT_REACTION'] },
+  { labelKey: 'categorySales', types: ['ADVERT_ACCEPTED', 'ADVERT_PURCHASE_REQUEST', 'MODEL_PURCHASED', 'MODEL_PURCHASE_REQUEST', 'MODEL_ACCESS_GRANTED', 'MODEL_PURCHASE_DECLINED'] },
+  { labelKey: 'categorySystem', types: ['ADVERT_REMOVED', 'MODEL_SHARED', 'SYSTEM'] }
+];
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { t, locale, setLocale } = useI18n();
@@ -47,6 +55,7 @@ export default function ProfileScreen() {
   const [website, setWebsite] = useState('');
   const [city, setCity] = useState('');
   const [roles, setRoles] = useState<Role[]>([]);
+  const [mutedNotifications, setMutedNotifications] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [adverts, setAdverts] = useState<AdvertSummary[]>([]);
   const [loadingAdverts, setLoadingAdverts] = useState(true);
@@ -81,6 +90,7 @@ export default function ProfileScreen() {
     setWebsite(user.website ?? '');
     setCity(user.city ?? '');
     setRoles((user.roles ?? []).filter((role) => role !== 'ADMIN'));
+    setMutedNotifications(user.mutedNotifications ?? []);
   }, [user]);
 
   const loadAdverts = useCallback(async () => {
@@ -134,6 +144,7 @@ export default function ProfileScreen() {
         city: city.trim(),
         locale,
         roles: roles.length ? roles : ['CUSTOMER'],
+        mutedNotifications: mutedNotifications as NotificationType[],
       });
       await refreshProfile();
       toast.success(t('profile.saved'));
@@ -299,6 +310,29 @@ export default function ProfileScreen() {
                 }
               />
             ))}
+          </Row>
+        </View>
+
+        <View style={{ gap: spacing.sm }}>
+          <H3>{t('notifications.settingsTitle')}</H3>
+          <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
+            {NOTIFICATION_CATEGORIES.map((cat) => {
+              const isEnabled = !cat.types.every((type) => mutedNotifications.includes(type));
+              return (
+                <Chip
+                  key={cat.labelKey}
+                  label={t(`notifications.${cat.labelKey}` as any)}
+                  selected={isEnabled}
+                  onPress={() => {
+                    if (isEnabled) {
+                      setMutedNotifications((prev) => Array.from(new Set([...prev, ...cat.types])));
+                    } else {
+                      setMutedNotifications((prev) => prev.filter((t) => !cat.types.includes(t as any)));
+                    }
+                  }}
+                />
+              );
+            })}
           </Row>
         </View>
 

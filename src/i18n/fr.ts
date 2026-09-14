@@ -404,9 +404,15 @@ const fr: Translations = {
   },
   notifications: {
     title: 'Notifications',
-    empty: "Vous n'avez aucune notification.",
+    empty: "Vous n'avez pas encore de notifications.",
     markAllRead: 'Tout marquer comme lu',
-    unread: 'non lues',
+    unread: 'non lu',
+    settingsTitle: 'Paramètres de notification',
+    categoryBids: 'Offres & Enchères',
+    categoryChat: 'Messages',
+    categoryReactions: 'Réactions',
+    categorySales: 'Ventes & Achats',
+    categorySystem: 'Système & Autres',
   },
   admin: {
     title: "Panneau d'administration",
