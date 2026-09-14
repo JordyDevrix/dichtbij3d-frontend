@@ -83,6 +83,14 @@ export default function LoginScreen() {
           autoComplete="current-password"
           onSubmitEditing={submit}
         />
+        <View style={{ alignItems: 'flex-end', marginTop: -spacing.sm }}>
+          <Button
+            title={t('auth.forgotPassword')}
+            variant="ghost"
+            size="sm"
+            onPress={() => router.push('/auth/forgot-password')}
+          />
+        </View>
 
         {error && <Body style={{ color: colors.danger }}>{error}</Body>}
 

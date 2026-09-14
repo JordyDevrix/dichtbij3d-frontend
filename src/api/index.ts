@@ -53,6 +53,12 @@ export const api = {
   login: (body: { email: string; password: string; totpCode?: string }) =>
     request<AuthResponse>('/api/auth/login', { method: 'POST', body, auth: false }),
 
+  forgotPassword: (email: string) =>
+    request<MessageResponse>('/api/auth/forgot-password', { method: 'POST', body: { email }, auth: false }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    request<MessageResponse>('/api/auth/reset-password', { method: 'POST', body: { token, newPassword }, auth: false }),
+
   verifyMfa: (body: { mfaToken: string; code: string }) =>
     request<AuthResponse>('/api/auth/mfa/verify', { method: 'POST', body, auth: false }),
 
