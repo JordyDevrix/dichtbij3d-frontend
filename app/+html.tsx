@@ -15,13 +15,14 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Open Graph / Social Media Meta Tags */}
         <meta property="og:title" content="Dichtbij3D" />
         <meta property="og:description" content="3D-printen dichtbij huis" />
-        <meta property="og:image" content="/og-image.png" />
+        {/* Note: WhatsApp requires an ABSOLUTE url for the image to show up! */}
+        <meta property="og:image" content="https://your-live-domain.com/og-image.png" />
         <meta property="og:type" content="website" />
         
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Dichtbij3D" />
         <meta name="twitter:description" content="3D-printen dichtbij huis" />
-        <meta name="twitter:image" content="/og-image.png" />
+        <meta name="twitter:image" content="https://your-live-domain.com/og-image.png" />
 
         <ScrollViewStyleReset />
       </head>
