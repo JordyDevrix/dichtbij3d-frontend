@@ -71,7 +71,7 @@ export function ModelUploadSheet({
   const addThumbnail = async () => {
     setBusy(true);
     try {
-      const upload = await pickAndUploadImage('models');
+      const upload = await pickAndUploadImage('thumbnails');
       if (upload) setThumbnail(upload);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : t('errors.generic'));

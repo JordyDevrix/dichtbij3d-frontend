@@ -350,6 +350,13 @@ export default function CreateAdvertScreen() {
               onChange={(value) => {
                 setModelId(value || null);
                 clearField('modelId');
+                if (value && images.length === 0) {
+                  const selectedModel = myModels.find((m) => m.id === value);
+                  if (selectedModel?.thumbnailUrl) {
+                    const key = selectedModel.thumbnailUrl.replace(/^\/api\/files\//, '');
+                    setImages([{ key, url: selectedModel.thumbnailUrl }]);
+                  }
+                }
               }}
               icon="cube"
             />
@@ -566,6 +573,10 @@ export default function CreateAdvertScreen() {
           setMyModels((prev) => [model, ...prev]);
           setModelId(model.id);
           clearField('modelId');
+          if (model.thumbnailUrl && images.length === 0) {
+            const key = model.thumbnailUrl.replace(/^\/api\/files\//, '');
+            setImages([{ key, url: model.thumbnailUrl }]);
+          }
           toast.success(t('create.modelSelected'));
         }}
       />

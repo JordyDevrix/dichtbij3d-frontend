@@ -116,9 +116,13 @@ export function AdvertCard({ advert, onChanged }: Props) {
           hovered ? shadow.raised : shadow.card,
         ]}
       >
-        <View style={{ aspectRatio: 16 / 10, backgroundColor: colors.surfaceAlt }}>
+        <View style={{ aspectRatio: 16 / 10, backgroundColor: colors.surfaceAlt, overflow: 'hidden', position: 'relative' }}>
           {cover ? (
-            <Image source={{ uri: cover }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+            <Image
+              source={{ uri: cover }}
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+              resizeMode="cover"
+            />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="cube" size={34} color={colors.borderStrong} />

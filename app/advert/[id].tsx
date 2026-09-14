@@ -120,7 +120,11 @@ export default function AdvertDetailScreen() {
   const canBuy = isSale && advert.priceCents != null && advert.status === 'OPEN' && !isOwner && !modelRemoved;
   const typeTone = advertTypeColor[advert.type];
   const statusTone = statusColor[advert.status] ?? statusColor.OPEN;
-  const images = advert.imageUrls.map((url) => absoluteUrl(url)!).filter(Boolean);
+  const images = (
+    advert.imageUrls.length > 0
+      ? advert.imageUrls.map((url) => absoluteUrl(url)!).filter(Boolean)
+      : [absoluteUrl(advert.model?.thumbnailUrl)].filter(Boolean)
+  ) as string[];
 
   const run = async (action: () => Promise<unknown>, successMessage?: string) => {
     setBusy(true);
