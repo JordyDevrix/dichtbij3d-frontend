@@ -12,6 +12,7 @@ import { AppHeader } from '../src/components/AppHeader';
 import { BottomBar } from '../src/components/BottomBar';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
+import { HeaderScrollProvider } from '../src/context/HeaderScrollContext';
 import { colors } from '../src/theme/theme';
 
 function Shell() {
@@ -22,7 +23,6 @@ function Shell() {
     // new token values without threading a theme object through the whole app.
     <View key={scheme} style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <AppHeader />
       <View style={{ flex: 1 }}>
         <Stack
           screenOptions={{
@@ -32,6 +32,7 @@ function Shell() {
           }}
         />
       </View>
+      <AppHeader />
       {!isWide && <BottomBar />}
     </View>
   );
@@ -46,7 +47,9 @@ export default function RootLayout() {
             <ToastProvider>
               <AuthProvider>
                 <ListsProvider>
-                  <Shell />
+                  <HeaderScrollProvider>
+                    <Shell />
+                  </HeaderScrollProvider>
                 </ListsProvider>
               </AuthProvider>
             </ToastProvider>

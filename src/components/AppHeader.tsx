@@ -12,6 +12,9 @@ import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import { absoluteUrl } from '../api/client';
+import { useHeaderScroll } from '../context/HeaderScrollContext';
+
+export const HEADER_HEIGHT = 58;
 
 export interface NavItem {
   href: string;
@@ -170,6 +173,7 @@ export function AppHeader() {
   const { user, isAdmin, unreadCount, unreadMessages, logout } = useAuth();
   const { isWide } = useBreakpoint();
   const { scheme } = useTheme();
+  const { isScrolled } = useHeaderScroll();
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -180,15 +184,34 @@ export function AppHeader() {
 
   return (
     <BlurView
-      intensity={80}
+      intensity={isScrolled ? 80 : 0}
       tint={scheme === 'dark' ? 'dark' : 'light'}
       style={[
         {
-          backgroundColor: colors.surface,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 20,
+          backgroundColor: isScrolled ? colors.surface : 'transparent',
           borderBottomWidth: 1,
-          borderBottomColor: colors.border,
+          borderBottomColor: isScrolled ? colors.border : 'transparent',
           paddingTop: insets.top,
-          ...(Platform.OS === 'web' ? ({ position: 'sticky', top: 0, zIndex: 20 } as any) : null),
+          ...(Platform.OS === 'web'
+            ? ({
+                backdropFilter: isScrolled ? 'saturate(180%) blur(16px)' : 'none',
+                WebkitBackdropFilter: isScrolled ? 'saturate(180%) blur(16px)' : 'none',
+                transitionProperty:
+                  'background-color, border-color, backdrop-filter, -webkit-backdrop-filter, box-shadow',
+                transitionDuration: '240ms',
+                transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: isScrolled
+                  ? scheme === 'dark'
+                    ? '0 4px 20px rgba(0, 0, 0, 0.35)'
+                    : '0 4px 20px rgba(0, 0, 0, 0.04)'
+                  : 'none',
+              } as any)
+            : null),
         },
       ]}
     >
