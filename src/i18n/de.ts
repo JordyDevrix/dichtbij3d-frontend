@@ -49,6 +49,7 @@ const de: Translations = {
     language: 'Sprache',
     copy: 'Kopieren',
     copied: 'Kopiert',
+    share: 'Teilen',
     submit: 'Absenden',
     send: 'Senden',
   },

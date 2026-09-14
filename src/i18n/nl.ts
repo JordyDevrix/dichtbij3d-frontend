@@ -46,6 +46,7 @@ const nl = {
     language: 'Taal',
     copy: 'Kopiëren',
     copied: 'Gekopieerd',
+    share: 'Delen',
     submit: 'Versturen',
     send: 'Versturen',
   },

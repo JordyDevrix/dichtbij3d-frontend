@@ -49,6 +49,7 @@ const fr: Translations = {
     language: 'Langue',
     copy: 'Copier',
     copied: 'Copié',
+    share: 'Partager',
     submit: 'Envoyer',
     send: 'Envoyer',
   },

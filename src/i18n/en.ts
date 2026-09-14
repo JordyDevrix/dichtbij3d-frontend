@@ -48,6 +48,7 @@ const en: Translations = {
     language: 'Language',
     copy: 'Copy',
     copied: 'Copied',
+    share: 'Share',
     submit: 'Submit',
     send: 'Send',
   },
