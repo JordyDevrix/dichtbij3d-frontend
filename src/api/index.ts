@@ -26,6 +26,10 @@ import type {
   ModelSummary,
   PageResponse,
   Passkey,
+  PlatformAnnouncement,
+  PlatformAnnouncementRequest,
+  PlatformBanner,
+  PlatformBannerUpdateRequest,
   PrinterModel,
   PublicStats,
   PublicUser,
@@ -268,6 +272,8 @@ export const api = {
 
   /* ---------------------------------------------------------------- public */
   stats: () => request<PublicStats>('/api/public/stats', { auth: false }),
+  platformBanner: () => request<PlatformBanner>('/api/public/banner', { auth: false }),
+  platformAnnouncements: () => request<PlatformAnnouncement[]>('/api/public/announcements', { auth: false }),
 
   /* ---------------------------------------------------------------- admin */
   adminMetrics: () => request<AdminMetrics>('/api/admin/metrics'),
@@ -286,6 +292,16 @@ export const api = {
     request<MessageResponse>(`/api/admin/reports/${id}/resolve`, { method: 'POST', query: { dismiss } }),
   adminAuditLog: (page = 0, size = 50) =>
     request<PageResponse<AuditLogEntry>>('/api/admin/audit-log', { query: { page, size } }),
+  adminBanner: () => request<PlatformBanner>('/api/admin/banner'),
+  adminUpdateBanner: (body: PlatformBannerUpdateRequest) =>
+    request<PlatformBanner>('/api/admin/banner', { method: 'PUT', body }),
+  adminAnnouncements: () => request<PlatformAnnouncement[]>('/api/admin/announcements'),
+  adminCreateAnnouncement: (body: PlatformAnnouncementRequest) =>
+    request<PlatformAnnouncement>('/api/admin/announcements', { method: 'POST', body }),
+  adminUpdateAnnouncement: (id: string, body: PlatformAnnouncementRequest) =>
+    request<PlatformAnnouncement>(`/api/admin/announcements/${id}`, { method: 'PUT', body }),
+  adminDeleteAnnouncement: (id: string) =>
+    request<MessageResponse>(`/api/admin/announcements/${id}`, { method: 'DELETE' }),
 };
 
 export { ApiError, API_BASE_URL, buildQuery };

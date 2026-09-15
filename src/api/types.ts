@@ -564,3 +564,52 @@ export interface AdvertList {
   advertIds: string[];
   createdAt: string;
 }
+
+export type AnnouncementType = 'INFO' | 'EVENT' | 'UPDATE' | 'WARNING';
+
+export interface PlatformBanner {
+  enabled: boolean;
+  title: string;
+  subtitle: string | null;
+  badgeText: string | null;
+  buttonText: string | null;
+  linkUrl: string | null;
+  imageUrl: string | null;
+  imageKey: string | null;
+  updatedAt: string;
+}
+
+export interface PlatformBannerUpdateRequest {
+  enabled?: boolean;
+  title: string;
+  subtitle?: string | null;
+  badgeText?: string | null;
+  buttonText?: string | null;
+  linkUrl?: string | null;
+  imageKey?: string | null;
+  imageUrl?: string | null;
+}
+
+export interface PlatformAnnouncement {
+  id: string;
+  title: string;
+  content: string;
+  type: AnnouncementType;
+  eventDate: string | null;
+  linkUrl: string | null;
+  linkText: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformAnnouncementRequest {
+  title: string;
+  content: string;
+  type?: AnnouncementType;
+  eventDate?: string | null;
+  linkUrl?: string | null;
+  linkText?: string | null;
+  active?: boolean;
+}
+

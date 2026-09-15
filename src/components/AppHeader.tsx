@@ -24,7 +24,8 @@ export interface NavItem {
 
 /** Desktop top navigation — browsing destinations only. */
 export const PRIMARY_NAV: NavItem[] = [
-  { href: '/', labelKey: 'nav.marketplace', icon: 'layers' },
+  { href: '/', labelKey: 'nav.home', icon: 'home' },
+  { href: '/marketplace', labelKey: 'nav.marketplace', icon: 'layers' },
   { href: '/calculator', labelKey: 'nav.calculator', icon: 'calculator' },
 ];
 
@@ -33,10 +34,10 @@ export const PRIMARY_NAV: NavItem[] = [
  * action sits under the thumb and the bar stays symmetrical.
  */
 export const TAB_ITEMS: NavItem[] = [
-  { href: '/', labelKey: 'nav.marketplace', icon: 'layers' },
-  { href: '/messages', labelKey: 'chat.title', icon: 'envelope' },
+  { href: '/', labelKey: 'nav.home', icon: 'home' },
+  { href: '/marketplace', labelKey: 'nav.marketplace', icon: 'layers' },
   { href: '/create', labelKey: 'nav.create', icon: 'plus' },
-  { href: '/notifications', labelKey: 'nav.notifications', icon: 'bell' },
+  { href: '/messages', labelKey: 'chat.title', icon: 'envelope' },
   { href: '/profile', labelKey: 'nav.profile', icon: 'user' },
 ];
 

@@ -1,197 +1,264 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Image, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { api, ApiError } from '../src/api';
+import { api } from '../src/api';
+import { absoluteUrl } from '../src/api/client';
 import type {
-  AdvertSearchParams,
-  AdvertSort,
   AdvertSummary,
   AdvertType,
-  Category,
+  PlatformAnnouncement,
+  PlatformBanner,
   PublicStats,
-  Tag,
 } from '../src/api/types';
-import { ADVERT_TYPES, CATEGORIES } from '../src/api/types';
 import { AdvertCard } from '../src/components/AdvertCard';
-import { Icon } from '../src/components/Icon';
+import { Icon, IconName } from '../src/components/Icon';
 import { Page } from '../src/components/Page';
 import {
+  Badge,
   Body,
   Button,
   Card,
-  Chip,
   EmptyState,
   H1,
   H2,
-  Input,
+  H3,
   Muted,
-  Pagination,
   Row,
-  Select,
-  Sheet,
   Spinner,
-  SwitchRow,
 } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
 import { useI18n } from '../src/i18n';
-import { advertTypeColor, colors, spacing, typography } from '../src/theme/theme';
-import { numberFmt, toCents } from '../src/utils/format';
+import { advertTypeColor, colors, radius, shadow, spacing, typography } from '../src/theme/theme';
+import { formatDate, numberFmt } from '../src/utils/format';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
 
-const PAGE_SIZE = 12;
-
-interface Filters {
-  types: AdvertType[];
-  categories: Category[];
-  tags: string[];
-  minPrice: string;
-  maxPrice: string;
-  city: string;
-  postedAfter: string;
-  postedBefore: string;
-  biddable: boolean;
+interface SectionData {
+  type: AdvertType;
+  titleKey: string;
+  subtitleKey: string;
+  icon: IconName;
+  items: AdvertSummary[];
+  loading: boolean;
 }
 
-const EMPTY_FILTERS: Filters = {
-  types: [],
-  categories: [],
-  tags: [],
-  minPrice: '',
-  maxPrice: '',
-  city: '',
-  postedAfter: '',
-  postedBefore: '',
-  biddable: false,
-};
-
-export default function MarketplaceScreen() {
+export default function HomeScreen() {
   const { t, locale } = useI18n();
   const { user } = useAuth();
   const router = useRouter();
-  const { isWide } = useBreakpoint();
+  const { isWide, isPhone } = useBreakpoint();
 
-  const [query, setQuery] = useState('');
-  const [debounced, setDebounced] = useState('');
-  const [sort, setSort] = useState<AdvertSort>('newest');
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
-  const [items, setItems] = useState<AdvertSummary[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [tags, setTags] = useState<Tag[]>([]);
+  const [banner, setBanner] = useState<PlatformBanner | null>(null);
+  const [announcements, setAnnouncements] = useState<PlatformAnnouncement[]>([]);
   const [stats, setStats] = useState<PublicStats | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [sections, setSections] = useState<Record<AdvertType, AdvertSummary[]>>({
+    PRINT_REQUEST: [],
+    MODEL_REQUEST: [],
+    MODEL_FOR_SALE: [],
+    PRINT_FOR_SALE: [],
+  });
+  const [loadingSections, setLoadingSections] = useState(true);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [bannerRes, annRes, statsRes] = await Promise.allSettled([
+        api.platformBanner(),
+        api.platformAnnouncements(),
+        api.stats(),
+      ]);
+
+      if (bannerRes.status === 'fulfilled') setBanner(bannerRes.value);
+      if (annRes.status === 'fulfilled') setAnnouncements(annRes.value);
+      if (statsRes.status === 'fulfilled') setStats(statsRes.value);
+
+      // Load top 15 adverts for each type
+      const types: AdvertType[] = ['PRINT_REQUEST', 'MODEL_REQUEST', 'MODEL_FOR_SALE', 'PRINT_FOR_SALE'];
+      const advertResults = await Promise.allSettled(
+        types.map((type) => api.adverts({ type: [type], size: 15, sort: 'popular' })),
+      );
+
+      const nextSections: Record<AdvertType, AdvertSummary[]> = {
+        PRINT_REQUEST: [],
+        MODEL_REQUEST: [],
+        MODEL_FOR_SALE: [],
+        PRINT_FOR_SALE: [],
+      };
+
+      types.forEach((type, index) => {
+        const res = advertResults[index];
+        if (res.status === 'fulfilled') {
+          nextSections[type] = res.value.content;
+        }
+      });
+
+      setSections(nextSections);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingSections(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const handle = setTimeout(() => setDebounced(query.trim()), 350);
-    return () => clearTimeout(handle);
-  }, [query]);
+    void loadData();
+  }, [loadData]);
 
-  useEffect(() => {
-    api.tags(undefined, 40).then(setTags).catch(() => undefined);
-    api.stats().then(setStats).catch(() => undefined);
-  }, [locale]);
-
-  const params = useMemo<AdvertSearchParams>(() => {
-    const min = toCents(filters.minPrice);
-    const max = toCents(filters.maxPrice);
-    return {
-      q: debounced || undefined,
-      type: filters.types.length ? filters.types : undefined,
-      category: filters.categories.length ? filters.categories : undefined,
-      tag: filters.tags.length ? filters.tags : undefined,
-      minPrice: min,
-      maxPrice: max,
-      city: filters.city.trim() || undefined,
-      postedAfter: filters.postedAfter || undefined,
-      postedBefore: filters.postedBefore || undefined,
-      biddable: filters.biddable || undefined,
-      sort,
-      size: PAGE_SIZE,
-    };
-  }, [debounced, filters, sort]);
-
-  const load = useCallback(
-    async (nextPage: number, append: boolean) => {
-      if (append) setLoadingMore(true);
-      else setLoading(true);
-      setError(null);
-      try {
-        const result = await api.adverts({ ...params, page: nextPage });
-        setTotal(result.totalElements);
-        setPage(result.page);
-        setTotalPages(result.totalPages);
-        setItems((prev) => (append ? [...prev, ...result.content] : result.content));
-      } catch (err) {
-        setError(err instanceof ApiError && err.isNetwork ? t('errors.network') : t('errors.generic'));
-        if (!append) setItems([]);
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [params, t],
-  );
-
-  useEffect(() => {
-    void load(0, false);
-  }, [load]);
-
-  const activeFilterCount =
-    filters.types.length +
-    filters.categories.length +
-    filters.tags.length +
-    (filters.minPrice ? 1 : 0) +
-    (filters.maxPrice ? 1 : 0) +
-    (filters.city ? 1 : 0) +
-    (filters.postedAfter ? 1 : 0) +
-    (filters.postedBefore ? 1 : 0) +
-    (filters.biddable ? 1 : 0);
-
-  const openFilters = () => {
-    setDraft(filters);
-    setFiltersOpen(true);
+  const onRefresh = () => {
+    setRefreshing(true);
+    void loadData();
   };
 
-  const toggleCategory = (category: Category) =>
-    setDraft((d) => ({
-      ...d,
-      categories: d.categories.includes(category)
-        ? d.categories.filter((x) => x !== category)
-        : [...d.categories, category],
-    }));
-
-  const toggleType = (type: AdvertType) =>
-    setDraft((d) => ({
-      ...d,
-      types: d.types.includes(type) ? d.types.filter((x) => x !== type) : [...d.types, type],
-    }));
-
-  const toggleTag = (slug: string) =>
-    setDraft((d) => ({
-      ...d,
-      tags: d.tags.includes(slug) ? d.tags.filter((x) => x !== slug) : [...d.tags, slug],
-    }));
-
-  const sortOptions: { value: AdvertSort; label: string }[] = [
-    { value: 'newest', label: t('marketplace.sortNewest') },
-    { value: 'oldest', label: t('marketplace.sortOldest') },
-    { value: 'views', label: t('marketplace.sortViews') },
-    { value: 'popular', label: t('marketplace.sortPopular') },
-    { value: 'price_asc', label: t('marketplace.sortPriceAsc') },
-    { value: 'price_desc', label: t('marketplace.sortPriceDesc') },
-    { value: 'deadline', label: t('marketplace.sortDeadline') },
+  const SECTIONS_CONFIG: {
+    type: AdvertType;
+    title: string;
+    subtitle: string;
+    icon: IconName;
+  }[] = [
+    {
+      type: 'PRINT_REQUEST',
+      title: t('home.printRequestsTitle'),
+      subtitle: t('home.printRequestsSubtitle'),
+      icon: 'print',
+    },
+    {
+      type: 'MODEL_REQUEST',
+      title: t('home.modelRequestsTitle'),
+      subtitle: t('home.modelRequestsSubtitle'),
+      icon: 'hammer',
+    },
+    {
+      type: 'MODEL_FOR_SALE',
+      title: t('home.modelsForSaleTitle'),
+      subtitle: t('home.modelsForSaleSubtitle'),
+      icon: 'cubes',
+    },
+    {
+      type: 'PRINT_FOR_SALE',
+      title: t('home.printsForSaleTitle'),
+      subtitle: t('home.printsForSaleSubtitle'),
+      icon: 'cart',
+    },
   ];
 
+  const getAnnouncementBadgeTone = (type: string) => {
+    switch (type) {
+      case 'WARNING':
+        return { bg: colors.dangerSoft, fg: colors.danger };
+      case 'EVENT':
+        return { bg: colors.orangeSoft, fg: colors.orangeDarker };
+      case 'UPDATE':
+        return { bg: colors.surfaceAlt, fg: colors.orange };
+      default:
+        return { bg: colors.surfaceAlt, fg: colors.textMuted };
+    }
+  };
+
+  const getAnnouncementIcon = (type: string): IconName => {
+    switch (type) {
+      case 'WARNING':
+        return 'warning';
+      case 'EVENT':
+        return 'calendar';
+      case 'UPDATE':
+        return 'bolt';
+      default:
+        return 'info';
+    }
+  };
+
+  const bannerImgUrl = banner?.imageUrl ? absoluteUrl(banner.imageUrl) : null;
+
   return (
-    <Page refreshing={loading} onRefresh={() => void load(0, false)}>
-      {!user && (
+    <Page refreshing={refreshing} onRefresh={onRefresh}>
+      {/* ----------------- BANNER / HERO SECTION ----------------- */}
+      {banner && banner.enabled ? (
+        <Card
+          padded={false}
+          flat
+          style={{
+            backgroundColor: colors.surface,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: radius.lg,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: isWide && bannerImgUrl ? 'row' : 'column',
+              alignItems: 'stretch',
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
+                padding: isWide ? spacing.xxl : spacing.xl,
+                gap: spacing.md,
+                justifyContent: 'center',
+              }}
+            >
+              {banner.badgeText && (
+                <Row gap={6}>
+                  <Badge
+                    label={banner.badgeText}
+                    tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
+                  />
+                </Row>
+              )}
+              <H1 style={{ fontSize: isWide ? 38 : 26, lineHeight: isWide ? 44 : 32, maxWidth: 640 }}>
+                {banner.title}
+              </H1>
+              {banner.subtitle && (
+                <Body style={{ maxWidth: 580, color: colors.textMuted, fontSize: isWide ? 16 : 14 }}>
+                  {banner.subtitle}
+                </Body>
+              )}
+              <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+                {banner.buttonText && (
+                  <Button
+                    title={banner.buttonText}
+                    icon="arrowRight"
+                    size={isWide ? 'lg' : 'md'}
+                    onPress={() => {
+                      if (banner.linkUrl?.startsWith('http')) {
+                        if (Platform.OS === 'web') window.open(banner.linkUrl, '_blank');
+                      } else {
+                        router.push((banner.linkUrl || '/marketplace') as any);
+                      }
+                    }}
+                  />
+                )}
+                <Button
+                  title={t('home.viewMarketplace')}
+                  icon="layers"
+                  variant={banner.buttonText ? 'outline' : 'primary'}
+                  size={isWide ? 'lg' : 'md'}
+                  onPress={() => router.push('/marketplace')}
+                />
+              </Row>
+            </View>
+
+            {bannerImgUrl && (
+              <View
+                style={{
+                  width: isWide ? 380 : '100%',
+                  height: isWide ? 'auto' : 220,
+                  minHeight: isWide ? 260 : undefined,
+                  backgroundColor: colors.surfaceAlt,
+                }}
+              >
+                <Image
+                  source={{ uri: bannerImgUrl }}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              </View>
+            )}
+          </View>
+        </Card>
+      ) : (
         <Card padded={false} flat style={{ backgroundColor: colors.surface }}>
           <View style={{ padding: isWide ? spacing.xxl : spacing.xl, gap: spacing.md }}>
             <Row gap={6}>
@@ -203,20 +270,20 @@ export default function MarketplaceScreen() {
             <H1 style={{ fontSize: isWide ? 40 : 27, lineHeight: isWide ? 46 : 33, maxWidth: 660 }}>
               {t('marketplace.heroTitle')}
             </H1>
-            <Body style={{ maxWidth: 600, color: colors.textMuted }}>{t('marketplace.heroSubtitle')}</Body>
+            <Body style={{ maxWidth: 600, color: colors.textMuted }}>{t('home.welcomeSubtitle')}</Body>
             <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+              <Button
+                title={t('home.viewMarketplace')}
+                icon="layers"
+                size={isWide ? 'lg' : 'md'}
+                onPress={() => router.push('/marketplace')}
+              />
               <Button
                 title={t('marketplace.heroCtaCreate')}
                 icon="plus"
-                size={isWide ? 'lg' : 'md'}
-                onPress={() => router.push('/create')}
-              />
-              <Button
-                title={t('common.createAccount')}
-                icon="userPlus"
                 variant="outline"
                 size={isWide ? 'lg' : 'md'}
-                onPress={() => router.push('/auth/register')}
+                onPress={() => router.push(user ? '/create' : '/auth/login')}
               />
             </Row>
           </View>
@@ -249,265 +316,161 @@ export default function MarketplaceScreen() {
         </Card>
       )}
 
-      <View style={{ gap: spacing.md }}>
-        <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-          <View style={{ flexGrow: 1, flexBasis: 150 }}>
-            <Input
-              value={query}
-              onChangeText={setQuery}
-              placeholder={t('common.searchPlaceholder')}
-              icon="search"
-              returnKeyType="search"
-            />
+      {/* ----------------- ANNOUNCEMENTS & EVENTS SECTION ----------------- */}
+      {announcements.length > 0 && (
+        <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
+          <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <Row gap={spacing.sm}>
+              <Icon name="bell" size={16} color={colors.orange} />
+              <H2>{t('home.announcements')}</H2>
+            </Row>
+          </Row>
+
+          <View style={{ gap: spacing.md }}>
+            {announcements.map((ann) => (
+              <Card
+                key={ann.id}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: ann.type === 'WARNING' ? colors.danger : colors.border,
+                  padding: spacing.lg,
+                }}
+              >
+                <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: spacing.sm }}>
+                  <Row gap={spacing.sm} style={{ flex: 1, minWidth: 240, alignItems: 'center' }}>
+                    <Icon name={getAnnouncementIcon(ann.type)} size={15} color={colors.orange} />
+                    <H3 style={{ flexShrink: 1 }}>{ann.title}</H3>
+                    <Badge label={ann.type} tone={getAnnouncementBadgeTone(ann.type)} />
+                  </Row>
+                  {ann.eventDate && (
+                    <Row gap={4} style={{ alignItems: 'center' }}>
+                      <Icon name="calendar" size={12} color={colors.textFaint} />
+                      <Muted style={typography.tiny}>
+                        {formatDate(ann.eventDate, locale)}
+                      </Muted>
+                    </Row>
+                  )}
+                </Row>
+
+                <Body style={{ color: colors.textMuted, marginTop: spacing.sm }}>{ann.content}</Body>
+
+                {ann.linkUrl && (
+                  <Row style={{ marginTop: spacing.md }}>
+                    <Button
+                      title={ann.linkText || t('home.readMore')}
+                      icon="arrowRight"
+                      variant="ghost"
+                      size="sm"
+                      onPress={() => {
+                        if (ann.linkUrl?.startsWith('http')) {
+                          if (Platform.OS === 'web') window.open(ann.linkUrl, '_blank');
+                        } else {
+                          router.push((ann.linkUrl || '/') as any);
+                        }
+                      }}
+                    />
+                  </Row>
+                )}
+              </Card>
+            ))}
           </View>
-          <Button
-            title={activeFilterCount ? `${t('common.filters')} · ${activeFilterCount}` : t('common.filters')}
-            icon="filter"
-            variant={activeFilterCount ? 'secondary' : 'outline'}
-            onPress={openFilters}
-            style={{ height: 44 }}
-          />
-          {isWide && (
-            <View style={{ minWidth: 190 }}>
-              <Select
-                value={sort}
-                options={sortOptions}
-                onChange={(value) => setSort(value)}
-                icon="sort"
-                placeholder={t('common.sort')}
-              />
-            </View>
-          )}
-        </Row>
+        </View>
+      )}
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.lg }}
-        >
-          <Chip
-            label={t('common.all')}
-            selected={filters.types.length === 0}
-            onPress={() => setFilters((f) => ({ ...f, types: [] }))}
-          />
-          {ADVERT_TYPES.map((type) => (
-            <Chip
-              key={type}
-              label={t(`advertTypes.${type}`)}
-              selected={filters.types.includes(type)}
-              onPress={() =>
-                setFilters((f) => ({
-                  ...f,
-                  types: f.types.includes(type) ? f.types.filter((x) => x !== type) : [...f.types, type],
-                }))
-              }
-            />
-          ))}
-        </ScrollView>
-
-        {filters.categories.length > 0 && (
-          <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-            {filters.categories.map((category) => (
-              <Chip
-                key={category}
-                label={t(`categories.${category}`)}
-                tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
-                onRemove={() =>
-                  setFilters((f) => ({ ...f, categories: f.categories.filter((x) => x !== category) }))
-                }
-              />
-            ))}
-          </Row>
-        )}
-
-        {filters.tags.length > 0 && (
-          <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-            {filters.tags.map((slug) => (
-              <Chip
-                key={slug}
-                label={tags.find((tag) => tag.slug === slug)?.label ?? slug}
-                tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
-                onRemove={() => setFilters((f) => ({ ...f, tags: f.tags.filter((x) => x !== slug) }))}
-              />
-            ))}
-            <Pressable onPress={() => setFilters(EMPTY_FILTERS)}>
-              <Muted style={{ textDecorationLine: 'underline' }}>{t('common.reset')}</Muted>
-            </Pressable>
-          </Row>
-        )}
-
-        <Row style={{ justifyContent: 'space-between' }}>
-          <Muted>
-            {numberFmt(total, locale)} {t('common.results')}
-          </Muted>
-          {error && <Muted style={{ color: colors.danger }}>{error}</Muted>}
-        </Row>
-      </View>
-
-      {loading ? (
+      {/* ----------------- 4 HORIZONTAL ADVERT SECTIONS ----------------- */}
+      {loadingSections ? (
         <Spinner label={t('common.loading')} />
-      ) : items.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon="search"
-            title={t('common.noResults')}
-            body={t('common.noResultsHint')}
-            action={<Button title={t('common.reset')} variant="outline" onPress={() => setFilters(EMPTY_FILTERS)} />}
-          />
-        </Card>
       ) : (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
-          {items.map((advert) => (
-            <AdvertCard key={advert.id} advert={advert} onChanged={() => void load(0, false)} />
-          ))}
+        <View style={{ gap: spacing.xxl, marginTop: spacing.md }}>
+          {SECTIONS_CONFIG.map((section) => {
+            const items = sections[section.type] || [];
+            const tone = advertTypeColor[section.type];
+
+            return (
+              <View key={section.type} style={{ gap: spacing.md }}>
+                {/* Section Header */}
+                <Row
+                  style={{
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: spacing.sm,
+                  }}
+                >
+                  <View style={{ gap: 2, flex: 1, minWidth: 220 }}>
+                    <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
+                      <View
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: radius.md,
+                          backgroundColor: tone.bg,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Icon name={section.icon} size={13} color={tone.fg} />
+                      </View>
+                      <H2>{section.title}</H2>
+                      <Badge label={`${items.length}`} tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }} />
+                    </Row>
+                    <Muted>{section.subtitle}</Muted>
+                  </View>
+
+                  <Button
+                    title={t('home.viewAll')}
+                    icon="arrowRight"
+                    variant="outline"
+                    size="sm"
+                    onPress={() => router.push(`/marketplace?type=${section.type}` as any)}
+                  />
+                </Row>
+
+                {/* Horizontal Scroll Advert Row */}
+                {items.length === 0 ? (
+                  <Card style={{ padding: spacing.xl }}>
+                    <EmptyState
+                      icon={section.icon}
+                      title={t('home.noAdverts')}
+                      body={section.subtitle}
+                      action={
+                        <Button
+                          title={t('home.postAdvert')}
+                          icon="plus"
+                          size="sm"
+                          onPress={() => router.push(user ? '/create' : '/auth/login')}
+                        />
+                      }
+                    />
+                  </Card>
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{
+                      gap: spacing.lg,
+                      paddingRight: spacing.lg,
+                      paddingVertical: spacing.xs,
+                    }}
+                  >
+                    {items.map((advert) => (
+                      <View
+                        key={advert.id}
+                        style={{
+                          width: isPhone ? 285 : 315,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <AdvertCard advert={advert} onChanged={loadData} />
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
-
-      {!loading && (
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          totalElements={total}
-          onChange={(newPage) => void load(newPage, false)}
-          loading={loading || loadingMore}
-        />
-      )}
-
-      <Sheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title={t('common.filters')} width={560}>
-        <View style={{ gap: spacing.lg }}>
-          {!isWide && (
-            <Select
-              label={t('common.sort')}
-              value={sort}
-              options={sortOptions}
-              onChange={(value) => setSort(value)}
-              icon="sort"
-            />
-          )}
-          <View style={{ gap: spacing.sm }}>
-            <Muted>{t('marketplace.type')}</Muted>
-            <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-              {ADVERT_TYPES.map((type) => (
-                <Chip
-                  key={type}
-                  label={t(`advertTypes.${type}`)}
-                  selected={draft.types.includes(type)}
-                  onPress={() => toggleType(type)}
-                  tone={
-                    draft.types.includes(type)
-                      ? { bg: advertTypeColor[type].fg, fg: colors.white }
-                      : undefined
-                  }
-                />
-              ))}
-            </Row>
-          </View>
-
-          <View style={{ gap: spacing.sm }}>
-            <Muted>{t('marketplace.categories')}</Muted>
-            <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-              {CATEGORIES.map((category) => (
-                <Chip
-                  key={category}
-                  label={t(`categories.${category}`)}
-                  selected={draft.categories.includes(category)}
-                  onPress={() => toggleCategory(category)}
-                />
-              ))}
-            </Row>
-          </View>
-
-          <View style={{ gap: spacing.sm }}>
-            <Muted>{t('marketplace.tags')}</Muted>
-            <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-              {tags.map((tag) => (
-                <Chip
-                  key={tag.id}
-                  label={tag.label}
-                  selected={draft.tags.includes(tag.slug)}
-                  onPress={() => toggleTag(tag.slug)}
-                />
-              ))}
-            </Row>
-          </View>
-
-          <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
-            <View style={{ flexGrow: 1, flexBasis: 120 }}>
-              <Input
-                label={t('marketplace.minPrice')}
-                value={draft.minPrice}
-                onChangeText={(v) => setDraft((d) => ({ ...d, minPrice: v }))}
-                keyboardType="decimal-pad"
-                icon="euro"
-              />
-            </View>
-            <View style={{ flexGrow: 1, flexBasis: 120 }}>
-              <Input
-                label={t('marketplace.maxPrice')}
-                value={draft.maxPrice}
-                onChangeText={(v) => setDraft((d) => ({ ...d, maxPrice: v }))}
-                keyboardType="decimal-pad"
-                icon="euro"
-              />
-            </View>
-            <View style={{ flexGrow: 1, flexBasis: 160 }}>
-              <Input
-                label={t('marketplace.city')}
-                value={draft.city}
-                onChangeText={(v) => setDraft((d) => ({ ...d, city: v }))}
-                icon="location"
-              />
-            </View>
-          </Row>
-
-          <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
-            <View style={{ flexGrow: 1, flexBasis: 160 }}>
-              <Input
-                label={t('marketplace.postedAfter')}
-                value={draft.postedAfter}
-                onChangeText={(v) => setDraft((d) => ({ ...d, postedAfter: v }))}
-                placeholder="2025-01-01"
-                icon="calendar"
-              />
-            </View>
-            <View style={{ flexGrow: 1, flexBasis: 160 }}>
-              <Input
-                label={t('marketplace.postedBefore')}
-                value={draft.postedBefore}
-                onChangeText={(v) => setDraft((d) => ({ ...d, postedBefore: v }))}
-                placeholder="2025-12-31"
-                icon="calendar"
-              />
-            </View>
-          </Row>
-
-          <SwitchRow
-            label={t('marketplace.onlyBiddable')}
-            value={draft.biddable}
-            onValueChange={(v) => setDraft((d) => ({ ...d, biddable: v }))}
-          />
-
-          <Row style={{ justifyContent: 'space-between' }}>
-            <Button
-              title={t('common.reset')}
-              variant="ghost"
-              onPress={() => {
-                setDraft(EMPTY_FILTERS);
-                setFilters(EMPTY_FILTERS);
-                setFiltersOpen(false);
-              }}
-            />
-            <Button
-              title={t('common.apply')}
-              icon="check"
-              onPress={() => {
-                setFilters(draft);
-                setFiltersOpen(false);
-              }}
-            />
-          </Row>
-        </View>
-      </Sheet>
     </Page>
   );
 }

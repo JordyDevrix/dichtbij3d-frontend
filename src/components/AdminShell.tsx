@@ -13,6 +13,8 @@ const TABS: { href: string; labelKey: string; icon: IconName }[] = [
   { href: '/admin/users', labelKey: 'admin.users', icon: 'users' },
   { href: '/admin/adverts', labelKey: 'admin.adverts', icon: 'layers' },
   { href: '/admin/reports', labelKey: 'admin.reports', icon: 'flag' },
+  { href: '/admin/banner', labelKey: 'admin.banner', icon: 'image' },
+  { href: '/admin/announcements', labelKey: 'admin.announcements', icon: 'bell' },
 ];
 
 /** Guards the admin area and renders the shared heading + tab bar. */
