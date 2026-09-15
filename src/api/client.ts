@@ -14,7 +14,20 @@ function configuredUrl(): string {
   const runtime = typeof window !== 'undefined' ? (window as any).__DICHTBIJ3D_API_URL__ : undefined;
   if (typeof runtime === 'string') return runtime.replace(/\/$/, '');
 
-  return (process.env.EXPO_PUBLIC_API_URL || fromExtra || 'http://localhost:8080').replace(/\/$/, '');
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (typeof envUrl === 'string' && envUrl.trim().length > 0) {
+    return envUrl.trim().replace(/\/$/, '');
+  }
+
+  // If running on web in a browser on a remote domain (not local dev), default to same origin ("")
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
+    const host = window.location.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return '';
+    }
+  }
+
+  return (fromExtra || 'http://localhost:8080').replace(/\/$/, '');
 }
 
 /**
