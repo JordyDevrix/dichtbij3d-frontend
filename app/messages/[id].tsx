@@ -14,7 +14,8 @@ import { api, ApiError } from '../../src/api';
 import { absoluteUrl } from '../../src/api/client';
 import type { ChatMessage, Conversation } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
-import { Avatar, Body, Button, Card, EmptyState, Muted, Row, Spinner } from '../../src/components/ui';
+import { Avatar, Badge, Body, Button, Card, EmptyState, IconButton, Muted, Row, Spinner } from '../../src/components/ui';
+import { UserSearchModal } from '../../src/components/UserSearchModal';
 import { useAuth } from '../../src/context/AuthContext';
 import { useI18n } from '../../src/i18n';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
@@ -45,6 +46,7 @@ export default function ConversationScreen() {
   const [missing, setMissing] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [addCollaboratorOpen, setAddCollaboratorOpen] = useState(false);
 
   const listRef = useRef<ScrollView>(null);
   const pinnedToBottom = useRef(true);
@@ -187,6 +189,11 @@ export default function ConversationScreen() {
     );
 
   const peer = conversation?.peer;
+  const isGroup = !!conversation?.isGroup || !!conversation?.title || ((conversation?.participants?.length ?? 0) > 2);
+  const displayTitle = conversation?.title ||
+    (isGroup && conversation?.participants && conversation.participants.length > 0
+      ? conversation.participants.filter((p) => p.id !== user?.id).map((p) => p.displayName).join(', ')
+      : peer?.displayName);
 
   return (
     <KeyboardAvoidingView
@@ -210,6 +217,7 @@ export default function ConversationScreen() {
             alignSelf: 'center',
             paddingHorizontal: spacing.md,
             paddingVertical: spacing.sm,
+            alignItems: 'center',
           }}
         >
           <Pressable
@@ -220,7 +228,32 @@ export default function ConversationScreen() {
           >
             <Icon name="back" size={15} color={colors.textMuted} />
           </Pressable>
-          {peer ? (
+          {isGroup ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.orangeSoft,
+                  borderWidth: 1,
+                  borderColor: colors.orangeBorder,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="users" size={16} color={colors.orange} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Body style={{ fontWeight: '700' }} numberOfLines={1}>
+                  {displayTitle}
+                </Body>
+                <Muted numberOfLines={1} style={{ fontSize: 12 }}>
+                  {conversation?.participants?.length ?? 0} {t('chat.participantsCount')}
+                </Muted>
+              </View>
+            </View>
+          ) : peer ? (
             <Pressable
               onPress={() => router.push(`/user/${peer.id}` as any)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}
@@ -236,6 +269,23 @@ export default function ConversationScreen() {
           ) : (
             <View style={{ flex: 1 }} />
           )}
+
+          {isWide ? (
+            <Button
+              title={t('chat.addCollaborator')}
+              variant="outline"
+              size="sm"
+              icon="userPlus"
+              onPress={() => setAddCollaboratorOpen(true)}
+            />
+          ) : (
+            <IconButton
+              name="userPlus"
+              label={t('chat.addCollaborator')}
+              onPress={() => setAddCollaboratorOpen(true)}
+            />
+          )}
+
           {conversation?.advert && (
             <Button
               title={isWide ? conversation.advert.title : t('chat.about')}
@@ -243,7 +293,7 @@ export default function ConversationScreen() {
               size="sm"
               icon="tag"
               onPress={() => router.push(`/advert/${conversation.advert!.id}` as any)}
-              style={{ maxWidth: 280 }}
+              style={{ maxWidth: 220 }}
             />
           )}
         </Row>
@@ -291,6 +341,7 @@ export default function ConversationScreen() {
                 previous={messages[index - 1]}
                 next={messages[index + 1]}
                 locale={locale}
+                isGroup={isGroup}
                 onDownload={handleDownload}
               />
             ))}
@@ -391,6 +442,21 @@ export default function ConversationScreen() {
           </Pressable>
         </Row>
       </View>
+
+      <UserSearchModal
+        open={addCollaboratorOpen}
+        onClose={() => setAddCollaboratorOpen(false)}
+        mode="add-to-chat"
+        conversationId={typeof id === 'string' ? id : undefined}
+        existingParticipantIds={
+          conversation?.participants?.map((p) => p.id) ||
+          ([conversation?.peer.id].filter(Boolean) as string[])
+        }
+        onParticipantAdded={(updated) => {
+          setConversation(updated);
+          void load(false);
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -414,12 +480,14 @@ function Bubble({
   previous,
   next,
   locale,
+  isGroup,
   onDownload,
 }: {
   message: ChatMessage;
   previous?: ChatMessage;
   next?: ChatMessage;
   locale: string;
+  isGroup?: boolean;
   onDownload?: (url: string, fileName: string) => void;
 }) {
   const { t } = useI18n();
@@ -444,9 +512,9 @@ function Bubble({
     );
 
   const grouped = previous?.senderId === message.senderId && previous?.kind === message.kind;
+  const isMine = message.mine;
 
   if (message.kind === 'FILE') {
-    const isMine = message.mine;
     const fileName = message.fileName || message.body;
     return (
       <View
@@ -455,6 +523,19 @@ function Bubble({
           marginTop: grouped ? 2 : spacing.sm,
         }}
       >
+        {!isMine && !grouped && isGroup && message.sender && (
+          <Row gap={6} style={{ alignItems: 'center', marginBottom: 2, marginLeft: 4 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted }}>
+              {message.sender.displayName}
+            </Text>
+            {message.sender.roles?.includes('MODELLER' as any) && (
+              <Badge label={t('chat.designers')} tone={{ bg: colors.violetSoft, fg: colors.violet }} />
+            )}
+            {message.sender.roles?.includes('PRINTER' as any) && (
+              <Badge label={t('chat.printers')} tone={{ bg: colors.orangeSoft, fg: colors.orangeDark }} />
+            )}
+          </Row>
+        )}
         <View
           style={{
             maxWidth: '82%',
@@ -527,6 +608,19 @@ function Bubble({
         marginTop: grouped ? 2 : spacing.sm,
       }}
     >
+      {!isMine && !grouped && isGroup && message.sender && (
+        <Row gap={6} style={{ alignItems: 'center', marginBottom: 2, marginLeft: 4 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted }}>
+            {message.sender.displayName}
+          </Text>
+          {message.sender.roles?.includes('MODELLER' as any) && (
+            <Badge label={t('chat.designers')} tone={{ bg: colors.violetSoft, fg: colors.violet }} />
+          )}
+          {message.sender.roles?.includes('PRINTER' as any) && (
+            <Badge label={t('chat.printers')} tone={{ bg: colors.orangeSoft, fg: colors.orangeDark }} />
+          )}
+        </Row>
+      )}
       <View
         style={{
           maxWidth: '82%',

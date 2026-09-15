@@ -348,7 +348,10 @@ export interface ConversationAdvert {
 
 export interface Conversation {
   id: string;
+  title?: string | null;
+  isGroup?: boolean;
   peer: PublicUser;
+  participants?: PublicUser[];
   advert: ConversationAdvert | null;
   lastMessage: string | null;
   lastMessageAt: string;
@@ -365,6 +368,7 @@ export interface ChatMessage {
   kind: MessageKind;
   senderId: string;
   mine: boolean;
+  sender?: PublicUser | null;
   fileName?: string | null;
   fileSize?: number | null;
   fileUrl?: string | null;

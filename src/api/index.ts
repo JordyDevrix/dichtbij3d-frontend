@@ -110,6 +110,8 @@ export const api = {
   uploadAvatar: (file: FileLike) =>
     request<UserProfile>('/api/users/me/avatar', { method: 'POST', body: toFormData(file) }),
   publicProfile: (id: string) => request<PublicUser>(`/api/users/${id}`),
+  searchUsers: (query?: { q?: string; role?: Role; page?: number; size?: number }) =>
+    request<PageResponse<PublicUser>>('/api/users', { query, auth: false }),
   blockedUsers: () => request<BlockedUser[]>('/api/users/blocks'),
   blockUser: (id: string, reason?: string) =>
     request<MessageResponse>(`/api/users/${id}/block`, { method: 'POST', body: { reason } }),
@@ -208,8 +210,18 @@ export const api = {
   conversations: (page = 0, size = 30) =>
     request<PageResponse<Conversation>>('/api/conversations', { query: { page, size } }),
   conversation: (id: string) => request<Conversation>(`/api/conversations/${id}`),
-  startConversation: (body: { userId: string; advertId?: string; message?: string }) =>
-    request<Conversation>('/api/conversations', { method: 'POST', body }),
+  startConversation: (body: {
+    userId?: string;
+    userIds?: string[];
+    title?: string;
+    advertId?: string;
+    message?: string;
+  }) => request<Conversation>('/api/conversations', { method: 'POST', body }),
+  addParticipant: (conversationId: string, userId: string) =>
+    request<Conversation>(`/api/conversations/${conversationId}/participants`, {
+      method: 'POST',
+      body: { userId },
+    }),
   chatMessages: (id: string, page = 0, size = 40) =>
     request<PageResponse<ChatMessage>>(`/api/conversations/${id}/messages`, { query: { page, size } }),
   sendChatMessage: (

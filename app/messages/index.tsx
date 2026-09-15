@@ -6,7 +6,8 @@ import { absoluteUrl } from '../../src/api/client';
 import type { Conversation } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
 import { Page } from '../../src/components/Page';
-import { Avatar, Body, Button, Card, EmptyState, H1, Muted, Pagination, Row, Spinner } from '../../src/components/ui';
+import { Avatar, Badge, Body, Button, Card, EmptyState, H1, Muted, Pagination, Row, Spinner } from '../../src/components/ui';
+import { UserSearchModal } from '../../src/components/UserSearchModal';
 import { useAuth } from '../../src/context/AuthContext';
 import { useI18n } from '../../src/i18n';
 import { colors, radius, spacing } from '../../src/theme/theme';
@@ -21,6 +22,7 @@ export default function ConversationsScreen() {
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const load = useCallback(async (targetPage = page) => {
     if (!user) {
@@ -75,16 +77,35 @@ export default function ConversationsScreen() {
 
   return (
     <Page maxWidth={760} refreshing={loading} onRefresh={() => void load()}>
-      <View style={{ gap: 4 }}>
-        <H1>{t('chat.title')}</H1>
-        <Muted>{t('chat.subtitle')}</Muted>
-      </View>
+      <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }} gap={spacing.md}>
+        <View style={{ gap: 4, flex: 1 }}>
+          <H1>{t('chat.title')}</H1>
+          <Muted>{t('chat.subtitle')}</Muted>
+        </View>
+        <Button
+          title={t('chat.newChat')}
+          icon="plus"
+          size="sm"
+          onPress={() => setSearchModalOpen(true)}
+        />
+      </Row>
 
       {loading ? (
         <Spinner />
       ) : items.length === 0 ? (
         <Card>
-          <EmptyState icon="envelope" title={t('chat.empty')} body={t('chat.emptyBody')} />
+          <EmptyState
+            icon="envelope"
+            title={t('chat.empty')}
+            body={t('chat.emptyBody')}
+            action={
+              <Button
+                title={t('chat.collaborate')}
+                icon="users"
+                onPress={() => setSearchModalOpen(true)}
+              />
+            }
+          />
         </Card>
       ) : (
         <>
@@ -108,6 +129,13 @@ export default function ConversationsScreen() {
           />
         </>
       )}
+
+      <UserSearchModal
+        open={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        mode="new-chat"
+        onChatCreated={() => void load(0)}
+      />
     </Page>
   );
 }
@@ -123,8 +151,16 @@ function ConversationRow({
   onPress: () => void;
   timeLabel: string;
 }) {
+  const { t } = useI18n();
   const [hovered, setHovered] = useState(false);
   const unread = conversation.unreadCount > 0;
+  const isGroup = !!conversation.isGroup || !!conversation.title || (conversation.participants && conversation.participants.length > 2);
+
+  const displayTitle = conversation.title ||
+    (isGroup && conversation.participants && conversation.participants.length > 0
+      ? conversation.participants.map((p) => p.displayName).join(', ')
+      : conversation.peer.displayName);
+
   return (
     <Pressable
       onPress={onPress}
@@ -140,12 +176,42 @@ function ConversationRow({
         backgroundColor: hovered ? colors.surfaceAlt : 'transparent',
       }}
     >
-      <Avatar name={conversation.peer.displayName} uri={absoluteUrl(conversation.peer.avatarUrl)} size={42} />
+      {isGroup ? (
+        <View
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: radius.pill,
+            backgroundColor: colors.orangeSoft,
+            borderWidth: 1,
+            borderColor: colors.orangeBorder,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon name="users" size={17} color={colors.orange} />
+        </View>
+      ) : (
+        <Avatar name={conversation.peer.displayName} uri={absoluteUrl(conversation.peer.avatarUrl)} size={42} />
+      )}
+
       <View style={{ flex: 1, gap: 2 }}>
         <Row style={{ justifyContent: 'space-between' }} gap={spacing.sm}>
-          <Body style={{ fontWeight: unread ? '700' : '600', flex: 1 }} numberOfLines={1}>
-            {conversation.peer.displayName}
-          </Body>
+          <Row gap={spacing.xs} style={{ flex: 1, alignItems: 'center' }}>
+            <Body style={{ fontWeight: unread ? '700' : '600', flexShrink: 1 }} numberOfLines={1}>
+              {displayTitle}
+            </Body>
+            {isGroup && (
+              <Badge
+                label={
+                  conversation.participants && conversation.participants.length > 0
+                    ? `${conversation.participants.length} ${t('chat.participantsCount')}`
+                    : t('chat.collaborators')
+                }
+                tone={{ bg: colors.orangeSoft, fg: colors.orangeDark }}
+              />
+            )}
+          </Row>
           <Muted>{timeLabel}</Muted>
         </Row>
         {conversation.advert && (
