@@ -482,6 +482,8 @@ export default function ConversationScreen() {
                 borderWidth: 1,
                 borderColor: colors.border,
                 opacity: uploadingFile ? 0.6 : 1,
+                flexShrink: 0,
+                ...(Platform.OS === 'web' ? ({ boxSizing: 'border-box' } as any) : null),
               }}
             >
               {uploadingFile ? (
@@ -496,6 +498,7 @@ export default function ConversationScreen() {
               placeholder={t('chat.placeholder')}
               placeholderTextColor={colors.textFaint}
               multiline
+              numberOfLines={1}
               maxLength={4000}
               onSubmitEditing={Platform.OS === 'web' ? undefined : () => void send()}
               onKeyPress={(event: any) => {
@@ -510,8 +513,8 @@ export default function ConversationScreen() {
                 minHeight: 44,
                 maxHeight: 140,
                 paddingHorizontal: spacing.md,
-                paddingTop: 11,
-                paddingBottom: 11,
+                paddingTop: 10,
+                paddingBottom: 10,
                 lineHeight: 20,
                 borderRadius: radius.lg,
                 borderWidth: 1,
@@ -519,7 +522,15 @@ export default function ConversationScreen() {
                 backgroundColor: colors.surfaceAlt,
                 color: colors.ink,
                 fontSize: 14,
-                ...(Platform.OS === 'web' ? ({ outlineStyle: 'none', boxSizing: 'border-box' } as any) : null),
+                textAlignVertical: 'center',
+                ...(Platform.OS === 'web'
+                  ? ({
+                      outlineStyle: 'none',
+                      boxSizing: 'border-box',
+                      resize: 'none',
+                      height: draft.includes('\n') ? undefined : 44,
+                    } as any)
+                  : null),
               }}
             />
             <Pressable
@@ -534,8 +545,10 @@ export default function ConversationScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: draft.trim() ? colors.orange : colors.surfaceAlt,
-                borderWidth: draft.trim() ? 0 : 1,
-                borderColor: colors.border,
+                borderWidth: 1,
+                borderColor: draft.trim() ? colors.orange : colors.border,
+                flexShrink: 0,
+                ...(Platform.OS === 'web' ? ({ boxSizing: 'border-box' } as any) : null),
               }}
             >
               <Icon name="send" size={15} color={draft.trim() ? colors.white : colors.textFaint} />
