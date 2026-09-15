@@ -16,6 +16,7 @@ import { useHeaderScroll } from '../context/HeaderScrollContext';
 
 export function Page({
   children,
+  hero,
   maxWidth = layout.maxWidth,
   refreshing,
   onRefresh,
@@ -24,6 +25,7 @@ export function Page({
   hideFooter = false,
 }: {
   children: React.ReactNode;
+  hero?: React.ReactNode;
   maxWidth?: number;
   refreshing?: boolean;
   onRefresh?: () => void;
@@ -63,21 +65,24 @@ export function Page({
         ) : undefined
       }
     >
-      <View
-        style={[
-          {
-            width: '100%',
-            maxWidth,
-            alignSelf: 'center',
-            paddingHorizontal: gutter,
-            paddingTop: gutter,
-            gap: spacing.lg,
-            flexGrow: 1,
-          },
-          contentStyle,
-        ]}
-      >
-        {children}
+      <View style={{ width: '100%', flexGrow: 1 }}>
+        {hero}
+        <View
+          style={[
+            {
+              width: '100%',
+              maxWidth,
+              alignSelf: 'center',
+              paddingHorizontal: gutter,
+              paddingTop: hero ? spacing.xl : gutter,
+              gap: spacing.lg,
+              flexGrow: 1,
+            },
+            contentStyle,
+          ]}
+        >
+          {children}
+        </View>
       </View>
       {!hideFooter && <Footer />}
     </ScrollView>

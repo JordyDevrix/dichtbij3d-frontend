@@ -28,7 +28,7 @@ import {
 } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
 import { useI18n } from '../src/i18n';
-import { advertTypeColor, colors, radius, shadow, spacing, typography } from '../src/theme/theme';
+import { advertTypeColor, colors, layout, radius, shadow, spacing, typography } from '../src/theme/theme';
 import { formatDate, numberFmt } from '../src/utils/format';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
 
@@ -170,31 +170,35 @@ export default function HomeScreen() {
 
   const bannerImgUrl = banner?.imageUrl ? absoluteUrl(banner.imageUrl) : null;
 
-  return (
-    <Page refreshing={refreshing} onRefresh={onRefresh}>
-      {/* ----------------- BANNER / HERO SECTION ----------------- */}
-      {banner && banner.enabled ? (
-        <Card
-          padded={false}
-          flat
-          style={{
-            backgroundColor: colors.surface,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: radius.lg,
-          }}
-        >
+  const heroContent = (
+    <View
+      style={{
+        width: '100%',
+        backgroundColor: colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+      }}
+    >
+      <View
+        style={{
+          width: '100%',
+          maxWidth: layout.maxWidth,
+          alignSelf: 'center',
+          paddingHorizontal: isWide ? spacing.xxl : spacing.lg,
+          paddingVertical: isWide ? spacing.xxl : spacing.xl,
+        }}
+      >
+        {banner && banner.enabled ? (
           <View
             style={{
               flexDirection: isWide && bannerImgUrl ? 'row' : 'column',
-              alignItems: 'stretch',
+              alignItems: isWide && bannerImgUrl ? 'center' : 'stretch',
+              gap: isWide ? spacing.xxl : spacing.xl,
             }}
           >
             <View
               style={{
                 flex: 1,
-                padding: isWide ? spacing.xxl : spacing.xl,
                 gap: spacing.md,
                 justifyContent: 'center',
               }}
@@ -243,10 +247,13 @@ export default function HomeScreen() {
             {bannerImgUrl && (
               <View
                 style={{
-                  width: isWide ? 380 : '100%',
-                  height: isWide ? 'auto' : 220,
-                  minHeight: isWide ? 260 : undefined,
+                  width: isWide ? 420 : '100%',
+                  height: isWide ? 260 : 220,
+                  borderRadius: radius.xl,
+                  overflow: 'hidden',
                   backgroundColor: colors.surfaceAlt,
+                  borderWidth: 1,
+                  borderColor: colors.border,
                 }}
               >
                 <Image
@@ -257,10 +264,8 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-        </Card>
-      ) : (
-        <Card padded={false} flat style={{ backgroundColor: colors.surface }}>
-          <View style={{ padding: isWide ? spacing.xxl : spacing.xl, gap: spacing.md }}>
+        ) : (
+          <View style={{ gap: spacing.md }}>
             <Row gap={6}>
               <Icon name="bolt" size={11} color={colors.orange} />
               <Body style={{ ...typography.tiny, color: colors.orange, textTransform: 'uppercase' }}>
@@ -287,16 +292,32 @@ export default function HomeScreen() {
               />
             </Row>
           </View>
-          {stats && (
+        )}
+      </View>
+
+      {stats && (
+        <View
+          style={{
+            width: '100%',
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            backgroundColor: colors.surfaceAlt,
+          }}
+        >
+          <View
+            style={{
+              width: '100%',
+              maxWidth: layout.maxWidth,
+              alignSelf: 'center',
+              paddingHorizontal: isWide ? spacing.xxl : spacing.lg,
+              paddingVertical: spacing.md,
+            }}
+          >
             <Row
               style={{
-                paddingHorizontal: isWide ? spacing.xxl : spacing.xl,
-                paddingVertical: spacing.lg,
                 flexWrap: 'wrap',
-                gap: spacing.xl,
-                borderTopWidth: 1,
-                borderTopColor: colors.border,
-                backgroundColor: colors.surfaceAlt,
+                gap: isWide ? spacing.xl : spacing.md,
+                justifyContent: isWide ? 'flex-start' : 'space-between',
               }}
             >
               {[
@@ -305,17 +326,21 @@ export default function HomeScreen() {
                 { icon: 'cubes' as const, value: stats.models, label: t('marketplace.statModels') },
                 { icon: 'eye' as const, value: stats.views, label: t('marketplace.statViews') },
               ].map((item) => (
-                <Row key={item.label} gap={spacing.sm}>
+                <Row key={item.label} gap={spacing.xs} style={{ alignItems: 'center' }}>
                   <Icon name={item.icon} size={13} color={colors.orange} />
                   <Body style={{ fontWeight: '700', color: colors.ink }}>{numberFmt(item.value, locale)}</Body>
-                  <Muted>{item.label}</Muted>
+                  <Muted style={typography.tiny}>{item.label}</Muted>
                 </Row>
               ))}
             </Row>
-          )}
-        </Card>
+          </View>
+        </View>
       )}
+    </View>
+  );
 
+  return (
+    <Page refreshing={refreshing} onRefresh={onRefresh} hero={heroContent}>
       {/* ----------------- ANNOUNCEMENTS & EVENTS SECTION ----------------- */}
       {announcements.length > 0 && (
         <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
