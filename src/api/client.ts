@@ -102,11 +102,15 @@ export async function loadTokens() {
 }
 
 export async function saveTokens(auth: AuthResponse) {
-  accessToken = auth.accessToken ?? null;
-  refreshToken = auth.refreshToken ?? null;
+  if (auth.accessToken !== undefined && auth.accessToken !== null) {
+    accessToken = auth.accessToken;
+    await setItem(StorageKeys.accessToken, accessToken);
+  }
+  if (auth.refreshToken !== undefined && auth.refreshToken !== null) {
+    refreshToken = auth.refreshToken;
+    await setItem(StorageKeys.refreshToken, refreshToken);
+  }
   tokensPromise = Promise.resolve({ accessToken, refreshToken });
-  if (accessToken) await setItem(StorageKeys.accessToken, accessToken);
-  if (refreshToken) await setItem(StorageKeys.refreshToken, refreshToken);
 }
 
 export async function clearTokens() {

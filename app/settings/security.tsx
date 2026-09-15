@@ -46,6 +46,8 @@ export default function SecurityScreen() {
 
   const [emailSetupStep, setEmailSetupStep] = useState(false);
   const [emailCode, setEmailCode] = useState('');
+  const [emailDisableStep, setEmailDisableStep] = useState(false);
+  const [emailDisableCode, setEmailDisableCode] = useState('');
 
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [passkeyLabel, setPasskeyLabel] = useState('');
@@ -277,21 +279,80 @@ export default function SecurityScreen() {
         <Muted>{t('security.emailMfaHelp')}</Muted>
 
         {user.emailMfaEnabled ? (
-          <View style={{ alignItems: isWide ? 'flex-start' : 'stretch' }}>
-            <Button
-              title={t('security.disableEmailMfa')}
-              icon="ban"
-              variant="danger"
-              loading={busy}
-              onPress={() =>
-                wrap(async () => {
-                  await api.emailMfaDisable();
-                  await refreshProfile();
-                  toast.success(t('security.emailMfaDisabled'));
-                })
-              }
-            />
-          </View>
+          emailDisableStep ? (
+            <View style={{ gap: spacing.md }}>
+              <Muted>{t('security.emailMfaCodeSent')}</Muted>
+              <View
+                style={{
+                  flexDirection: isWide ? 'row' : 'column',
+                  gap: spacing.md,
+                  alignItems: isWide ? 'flex-end' : 'stretch',
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Input
+                    label={t('security.codeFromEmail')}
+                    value={emailDisableCode}
+                    onChangeText={setEmailDisableCode}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    icon="shield"
+                  />
+                </View>
+                <Button
+                  title={t('security.disableEmailMfa')}
+                  icon="ban"
+                  variant="danger"
+                  loading={busy}
+                  onPress={() =>
+                    wrap(async () => {
+                      await api.emailMfaDisable({ code: emailDisableCode.trim() });
+                      setEmailDisableCode('');
+                      setEmailDisableStep(false);
+                      await refreshProfile();
+                      toast.success(t('security.emailMfaDisabled'));
+                    })
+                  }
+                />
+                <Button
+                  title={t('security.resendEmailCode')}
+                  icon="envelope"
+                  variant="outline"
+                  loading={busy}
+                  onPress={() =>
+                    wrap(async () => {
+                      await api.emailMfaSendDisableCode();
+                      toast.success(t('security.emailCodeResent'));
+                    })
+                  }
+                />
+                <Button
+                  title={t('common.cancel')}
+                  variant="ghost"
+                  onPress={() => {
+                    setEmailDisableStep(false);
+                    setEmailDisableCode('');
+                  }}
+                />
+              </View>
+            </View>
+          ) : (
+            <View style={{ alignItems: isWide ? 'flex-start' : 'stretch' }}>
+              <Button
+                title={t('security.disableEmailMfa')}
+                icon="ban"
+                variant="danger"
+                loading={busy}
+                onPress={() =>
+                  wrap(async () => {
+                    await api.emailMfaSendDisableCode();
+                    setEmailDisableStep(true);
+                    toast.info(t('security.emailMfaCodeSent'));
+                  })
+                }
+              />
+            </View>
+          )
         ) : emailSetupStep ? (
           <View style={{ gap: spacing.md }}>
             <Muted>{t('security.emailMfaCodeSent')}</Muted>

@@ -88,6 +88,8 @@ export const api = {
     request<MessageResponse>('/api/auth/mfa/totp/disable', { method: 'POST', body: { code } }),
 
   emailMfaSetup: () => request<MessageResponse>('/api/auth/mfa/email/setup', { method: 'POST' }),
+  emailMfaSendDisableCode: () =>
+    request<MessageResponse>('/api/auth/mfa/email/disable/send', { method: 'POST' }),
   emailMfaEnable: (code: string) =>
     request<MessageResponse>('/api/auth/mfa/email/enable', { method: 'POST', body: { code } }),
   emailMfaDisable: (body?: { code?: string; password?: string }) =>
