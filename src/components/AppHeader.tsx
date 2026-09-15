@@ -174,7 +174,7 @@ export function AppHeader() {
   const { user, isAdmin, unreadCount, unreadMessages, logout } = useAuth();
   const { isWide } = useBreakpoint();
   const { scheme } = useTheme();
-  const { isScrolled } = useHeaderScroll();
+  const { isScrolled, setHeaderHeight } = useHeaderScroll();
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -187,6 +187,12 @@ export function AppHeader() {
     <BlurView
       intensity={isScrolled ? 80 : 0}
       tint={scheme === 'dark' ? 'dark' : 'light'}
+      onLayout={(e) => {
+        const height = e.nativeEvent.layout.height;
+        if (height > 0) {
+          setHeaderHeight(height);
+        }
+      }}
       style={[
         {
           position: 'absolute',

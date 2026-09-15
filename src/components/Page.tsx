@@ -35,9 +35,9 @@ export function Page({
 }) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { onScrollY } = useHeaderScroll();
+  const { onScrollY, headerHeight: contextHeaderHeight } = useHeaderScroll();
   const gutter = width >= 900 ? spacing.xl : spacing.lg;
-  const headerHeight = HEADER_HEIGHT + insets.top;
+  const headerHeight = contextHeaderHeight > 0 ? contextHeaderHeight : HEADER_HEIGHT + insets.top;
 
   return (
     <ScrollView

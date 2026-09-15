@@ -25,6 +25,7 @@ import { formatDateTime } from '../../src/utils/format';
 import { pickAndUploadFiles } from '../../src/utils/upload';
 import { downloadFile } from '../../src/utils/download';
 import { useToast } from '../../src/context/ToastContext';
+import { useHeaderScroll } from '../../src/context/HeaderScrollContext';
 
 const PAGE_SIZE = 40;
 const POLL_MS = 6000;
@@ -36,6 +37,8 @@ export default function ConversationScreen() {
   const { t, locale } = useI18n();
   const { isWide } = useBreakpoint();
   const { user, booting, refreshUnread } = useAuth();
+  const { headerHeight: contextHeaderHeight } = useHeaderScroll();
+  const headerHeight = contextHeaderHeight > 0 ? contextHeaderHeight : insets.top + 58;
 
   const toast = useToast();
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -228,9 +231,9 @@ export default function ConversationScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + 58 }}
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: headerHeight }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={insets.top + 58}
+      keyboardVerticalOffset={headerHeight}
     >
       {/* ----------------------------------------------------------- thread header */}
       <View

@@ -5,17 +5,22 @@ import { Platform } from 'react-native';
 interface HeaderScrollContextValue {
   isScrolled: boolean;
   onScrollY: (y: number) => void;
+  headerHeight: number;
+  setHeaderHeight: (h: number) => void;
 }
 
 const HeaderScrollContext = createContext<HeaderScrollContextValue>({
   isScrolled: false,
   onScrollY: () => {},
+  headerHeight: 0,
+  setHeaderHeight: () => {},
 });
 
 export const SCROLL_THRESHOLD = 15;
 
 export function HeaderScrollProvider({ children }: { children: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [headerHeight, setHeaderHeightState] = useState(0);
   const isScrolledRef = useRef(false);
   const pathname = usePathname();
 
@@ -33,6 +38,11 @@ export function HeaderScrollProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
+  const setHeaderHeight = useCallback((h: number) => {
+    if (h <= 0) return;
+    setHeaderHeightState((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
+  }, []);
+
   // Web window scroll listener fallback
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
@@ -44,7 +54,10 @@ export function HeaderScrollProvider({ children }: { children: React.ReactNode }
     return () => window.removeEventListener('scroll', handleScroll);
   }, [onScrollY]);
 
-  const value = useMemo(() => ({ isScrolled, onScrollY }), [isScrolled, onScrollY]);
+  const value = useMemo(
+    () => ({ isScrolled, onScrollY, headerHeight, setHeaderHeight }),
+    [isScrolled, onScrollY, headerHeight, setHeaderHeight],
+  );
 
   return <HeaderScrollContext.Provider value={value}>{children}</HeaderScrollContext.Provider>;
 }
@@ -52,3 +65,4 @@ export function HeaderScrollProvider({ children }: { children: React.ReactNode }
 export function useHeaderScroll() {
   return useContext(HeaderScrollContext);
 }
+
