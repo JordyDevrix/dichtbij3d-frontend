@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Image, Platform, Pressable, ScrollView, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { api } from '../src/api';
 import { absoluteUrl } from '../src/api/client';
@@ -32,23 +31,6 @@ import { useI18n } from '../src/i18n';
 import { advertTypeColor, colors, layout, radius, shadow, spacing, typography } from '../src/theme/theme';
 import { formatDate, numberFmt } from '../src/utils/format';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
-
-function hexToRgba(hex: string, alpha: number): string {
-  const clean = hex.replace('#', '');
-  if (clean.length === 3) {
-    const r = parseInt(clean[0] + clean[0], 16);
-    const g = parseInt(clean[1] + clean[1], 16);
-    const b = parseInt(clean[2] + clean[2], 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-  if (clean.length === 6) {
-    const r = parseInt(clean.substring(0, 2), 16);
-    const g = parseInt(clean.substring(2, 4), 16);
-    const b = parseInt(clean.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-  return hex;
-}
 
 interface SectionData {
   type: AdvertType;
@@ -197,82 +179,130 @@ export default function HomeScreen() {
         borderBottomColor: colors.border,
       }}
     >
-      {/* Centered Hero Area with integrated background image & text */}
-      <View
-        style={{
-          width: '100%',
-          maxWidth: layout.maxWidth,
-          alignSelf: 'center',
-          position: 'relative',
-          overflow: 'hidden',
-          minHeight: isWide ? 340 : undefined,
-          justifyContent: 'center',
-        }}
-      >
-        {/* Background Banner Image with Gradient Fade-Out */}
-        {banner && banner.enabled && bannerImgUrl && (
+      {banner && banner.enabled && bannerImgUrl ? (
+        isWide ? (
+          /* ---------------- DESKTOP & ULTRAWIDE HERO BANNER ---------------- */
           <View
             style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              right: 0,
-              width: isWide ? '60%' : '100%',
-              zIndex: 0,
+              width: '100%',
+              height: 400,
+              position: 'relative',
+              backgroundColor: colors.surfaceAlt,
+              overflow: 'hidden',
             }}
-            pointerEvents="none"
           >
+            {/* 100% full-width centered background image (true aspect ratio, NO dark filters) */}
             <Image
               source={{ uri: bannerImgUrl }}
-              style={{ width: '100%', height: '100%' }}
-              resizeMode="cover"
-            />
-            <LinearGradient
-              colors={
-                isWide
-                  ? [
-                      hexToRgba(colors.surface, 1),
-                      hexToRgba(colors.surface, 0.96),
-                      hexToRgba(colors.surface, 0.65),
-                      hexToRgba(colors.surface, 0.15),
-                      hexToRgba(colors.surface, 0),
-                    ]
-                  : [
-                      hexToRgba(colors.surface, 0.96),
-                      hexToRgba(colors.surface, 0.9),
-                      hexToRgba(colors.surface, 0.7),
-                    ]
-              }
-              locations={isWide ? [0, 0.25, 0.55, 0.8, 1] : [0, 0.45, 1]}
-              start={{ x: 0, y: 0 }}
-              end={isWide ? { x: 1, y: 0 } : { x: 0, y: 1 }}
               style={{
                 position: 'absolute',
                 top: 0,
                 left: 0,
                 right: 0,
                 bottom: 0,
+                width: '100%',
+                height: '100%',
               }}
+              resizeMode="cover"
             />
-          </View>
-        )}
 
-        {/* Foreground Hero Content */}
-        <View
-          style={{
-            width: '100%',
-            paddingHorizontal: isWide ? spacing.xxl : spacing.lg,
-            paddingVertical: isWide ? 64 : 40,
-            position: 'relative',
-            zIndex: 1,
-          }}
-        >
-          {banner && banner.enabled ? (
+            {/* Centered content grid with floating card */}
             <View
               style={{
-                maxWidth: isWide ? 580 : '100%',
-                gap: spacing.lg,
+                width: '100%',
+                maxWidth: layout.maxWidth,
+                height: '100%',
+                alignSelf: 'center',
+                paddingHorizontal: spacing.xxl,
                 justifyContent: 'center',
+                alignItems: 'flex-start',
+                position: 'relative',
+                zIndex: 2,
+              }}
+            >
+              <View
+                style={[
+                  {
+                    maxWidth: 520,
+                    width: '100%',
+                    backgroundColor: colors.surface,
+                    borderRadius: radius.xl,
+                    padding: spacing.xxl,
+                    gap: spacing.lg,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  },
+                  shadow.raised,
+                ]}
+              >
+                {banner.badgeText && (
+                  <Row gap={6}>
+                    <Badge
+                      label={banner.badgeText}
+                      tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
+                    />
+                  </Row>
+                )}
+                <H1 style={{ fontSize: 32, lineHeight: 38 }}>
+                  {banner.title}
+                </H1>
+                {banner.subtitle && (
+                  <Body style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                    {banner.subtitle}
+                  </Body>
+                )}
+                <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+                  {banner.buttonText && (
+                    <Button
+                      title={banner.buttonText}
+                      icon="arrowRight"
+                      size="md"
+                      onPress={() => {
+                        if (banner.linkUrl?.startsWith('http')) {
+                          if (Platform.OS === 'web') window.open(banner.linkUrl, '_blank');
+                        } else {
+                          router.push((banner.linkUrl || '/marketplace') as any);
+                        }
+                      }}
+                    />
+                  )}
+                  <Button
+                    title={t('home.viewMarketplace')}
+                    icon="layers"
+                    variant={banner.buttonText ? 'outline' : 'primary'}
+                    size="md"
+                    onPress={() => router.push('/marketplace')}
+                  />
+                </Row>
+              </View>
+            </View>
+          </View>
+        ) : (
+          /* ---------------- MOBILE & PHONE HERO BANNER ---------------- */
+          <View style={{ width: '100%' }}>
+            {/* Top Image: clean 16:9 aspect ratio, edge-to-edge full width, no filter */}
+            <View
+              style={{
+                width: '100%',
+                aspectRatio: 16 / 9,
+                backgroundColor: colors.surfaceAlt,
+                overflow: 'hidden',
+              }}
+            >
+              <Image
+                source={{ uri: bannerImgUrl }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+              />
+            </View>
+
+            {/* Bottom Text Content under the image */}
+            <View
+              style={{
+                paddingHorizontal: spacing.lg,
+                paddingVertical: spacing.xl,
+                gap: spacing.md,
+                backgroundColor: colors.surface,
               }}
             >
               {banner.badgeText && (
@@ -283,20 +313,20 @@ export default function HomeScreen() {
                   />
                 </Row>
               )}
-              <H1 style={{ fontSize: isWide ? 40 : 26, lineHeight: isWide ? 48 : 34, maxWidth: 560 }}>
+              <H1 style={{ fontSize: 24, lineHeight: 30 }}>
                 {banner.title}
               </H1>
               {banner.subtitle && (
-                <Body style={{ maxWidth: 540, color: colors.textMuted, fontSize: isWide ? 16 : 14, lineHeight: isWide ? 24 : 20 }}>
+                <Body style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
                   {banner.subtitle}
                 </Body>
               )}
-              <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+              <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
                 {banner.buttonText && (
                   <Button
                     title={banner.buttonText}
                     icon="arrowRight"
-                    size={isWide ? 'lg' : 'md'}
+                    size="md"
                     onPress={() => {
                       if (banner.linkUrl?.startsWith('http')) {
                         if (Platform.OS === 'web') window.open(banner.linkUrl, '_blank');
@@ -310,44 +340,108 @@ export default function HomeScreen() {
                   title={t('home.viewMarketplace')}
                   icon="layers"
                   variant={banner.buttonText ? 'outline' : 'primary'}
-                  size={isWide ? 'lg' : 'md'}
+                  size="md"
                   onPress={() => router.push('/marketplace')}
                 />
               </Row>
             </View>
-          ) : (
-            <View style={{ gap: spacing.lg, maxWidth: isWide ? 640 : '100%' }}>
+          </View>
+        )
+      ) : banner && banner.enabled && !bannerImgUrl ? (
+        /* ---------------- CUSTOM BANNER (NO IMAGE) ---------------- */
+        <View
+          style={{
+            width: '100%',
+            maxWidth: layout.maxWidth,
+            alignSelf: 'center',
+            paddingHorizontal: isWide ? spacing.xxl : spacing.lg,
+            paddingVertical: isWide ? 56 : 36,
+          }}
+        >
+          <View style={{ maxWidth: 660, gap: spacing.lg }}>
+            {banner.badgeText && (
               <Row gap={6}>
-                <Icon name="bolt" size={11} color={colors.orange} />
-                <Body style={{ ...typography.tiny, color: colors.orange, textTransform: 'uppercase' }}>
-                  {t('common.tagline')}
-                </Body>
+                <Badge
+                  label={banner.badgeText}
+                  tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
+                />
               </Row>
-              <H1 style={{ fontSize: isWide ? 42 : 28, lineHeight: isWide ? 50 : 36, maxWidth: 640 }}>
-                {t('marketplace.heroTitle')}
-              </H1>
-              <Body style={{ maxWidth: 600, color: colors.textMuted, fontSize: isWide ? 16 : 15, lineHeight: isWide ? 24 : 22 }}>
-                {t('home.welcomeSubtitle')}
+            )}
+            <H1 style={{ fontSize: isWide ? 40 : 26, lineHeight: isWide ? 48 : 34 }}>
+              {banner.title}
+            </H1>
+            {banner.subtitle && (
+              <Body style={{ maxWidth: 600, color: colors.textMuted, fontSize: isWide ? 16 : 14, lineHeight: isWide ? 24 : 20 }}>
+                {banner.subtitle}
               </Body>
-              <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+            )}
+            <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+              {banner.buttonText && (
                 <Button
-                  title={t('home.viewMarketplace')}
-                  icon="layers"
+                  title={banner.buttonText}
+                  icon="arrowRight"
                   size={isWide ? 'lg' : 'md'}
-                  onPress={() => router.push('/marketplace')}
+                  onPress={() => {
+                    if (banner.linkUrl?.startsWith('http')) {
+                      if (Platform.OS === 'web') window.open(banner.linkUrl, '_blank');
+                    } else {
+                      router.push((banner.linkUrl || '/marketplace') as any);
+                    }
+                  }}
                 />
-                <Button
-                  title={t('marketplace.heroCtaCreate')}
-                  icon="plus"
-                  variant="outline"
-                  size={isWide ? 'lg' : 'md'}
-                  onPress={() => router.push(user ? '/create' : '/auth/login')}
-                />
-              </Row>
-            </View>
-          )}
+              )}
+              <Button
+                title={t('home.viewMarketplace')}
+                icon="layers"
+                variant={banner.buttonText ? 'outline' : 'primary'}
+                size={isWide ? 'lg' : 'md'}
+                onPress={() => router.push('/marketplace')}
+              />
+            </Row>
+          </View>
         </View>
-      </View>
+      ) : (
+        /* ---------------- DEFAULT HERO (NO BANNER) ---------------- */
+        <View
+          style={{
+            width: '100%',
+            maxWidth: layout.maxWidth,
+            alignSelf: 'center',
+            paddingHorizontal: isWide ? spacing.xxl : spacing.lg,
+            paddingVertical: isWide ? 56 : 36,
+          }}
+        >
+          <View style={{ gap: spacing.lg, maxWidth: 680 }}>
+            <Row gap={6}>
+              <Icon name="bolt" size={11} color={colors.orange} />
+              <Body style={{ ...typography.tiny, color: colors.orange, textTransform: 'uppercase' }}>
+                {t('common.tagline')}
+              </Body>
+            </Row>
+            <H1 style={{ fontSize: isWide ? 42 : 28, lineHeight: isWide ? 50 : 36, maxWidth: 660 }}>
+              {t('marketplace.heroTitle')}
+            </H1>
+            <Body style={{ maxWidth: 600, color: colors.textMuted, fontSize: isWide ? 16 : 15, lineHeight: isWide ? 24 : 22 }}>
+              {t('home.welcomeSubtitle')}
+            </Body>
+            <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+              <Button
+                title={t('home.viewMarketplace')}
+                icon="layers"
+                size={isWide ? 'lg' : 'md'}
+                onPress={() => router.push('/marketplace')}
+              />
+              <Button
+                title={t('marketplace.heroCtaCreate')}
+                icon="plus"
+                variant="outline"
+                size={isWide ? 'lg' : 'md'}
+                onPress={() => router.push(user ? '/create' : '/auth/login')}
+              />
+            </Row>
+          </View>
+        </View>
+      )}
 
       {stats && (
         <View
