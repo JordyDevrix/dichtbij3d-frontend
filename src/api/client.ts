@@ -76,6 +76,7 @@ export class ApiError extends Error {
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let unauthorizedHandler: (() => void) | null = null;
+let maintenanceHandler: ((payload?: any) => void) | null = null;
 
 export async function loadTokens() {
   accessToken = await getItem(StorageKeys.accessToken);
@@ -107,6 +108,10 @@ export function hasSession() {
 
 export function onUnauthorized(handler: (() => void) | null) {
   unauthorizedHandler = handler;
+}
+
+export function onMaintenanceMode(handler: ((payload?: any) => void) | null) {
+  maintenanceHandler = handler;
 }
 
 /* ------------------------------------------------------------------ locale */
@@ -212,6 +217,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       // The backend calls these `error` and `fieldErrors` (see ApiError.kt).
       code = payload.code ?? payload.error;
       fields = payload.fieldErrors ?? payload.fields;
+      if (response.status === 503 && (code === 'maintenance_mode' || payload.error === 'maintenance_mode')) {
+        maintenanceHandler?.(payload.maintenance);
+      }
     } catch {
       /* non-JSON error body */
     }

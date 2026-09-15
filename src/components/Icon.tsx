@@ -59,6 +59,7 @@ import {
   faPen,
   faPhone,
   faPlus,
+  faPowerOff,
   faPrint,
   faRotate,
   faShareNodes,
@@ -78,6 +79,7 @@ import {
   faUserShield,
   faWandMagicSparkles,
   faWeightHanging,
+  faWrench,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import {
@@ -153,6 +155,8 @@ export const ICONS = {
   ban: faBan,
   flag: faFlag,
   gear: faGear,
+  wrench: faWrench,
+  powerOff: faPowerOff,
   sun: faSun,
   moon: faMoon,
   language: faLanguage,

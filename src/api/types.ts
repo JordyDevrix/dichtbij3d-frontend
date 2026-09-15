@@ -613,3 +613,19 @@ export interface PlatformAnnouncementRequest {
   active?: boolean;
 }
 
+export interface MaintenanceStatus {
+  enabled: boolean;
+  title: string;
+  message: string;
+  until: string | null;
+  updatedAt: string;
+}
+
+export interface MaintenanceUpdateRequest {
+  enabled: boolean;
+  title?: string | null;
+  message?: string | null;
+  until?: string | null;
+}
+
+

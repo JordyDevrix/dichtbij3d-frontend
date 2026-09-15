@@ -19,6 +19,8 @@ import type {
   Bid,
   CostEstimateRequest,
   CostEstimateResponse,
+  MaintenanceStatus,
+  MaintenanceUpdateRequest,
   MessageKind,
   MessageResponse,
   ModelCreateRequest,
@@ -274,6 +276,7 @@ export const api = {
   stats: () => request<PublicStats>('/api/public/stats', { auth: false }),
   platformBanner: () => request<PlatformBanner>('/api/public/banner', { auth: false }),
   platformAnnouncements: () => request<PlatformAnnouncement[]>('/api/public/announcements', { auth: false }),
+  maintenanceStatus: () => request<MaintenanceStatus>('/api/public/maintenance', { auth: false }),
 
   /* ---------------------------------------------------------------- admin */
   adminMetrics: () => request<AdminMetrics>('/api/admin/metrics'),
@@ -302,6 +305,9 @@ export const api = {
     request<PlatformAnnouncement>(`/api/admin/announcements/${id}`, { method: 'PUT', body }),
   adminDeleteAnnouncement: (id: string) =>
     request<MessageResponse>(`/api/admin/announcements/${id}`, { method: 'DELETE' }),
+  adminMaintenance: () => request<MaintenanceStatus>('/api/admin/maintenance'),
+  adminUpdateMaintenance: (body: MaintenanceUpdateRequest) =>
+    request<MaintenanceStatus>('/api/admin/maintenance', { method: 'PUT', body }),
 };
 
 export { ApiError, API_BASE_URL, buildQuery };

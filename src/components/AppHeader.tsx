@@ -8,6 +8,7 @@ import { colors, layout, radius, spacing, typography } from '../theme/theme';
 import { Icon, IconName } from './Icon';
 import { Avatar, Button, CountBadge, Divider, MenuItem, Muted, Row, Sheet } from './ui';
 import { PreferencesSheet } from './PreferencesSheet';
+import { AdminMaintenanceBanner } from './AdminMaintenanceBanner';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n';
 import { useBreakpoint } from '../hooks/useBreakpoint';
@@ -215,6 +216,7 @@ export function AppHeader() {
         },
       ]}
     >
+      <AdminMaintenanceBanner />
       <View
         style={{
           width: '100%',

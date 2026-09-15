@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { api } from '../../src/api';
 import type { AdminMetrics, AuditLogEntry } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
-import { Body, Button, Card, EmptyState, H2, H3, Muted, Row, Spinner, Stat } from '../../src/components/ui';
+import { Badge, Body, Button, Card, EmptyState, H2, H3, Muted, Row, Spinner, Stat } from '../../src/components/ui';
+import { useMaintenance } from '../../src/context/MaintenanceContext';
 import { useI18n } from '../../src/i18n';
 import { advertTypeColor, colors, radius, spacing } from '../../src/theme/theme';
 import { formatDateTime, numberFmt } from '../../src/utils/format';
@@ -36,6 +38,8 @@ function BarChart({ data, title }: { data: { day: string; count: number }[]; tit
 
 export default function AdminOverviewScreen() {
   const { t, locale } = useI18n();
+  const router = useRouter();
+  const { maintenance, isMaintenanceActive } = useMaintenance();
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [audit, setAudit] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +86,48 @@ export default function AdminOverviewScreen() {
         </Card>
       ) : (
         <>
+          {/* Global Maintenance Alert Card */}
+          <Card
+            style={{
+              backgroundColor: isMaintenanceActive ? colors.dangerSoft : colors.surface,
+              borderColor: isMaintenanceActive ? colors.danger : colors.border,
+              borderWidth: 1.5,
+              padding: spacing.md,
+            }}
+          >
+            <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.md }}>
+              <Row gap={spacing.md} style={{ flex: 1, minWidth: 240 }}>
+                <Badge
+                  label={isMaintenanceActive ? t('admin.statusOffline') : t('admin.statusOnline')}
+                  tone={
+                    isMaintenanceActive
+                      ? { bg: colors.danger, fg: colors.white }
+                      : { bg: colors.orange, fg: colors.white }
+                  }
+                />
+                <View style={{ flex: 1 }}>
+                  <Body style={{ fontWeight: '700' }}>
+                    {isMaintenanceActive
+                      ? t('admin.maintenanceStatusActive')
+                      : t('admin.maintenanceStatusInactive')}
+                  </Body>
+                  <Muted numberOfLines={1}>
+                    {isMaintenanceActive
+                      ? maintenance?.message || t('admin.maintenanceActiveDesc')
+                      : t('admin.maintenanceInactiveDesc')}
+                  </Muted>
+                </View>
+              </Row>
+
+              <Button
+                title={t('admin.maintenance')}
+                icon="wrench"
+                size="sm"
+                variant={isMaintenanceActive ? 'danger' : 'outline'}
+                onPress={() => router.push('/admin/maintenance')}
+              />
+            </Row>
+          </Card>
           <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
             <Stat icon="users" value={numberFmt(metrics.totalUsers, locale)} label={t('admin.totalUsers')} />
             <Stat icon="userPlus" value={numberFmt(metrics.newUsers7d, locale)} label={t('admin.newUsers')} />
