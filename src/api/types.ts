@@ -118,7 +118,8 @@ export interface AuthResponse {
   user?: UserProfile | null;
   mfaRequired?: boolean;
   mfaToken?: string | null;
-  mfaMethods?: ('totp' | 'email')[] | null;
+  mfaMethods?: ('totp' | 'email' | 'TOTP' | 'EMAIL')[] | null;
+  maskedEmail?: string | null;
 }
 
 export interface TotpSetupResponse {

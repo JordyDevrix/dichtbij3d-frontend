@@ -22,6 +22,7 @@ import {
   Muted,
   Row,
   Select,
+  Sheet,
   SwitchRow,
 } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
@@ -31,7 +32,7 @@ import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { useI18n } from '../src/i18n';
 import { advertTypeColor, colors, radius, spacing } from '../src/theme/theme';
 import { toCents } from '../src/utils/format';
-import { pickAndUploadImage } from '../src/utils/upload';
+import { pickAndUploadImages } from '../src/utils/upload';
 
 const TYPE_ICONS: Record<AdvertType, 'print' | 'cube' | 'coins' | 'box'> = {
   PRINT_REQUEST: 'print',
@@ -66,6 +67,8 @@ export default function CreateAdvertScreen() {
   const [images, setImages] = useState<{ key: string; url: string }[]>([]);
   const [modelId, setModelId] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [thumbnailModalOpen, setThumbnailModalOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
 
   const [tags, setTags] = useState<Tag[]>([]);
   const [loadingAdvert, setLoadingAdvert] = useState(false);
@@ -168,16 +171,52 @@ export default function CreateAdvertScreen() {
     setCustomTag('');
   };
 
-  const addImage = async () => {
+  const addImages = async () => {
     setUploading(true);
+    setUploadProgress(null);
     try {
-      const upload = await pickAndUploadImage('listings');
-      if (upload) setImages((prev) => [...prev, { key: upload.objectKey, url: upload.url }]);
+      const uploads = await pickAndUploadImages('listings', (current, total) => {
+        setUploadProgress({ current, total });
+      });
+      if (uploads.length > 0) {
+        const newEntries = uploads.map((u) => ({ key: u.objectKey, url: u.url }));
+        setImages((prev) => {
+          const next = [...prev, ...newEntries];
+          // If multiple images were uploaded in batch, open thumbnail picker if more than 1 image exists
+          if (uploads.length > 1 && next.length > 1) {
+            setTimeout(() => setThumbnailModalOpen(true), 300);
+          }
+          return next;
+        });
+      }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
+  };
+
+  const setThumbnail = (index: number) => {
+    if (index === 0 || index >= images.length) return;
+    setImages((prev) => {
+      const chosen = prev[index];
+      const remaining = prev.filter((_, i) => i !== index);
+      return [chosen, ...remaining];
+    });
+    toast.success(t('create.setAsThumbnail'));
+  };
+
+  const moveImage = (index: number, direction: 'left' | 'right') => {
+    const target = direction === 'left' ? index - 1 : index + 1;
+    if (target < 0 || target >= images.length) return;
+    setImages((prev) => {
+      const copy = [...prev];
+      const temp = copy[index];
+      copy[index] = copy[target];
+      copy[target] = temp;
+      return copy;
+    });
   };
 
   /** Everything the backend would reject, checked up front and reported per field. */
@@ -394,43 +433,181 @@ export default function CreateAdvertScreen() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <Row style={{ justifyContent: 'space-between' }}>
-            <Body style={{ fontWeight: '600' }}>{t('create.images')}</Body>
-            <Button
-              title={t('create.addImage')}
-              icon="camera"
-              size="sm"
-              variant="outline"
-              loading={uploading}
-              onPress={addImage}
-            />
+          <Row style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs }}>
+            <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
+              <Body style={{ fontWeight: '600' }}>{t('create.images')}</Body>
+              {images.length > 0 && (
+                <View
+                  style={{
+                    backgroundColor: colors.surfaceAlt,
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: radius.pill,
+                  }}
+                >
+                  <Muted style={{ fontSize: 12, fontWeight: '600' }}>{images.length}</Muted>
+                </View>
+              )}
+            </Row>
+            <Row gap={spacing.sm}>
+              {images.length > 1 && (
+                <Button
+                  title={t('create.selectThumbnail')}
+                  icon="star"
+                  size="sm"
+                  variant="outline"
+                  onPress={() => setThumbnailModalOpen(true)}
+                />
+              )}
+              <Button
+                title={
+                  uploadProgress
+                    ? `${t('create.uploadingCount')} (${uploadProgress.current}/${uploadProgress.total})`
+                    : t('create.addImages')
+                }
+                icon="camera"
+                size="sm"
+                variant={images.length === 0 ? 'primary' : 'outline'}
+                loading={uploading}
+                onPress={addImages}
+              />
+            </Row>
           </Row>
+
+          {images.length > 1 && (
+            <Muted style={{ fontSize: 13 }}>{t('create.imagesHint')}</Muted>
+          )}
+
           {images.length > 0 && (
-            <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>
-              {images.map((image, index) => (
-                <View key={image.key}>
-                  <AppImage
-                    uri={absoluteUrl(image.url)}
-                    style={{ width: 96, height: 72, borderRadius: radius.sm }}
-                  />
-                  <Pressable
-                    onPress={() => setImages((prev) => prev.filter((_, i) => i !== index))}
+            <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+              {images.map((image, index) => {
+                const isThumbnail = index === 0;
+                return (
+                  <View
+                    key={image.key}
                     style={{
-                      position: 'absolute',
-                      top: -6,
-                      right: -6,
-                      backgroundColor: colors.danger,
-                      borderRadius: 10,
-                      width: 20,
-                      height: 20,
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      width: isWide ? 130 : 100,
+                      borderRadius: radius.md,
+                      overflow: 'hidden',
+                      borderWidth: isThumbnail ? 2.5 : 1,
+                      borderColor: isThumbnail ? colors.orange : colors.border,
+                      backgroundColor: colors.surfaceAlt,
+                      position: 'relative',
                     }}
                   >
-                    <Icon name="close" size={10} color={colors.white} />
-                  </Pressable>
-                </View>
-              ))}
+                    <Pressable
+                      onPress={() => {
+                        if (!isThumbnail) setThumbnail(index);
+                      }}
+                      style={{ width: '100%', height: isWide ? 95 : 75, cursor: !isThumbnail ? 'pointer' : (undefined as any) }}
+                    >
+                      <AppImage
+                        uri={absoluteUrl(image.url)}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    </Pressable>
+
+                    {/* Thumbnail star badge or Make Thumbnail button */}
+                    {isThumbnail ? (
+                      <View
+                        style={{
+                          backgroundColor: colors.orange,
+                          paddingVertical: 3,
+                          paddingHorizontal: 6,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <Icon name="star" size={10} color="#FFFFFF" />
+                        <Body style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>
+                          {t('create.thumbnail')}
+                        </Body>
+                      </View>
+                    ) : (
+                      <Pressable
+                        onPress={() => setThumbnail(index)}
+                        style={({ pressed, hovered }: any) => [
+                          {
+                            paddingVertical: 3,
+                            paddingHorizontal: 4,
+                            backgroundColor: hovered ? colors.orangeSoft : colors.surfaceAlt,
+                            alignItems: 'center',
+                            cursor: 'pointer' as any,
+                            opacity: pressed ? 0.8 : 1,
+                          },
+                        ]}
+                      >
+                        <Body
+                          style={{
+                            fontSize: 10,
+                            fontWeight: '600',
+                            color: colors.orangeDarker,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {t('create.setAsThumbnail')}
+                        </Body>
+                      </Pressable>
+                    )}
+
+                    {/* Reorder arrows */}
+                    {images.length > 1 && (
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          paddingHorizontal: 4,
+                          paddingVertical: 2,
+                          backgroundColor: colors.surface,
+                          borderTopWidth: 1,
+                          borderColor: colors.border,
+                        }}
+                      >
+                        <Pressable
+                          disabled={index === 0}
+                          onPress={() => moveImage(index, 'left')}
+                          style={{ opacity: index === 0 ? 0.3 : 1, padding: 3, cursor: index > 0 ? 'pointer' : (undefined as any) }}
+                        >
+                          <Icon name="chevronLeft" size={10} color={colors.textMuted} />
+                        </Pressable>
+                        <Muted style={{ fontSize: 10, alignSelf: 'center' }}>#{index + 1}</Muted>
+                        <Pressable
+                          disabled={index === images.length - 1}
+                          onPress={() => moveImage(index, 'right')}
+                          style={{ opacity: index === images.length - 1 ? 0.3 : 1, padding: 3, cursor: index < images.length - 1 ? 'pointer' : (undefined as any) }}
+                        >
+                          <Icon name="chevronRight" size={10} color={colors.textMuted} />
+                        </Pressable>
+                      </View>
+                    )}
+
+                    {/* Delete button */}
+                    <Pressable
+                      onPress={() => setImages((prev) => prev.filter((_, i) => i !== index))}
+                      style={({ pressed }: any) => [
+                        {
+                          position: 'absolute',
+                          top: 4,
+                          right: 4,
+                          backgroundColor: 'rgba(0,0,0,0.65)',
+                          borderRadius: 12,
+                          width: 22,
+                          height: 22,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: pressed ? 0.7 : 1,
+                          cursor: 'pointer' as any,
+                        },
+                      ]}
+                    >
+                      <Icon name="close" size={10} color="#FFFFFF" />
+                    </Pressable>
+                  </View>
+                );
+              })}
             </Row>
           )}
         </View>
@@ -581,6 +758,104 @@ export default function CreateAdvertScreen() {
           toast.success(t('create.modelSelected'));
         }}
       />
+
+      {/* Thumbnail Selection Overlay Modal */}
+      <Sheet
+        open={thumbnailModalOpen}
+        onClose={() => setThumbnailModalOpen(false)}
+        title={t('create.selectThumbnail')}
+        width={640}
+      >
+        <View style={{ gap: spacing.md }}>
+          <Muted>{t('create.selectThumbnailDesc')}</Muted>
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: spacing.sm,
+              justifyContent: 'space-between',
+            }}
+          >
+            {images.map((image, index) => {
+              const isThumbnail = index === 0;
+              return (
+                <Pressable
+                  key={image.key}
+                  onPress={() => {
+                    setThumbnail(index);
+                    setThumbnailModalOpen(false);
+                  }}
+                  style={({ pressed, hovered }: any) => [
+                    {
+                      width: isWide ? 190 : '48%',
+                      aspectRatio: 16 / 10,
+                      borderRadius: radius.md,
+                      overflow: 'hidden',
+                      borderWidth: 3,
+                      borderColor: isThumbnail ? colors.orange : hovered ? colors.orangeBorder : colors.border,
+                      position: 'relative',
+                      cursor: 'pointer' as any,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                      backgroundColor: colors.surfaceAlt,
+                    },
+                  ]}
+                >
+                  <AppImage
+                    uri={absoluteUrl(image.url)}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                  />
+                  {isThumbnail ? (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 6,
+                        left: 6,
+                        backgroundColor: colors.orange,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: radius.sm,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <Icon name="star" size={10} color="#FFFFFF" />
+                      <Body style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>
+                        {t('create.thumbnail')}
+                      </Body>
+                    </View>
+                  ) : (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        bottom: 6,
+                        left: 6,
+                        right: 6,
+                        backgroundColor: 'rgba(0,0,0,0.65)',
+                        paddingVertical: 5,
+                        paddingHorizontal: 6,
+                        borderRadius: radius.sm,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Body style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600' }}>
+                        {t('create.setAsThumbnail')}
+                      </Body>
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+          <Button
+            title={t('common.close')}
+            variant="outline"
+            onPress={() => setThumbnailModalOpen(false)}
+            style={{ marginTop: spacing.sm }}
+          />
+        </View>
+      </Sheet>
 
       <View style={{ flexDirection: isWide ? 'row' : 'column-reverse', justifyContent: isWide ? 'flex-end' : undefined, gap: spacing.sm }}>
         <Button title={t('common.cancel')} variant="ghost" onPress={goBack} />

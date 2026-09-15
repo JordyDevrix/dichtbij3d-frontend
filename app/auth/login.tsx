@@ -36,6 +36,7 @@ export default function LoginScreen() {
             token: result.mfaToken,
             redirect: redirect ?? '',
             methods: result.mfaMethods?.join(',') ?? '',
+            maskedEmail: result.maskedEmail ?? '',
           },
         });
         return;

@@ -5,6 +5,7 @@ import { api, ApiError } from '../../src/api';
 import { absoluteUrl } from '../../src/api/client';
 import type { AdvertDetail } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
+import { AdvertGallery } from '../../src/components/AdvertGallery';
 import { AppImage } from '../../src/components/AppImage';
 import { Page } from '../../src/components/Page';
 import { ShareModal, shareAdvert } from '../../src/components/ShareModal';
@@ -63,7 +64,6 @@ export default function AdvertDetailScreen() {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
 
   const openedAt = useRef(Date.now());
   const pinged = useRef(false);
@@ -269,37 +269,7 @@ export default function AdvertDetailScreen() {
         {/* ------------------------------------------------ main column */}
         <View style={{ flex: isWide ? 2 : undefined, gap: spacing.lg, width: '100%' }}>
           <Card padded={false} style={{ overflow: 'hidden' }}>
-            <View style={{ height: isWide ? 380 : 220, backgroundColor: colors.orangeSofter }}>
-              {images.length > 0 ? (
-                <AppImage uri={images[activeImage]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-              ) : (
-                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon name="cube" size={52} color={colors.orangeBorder} />
-                </View>
-              )}
-            </View>
-            {images.length > 1 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
-              >
-                {images.map((uri, index) => (
-                  <Pressable key={uri} onPress={() => setActiveImage(index)}>
-                    <AppImage
-                      uri={uri}
-                      style={{
-                        width: 72,
-                        height: 56,
-                        borderRadius: radius.sm,
-                        borderWidth: 2,
-                        borderColor: index === activeImage ? colors.orange : 'transparent',
-                      }}
-                    />
-                  </Pressable>
-                ))}
-              </ScrollView>
-            )}
+            <AdvertGallery images={images} title={advert.title} isWide={isWide} />
 
             <View style={{ padding: spacing.xl, gap: spacing.md }}>
               <Row gap={spacing.sm} style={{ flexWrap: 'wrap' }}>

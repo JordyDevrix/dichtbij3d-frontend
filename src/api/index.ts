@@ -59,8 +59,11 @@ export const api = {
   resetPassword: (token: string, newPassword: string) =>
     request<MessageResponse>('/api/auth/reset-password', { method: 'POST', body: { token, newPassword }, auth: false }),
 
-  verifyMfa: (body: { mfaToken: string; code: string }) =>
+  verifyMfa: (body: { mfaToken: string; code: string; method?: 'totp' | 'email' | 'TOTP' | 'EMAIL' }) =>
     request<AuthResponse>('/api/auth/mfa/verify', { method: 'POST', body, auth: false }),
+
+  sendMfaEmail: (body: { mfaToken: string }) =>
+    request<MessageResponse>('/api/auth/mfa/email/send', { method: 'POST', body, auth: false }),
 
   logout: (refreshToken?: string | null) =>
     request<MessageResponse>('/api/auth/logout', { method: 'POST', body: { refreshToken } }),

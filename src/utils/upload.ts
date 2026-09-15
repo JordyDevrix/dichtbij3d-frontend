@@ -103,8 +103,34 @@ async function toUploadable(uri: string, name: string, mime: string, isImage = f
   return { uri, name, type: mime };
 }
 
+/** Opens the gallery and uploads one or multiple chosen images in batch; returns empty array when cancelled. */
+export async function pickAndUploadImages(
+  folder = 'listings',
+  onProgress?: (current: number, total: number) => void,
+): Promise<UploadResponse[]> {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    quality: 0.85,
+    allowsMultipleSelection: true,
+    selectionLimit: 12,
+  });
+  if (result.canceled || !result.assets?.length) return [];
+
+  const uploads: UploadResponse[] = [];
+  const total = result.assets.length;
+  for (let i = 0; i < total; i++) {
+    onProgress?.(i + 1, total);
+    const asset = result.assets[i];
+    const name = asset.fileName || `image-${Date.now()}-${i}.jpg`;
+    const file = await toUploadable(asset.uri, name, asset.mimeType || 'image/jpeg', true);
+    const uploaded = await api.upload(file as any, folder);
+    uploads.push(uploaded);
+  }
+  return uploads;
+}
+
 /** Opens the gallery and uploads the chosen image; returns null when cancelled. */
-export async function pickAndUploadImage(folder = 'adverts'): Promise<UploadResponse | null> {
+export async function pickAndUploadImage(folder = 'listings'): Promise<UploadResponse | null> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     quality: 0.85,

@@ -9,7 +9,8 @@ interface LoginResult {
   ok: boolean;
   mfaRequired?: boolean;
   mfaToken?: string | null;
-  mfaMethods?: ('totp' | 'email')[] | null;
+  mfaMethods?: ('totp' | 'email' | 'TOTP' | 'EMAIL')[] | null;
+  maskedEmail?: string | null;
 }
 
 interface AuthValue {
@@ -20,7 +21,8 @@ interface AuthValue {
   isAdmin: boolean;
   hasRole: (role: Role) => boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
-  verifyMfa: (mfaToken: string, code: string) => Promise<boolean>;
+  verifyMfa: (mfaToken: string, code: string, method?: 'TOTP' | 'EMAIL' | 'totp' | 'email') => Promise<boolean>;
+  sendMfaEmail: (mfaToken: string) => Promise<boolean>;
   register: (input: { email: string; password: string; displayName: string; roles: Role[] }) => Promise<LoginResult>;
   loginWithAuthResponse: (auth: AuthResponse) => Promise<void>;
   logout: () => Promise<void>;
@@ -102,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           mfaRequired: true,
           mfaToken: auth.mfaToken,
           mfaMethods: auth.mfaMethods,
+          maskedEmail: auth.maskedEmail,
         };
       }
       await saveTokens(auth);
@@ -129,16 +132,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const verifyMfa = useCallback(
-    async (mfaToken: string, code: string) => {
+    async (mfaToken: string, code: string, method?: 'TOTP' | 'EMAIL' | 'totp' | 'email') => {
       setBusy(true);
       try {
-        const result = await handleAuthResponse(await api.verifyMfa({ mfaToken, code }));
+        const result = await handleAuthResponse(await api.verifyMfa({ mfaToken, code, method }));
         return result.ok;
       } finally {
         setBusy(false);
       }
     },
     [handleAuthResponse],
+  );
+
+  const sendMfaEmail = useCallback(
+    async (mfaToken: string) => {
+      setBusy(true);
+      try {
+        await api.sendMfaEmail({ mfaToken });
+        return true;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [],
   );
 
   const register = useCallback(
@@ -192,6 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       hasRole: (role: Role) => !!user?.roles?.includes(role),
       login,
       verifyMfa,
+      sendMfaEmail,
       register,
       loginWithAuthResponse,
       logout,
@@ -207,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       busy,
       login,
       verifyMfa,
+      sendMfaEmail,
       register,
       loginWithAuthResponse,
       logout,
