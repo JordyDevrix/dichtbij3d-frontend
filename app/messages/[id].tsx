@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -407,21 +408,21 @@ export default function ConversationScreen() {
               width: '100%',
               maxWidth: 760,
               alignSelf: 'center',
-              backgroundColor: '#f0f9ff',
+              backgroundColor: colors.infoSoft,
               borderRadius: radius.lg,
               borderWidth: 1,
-              borderColor: '#bae6fd',
+              borderColor: colors.info,
               padding: spacing.md,
               gap: spacing.sm,
             }}
           >
             <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-              <Icon name="envelope" size={18} color="#0284c7" />
-              <Body style={{ fontWeight: '700', color: '#0369a1' }}>
+              <Icon name="envelope" size={18} color={colors.info} />
+              <Body style={{ fontWeight: '700', color: colors.info }}>
                 {t('chat.inviteTitle')}
               </Body>
             </Row>
-            <Text style={{ fontSize: 13, color: '#334155', lineHeight: 18 }}>
+            <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>
               {t('chat.inviteSubtitle')}
             </Text>
             <Row gap={spacing.sm} style={{ marginTop: spacing.xs, justifyContent: 'flex-end' }}>
@@ -484,7 +485,7 @@ export default function ConversationScreen() {
               }}
             >
               {uploadingFile ? (
-                <Spinner />
+                <ActivityIndicator size="small" color={colors.orange} />
               ) : (
                 <Icon name="cube" size={17} color={colors.orange} />
               )}
@@ -509,14 +510,16 @@ export default function ConversationScreen() {
                 minHeight: 44,
                 maxHeight: 140,
                 paddingHorizontal: spacing.md,
-                paddingVertical: 11,
+                paddingTop: 11,
+                paddingBottom: 11,
+                lineHeight: 20,
                 borderRadius: radius.lg,
                 borderWidth: 1,
                 borderColor: colors.border,
                 backgroundColor: colors.surfaceAlt,
                 color: colors.ink,
                 fontSize: 14,
-                ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null),
+                ...(Platform.OS === 'web' ? ({ outlineStyle: 'none', boxSizing: 'border-box' } as any) : null),
               }}
             />
             <Pressable
@@ -607,7 +610,7 @@ export default function ConversationScreen() {
                     {isInvited ? (
                       <Badge
                         label={t('chat.invitedStatus')}
-                        tone={{ bg: '#e0f2fe', fg: '#0369a1' }}
+                        tone={{ bg: colors.infoSoft, fg: colors.info }}
                       />
                     ) : (
                       <Badge
@@ -838,7 +841,7 @@ function isToday(iso: string) {
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, padding: spacing.lg, justifyContent: 'center' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background, padding: spacing.lg, justifyContent: 'center', alignItems: 'center' }}>
       <Card style={{ width: '100%', maxWidth: 520, alignSelf: 'center' }}>{children}</Card>
     </View>
   );

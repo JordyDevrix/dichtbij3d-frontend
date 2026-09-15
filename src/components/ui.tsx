@@ -425,7 +425,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <View style={{ alignItems: 'center', paddingVertical: spacing.xxl, paddingHorizontal: spacing.lg, gap: spacing.md }}>
+    <View style={{ alignItems: 'center', paddingVertical: spacing.xxl, paddingHorizontal: spacing.lg, gap: spacing.md, width: '100%' }}>
       <View
         style={{
           width: 56,
@@ -440,7 +440,15 @@ export function EmptyState({
       </View>
       <H3 style={{ textAlign: 'center' }}>{title}</H3>
       {body && <Muted style={{ textAlign: 'center', maxWidth: 420 }}>{body}</Muted>}
-      {action}
+      {action && (
+        <View style={{ alignItems: 'center', justifyContent: 'center', alignSelf: 'center' }}>
+          {React.isValidElement(action)
+            ? React.cloneElement(action as React.ReactElement<any>, {
+                style: [{ alignSelf: 'center' }, (action.props as any)?.style],
+              })
+            : action}
+        </View>
+      )}
     </View>
   );
 }

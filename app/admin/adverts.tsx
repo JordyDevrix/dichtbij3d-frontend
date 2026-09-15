@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../src/api';
 import type { AdminAdvert } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
-import { Badge, Body, Button, Card, Muted, Pagination, Row, Spinner } from '../../src/components/ui';
+import { Badge, Body, Button, Card, EmptyState, Muted, Pagination, Row, Spinner } from '../../src/components/ui';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
 import { advertTypeColor, colors, spacing, statusColor } from '../../src/theme/theme';
@@ -57,7 +57,7 @@ export default function AdminAdvertsScreen() {
         <Spinner />
       ) : adverts.length === 0 ? (
         <Card>
-          <Muted>{t('admin.noAdverts')}</Muted>
+          <EmptyState icon="layers" title={t('admin.noAdverts')} />
         </Card>
       ) : (
         <View style={{ gap: spacing.sm }}>

@@ -14,6 +14,7 @@ import {
   Card,
   Chip,
   Divider,
+  EmptyState,
   H3,
   Input,
   Muted,
@@ -96,7 +97,7 @@ export default function AdminUsersScreen() {
         <Spinner />
       ) : users.length === 0 ? (
         <Card>
-          <Muted>{t('admin.noUsers')}</Muted>
+          <EmptyState icon="users" title={t('admin.noUsers')} />
         </Card>
       ) : (
         <View style={{ gap: spacing.md }}>

@@ -204,7 +204,7 @@ function ConversationRow({
             {conversation.myStatus === 'INVITED' ? (
               <Badge
                 label={t('chat.invite')}
-                tone={{ bg: '#e0f2fe', fg: '#0369a1' }}
+                tone={{ bg: colors.infoSoft, fg: colors.info }}
               />
             ) : isGroup && (
               <Badge

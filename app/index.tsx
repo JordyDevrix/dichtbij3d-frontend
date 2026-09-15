@@ -374,7 +374,7 @@ export default function MarketplaceScreen() {
       )}
 
       <Sheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title={t('common.filters')} width={560}>
-        <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
+        <View style={{ gap: spacing.lg }}>
           {!isWide && (
             <Select
               label={t('common.sort')}
@@ -506,7 +506,7 @@ export default function MarketplaceScreen() {
               }}
             />
           </Row>
-        </ScrollView>
+        </View>
       </Sheet>
     </Page>
   );

@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../src/api';
 import type { NotificationType } from '../../src/api/types';
 import { Page } from '../../src/components/Page';
-import { Button, Card, Chip, H1, H2, H3, Muted, Row } from '../../src/components/ui';
+import { Button, Card, Chip, EmptyState, H1, H2, H3, Muted, Row } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
@@ -39,8 +39,20 @@ export default function NotificationsSettingsScreen() {
 
   if (!user) {
     return (
-      <Page>
-        <Muted>{t('common.signInRequired')}</Muted>
+      <Page maxWidth={600}>
+        <Card>
+          <EmptyState
+            icon="bell"
+            title={t('common.signInRequired')}
+            body={t('common.signInRequiredBody')}
+            action={
+              <Button
+                title={t('nav.login')}
+                onPress={() => router.push({ pathname: '/auth/login', params: { redirect: '/settings/notifications' } })}
+              />
+            }
+          />
+        </Card>
       </Page>
     );
   }

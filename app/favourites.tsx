@@ -8,7 +8,7 @@ import { useI18n } from '../src/i18n';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { Page } from '../src/components/Page';
 import { Icon } from '../src/components/Icon';
-import { Button, Card, H1, H2, H3, Input, Muted, Pagination, Row, Badge } from '../src/components/ui';
+import { Button, Card, EmptyState, H1, H2, H3, Input, Muted, Pagination, Row, Badge, Spinner } from '../src/components/ui';
 import { spacing, colors, radius, typography } from '../src/theme/theme';
 import { api, ApiError } from '../src/api';
 import type { AdvertSummary } from '../src/api/types';
@@ -103,8 +103,20 @@ export default function FavouritesScreen() {
 
   if (!user) {
     return (
-      <Page>
-        <Muted>{t('common.signInRequired')}</Muted>
+      <Page maxWidth={600}>
+        <Card>
+          <EmptyState
+            icon="star"
+            title={t('common.signInRequired')}
+            body={t('common.signInRequiredBody')}
+            action={
+              <Row gap={spacing.sm}>
+                <Button title={t('nav.login')} onPress={() => router.push({ pathname: '/auth/login', params: { redirect: '/favourites' } })} />
+                <Button title={t('nav.register')} variant="outline" onPress={() => router.push({ pathname: '/auth/register', params: { redirect: '/favourites' } })} />
+              </Row>
+            }
+          />
+        </Card>
       </Page>
     );
   }
@@ -115,7 +127,7 @@ export default function FavouritesScreen() {
         <Card style={{ flex: isWide ? 1 : undefined, width: isWide ? undefined : '100%', minWidth: 250, maxWidth: isWide ? 300 : undefined, gap: spacing.md }}>
           <H2>{t('nav.favourites')}</H2>
           <View style={{ gap: spacing.xs }}>
-            {lists.map(list => (
+            {lists.map((list) => (
               <Pressable
                 key={list.id}
                 onPress={() => setSelectedListId(list.id)}
@@ -125,7 +137,7 @@ export default function FavouritesScreen() {
                   borderRadius: radius.md,
                   flexDirection: 'row',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
                 }}
               >
                 <View style={{ flex: 1 }}>
@@ -148,9 +160,9 @@ export default function FavouritesScreen() {
               </Pressable>
             ))}
           </View>
-          
+
           <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.sm }} />
-          
+
           <Row gap={spacing.sm}>
             <View style={{ flex: 1 }}>
               <Input
@@ -160,7 +172,8 @@ export default function FavouritesScreen() {
               />
             </View>
             <Button
-              title="+"
+              title={t('common.save')}
+              size="md"
               disabled={!newListTitle.trim()}
               onPress={async () => {
                 try {
@@ -175,20 +188,27 @@ export default function FavouritesScreen() {
             />
           </Row>
         </Card>
-        
+
         <View style={{ flex: isWide ? 3 : undefined, width: isWide ? undefined : '100%' }}>
           {selectedListId ? (
             loading ? (
-              <Muted>{t('common.loading')}</Muted>
+              <Spinner label={t('common.loading')} />
             ) : adverts.length === 0 ? (
-              <Muted>{t('common.noResults')}</Muted>
+              <Card>
+                <EmptyState
+                  icon="star"
+                  title={t('common.noResults')}
+                  body={t('common.noResultsHint')}
+                  action={<Button title={t('nav.marketplace')} onPress={() => router.push('/')} />}
+                />
+              </Card>
             ) : (
               <>
-                <Row gap={spacing.lg} style={{ flexWrap: 'wrap' }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg }}>
                   {pagedAdverts.map((adv) => (
                     <AdvertCard key={adv.id} advert={adv} />
                   ))}
-                </Row>
+                </View>
                 <Pagination
                   page={page}
                   totalPages={totalPages}
@@ -199,7 +219,7 @@ export default function FavouritesScreen() {
               </>
             )
           ) : (
-            <Muted>{t('common.loading')}</Muted>
+            <Spinner label={t('common.loading')} />
           )}
         </View>
       </View>

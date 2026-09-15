@@ -172,6 +172,7 @@ export const typography: Record<string, TextStyle> = {
   small: { fontFamily, fontSize: 13, fontWeight: '400', lineHeight: 19 },
   tiny: { fontFamily, fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
   label: { fontFamily, fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  tabular: { fontVariant: ['tabular-nums'] },
 };
 
 export const layout = {

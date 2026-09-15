@@ -500,6 +500,7 @@ export function UserSearchModal({
                   : t('chat.createGroupChat')
               }
               icon="send"
+              full
               loading={submitting}
               onPress={() => void handleCreateChat()}
             />
