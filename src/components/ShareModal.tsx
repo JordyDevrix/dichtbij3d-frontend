@@ -11,7 +11,7 @@ export function getShareUrl(advertId: string): string {
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
     return `${window.location.origin}/advert/${advertId}`;
   }
-  const base = API_BASE_URL.startsWith('http') ? API_BASE_URL : 'https://dichtbij3d-tst.clovercloud.cc';
+  const base = process.env.EXPO_PUBLIC_SITE_URL || 'https://dichtbij3d.nl';
   return `${base.replace(/\/$/, '')}/advert/${advertId}`;
 }
 
