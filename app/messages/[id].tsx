@@ -17,6 +17,8 @@ import type { ChatMessage, Conversation } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
 import { Avatar, Badge, Body, Button, Card, EmptyState, IconButton, Muted, Row, Sheet, Spinner } from '../../src/components/ui';
 import { UserSearchModal } from '../../src/components/UserSearchModal';
+import { MaintenanceScreen } from '../../src/components/MaintenanceScreen';
+import { useMaintenance } from '../../src/context/MaintenanceContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useI18n } from '../../src/i18n';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
@@ -36,7 +38,8 @@ export default function ConversationScreen() {
   const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
   const { isWide } = useBreakpoint();
-  const { user, booting, refreshUnread } = useAuth();
+  const { user, isAdmin, booting, refreshUnread } = useAuth();
+  const { isMaintenanceActive } = useMaintenance();
   const { headerHeight: contextHeaderHeight } = useHeaderScroll();
   const headerHeight = contextHeaderHeight > 0 ? contextHeaderHeight : insets.top + 58;
 
@@ -193,6 +196,10 @@ export default function ConversationScreen() {
   };
 
   if (booting) return null;
+
+  if (isMaintenanceActive && !isAdmin) {
+    return <MaintenanceScreen />;
+  }
 
   if (!user)
     return (

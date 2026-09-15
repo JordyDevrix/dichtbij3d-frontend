@@ -21,13 +21,13 @@ function Shell() {
   const { isWide } = useBreakpoint();
   const { scheme } = useTheme();
   const pathname = usePathname();
-  const { isAdmin, booting: authBooting } = useAuth();
-  const { isMaintenanceActive, loading: maintenanceLoading } = useMaintenance();
+  const { isAdmin } = useAuth();
+  const { isMaintenanceActive } = useMaintenance();
 
   // If maintenance mode is active and user is not an administrator,
   // show the maintenance screen, unless they are on an authentication screen (/auth/login etc.)
   const isAuthRoute = pathname?.startsWith('/auth/');
-  const showMaintenanceBlock = !authBooting && !maintenanceLoading && isMaintenanceActive && !isAdmin && !isAuthRoute;
+  const showMaintenanceBlock = !isAuthRoute && isMaintenanceActive && !isAdmin;
 
   return (
     // Remounting on a palette swap is what makes every inline style pick up the

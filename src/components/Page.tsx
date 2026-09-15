@@ -9,10 +9,14 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePathname } from 'expo-router';
 import { colors, layout, spacing } from '../theme/theme';
 import { HEADER_HEIGHT } from './AppHeader';
 import { Footer } from './Footer';
+import { MaintenanceScreen } from './MaintenanceScreen';
 import { useHeaderScroll } from '../context/HeaderScrollContext';
+import { useMaintenance } from '../context/MaintenanceContext';
+import { useAuth } from '../context/AuthContext';
 
 export function Page({
   children,
@@ -33,11 +37,19 @@ export function Page({
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   hideFooter?: boolean;
 }) {
+  const pathname = usePathname();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const { isAdmin } = useAuth();
+  const { isMaintenanceActive } = useMaintenance();
   const { onScrollY, headerHeight: contextHeaderHeight } = useHeaderScroll();
   const gutter = width >= 900 ? spacing.xl : spacing.lg;
   const headerHeight = contextHeaderHeight > 0 ? contextHeaderHeight : HEADER_HEIGHT + insets.top;
+
+  const isAuthRoute = pathname?.startsWith('/auth/');
+  if (isMaintenanceActive && !isAdmin && !isAuthRoute) {
+    return <MaintenanceScreen />;
+  }
 
   return (
     <ScrollView

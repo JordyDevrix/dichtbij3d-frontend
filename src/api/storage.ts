@@ -89,6 +89,7 @@ export const StorageKeys = {
   accessToken: 'd3d.accessToken',
   refreshToken: 'd3d.refreshToken',
   user: 'd3d.user',
+  maintenance: 'd3d.maintenance',
   locale: 'd3d.locale',
   theme: 'd3d.theme',
 };
