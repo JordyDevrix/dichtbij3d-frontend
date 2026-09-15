@@ -222,6 +222,14 @@ export const api = {
       method: 'POST',
       body: { userId },
     }),
+  acceptInvite: (conversationId: string) =>
+    request<Conversation>(`/api/conversations/${conversationId}/accept`, {
+      method: 'POST',
+    }),
+  declineInvite: (conversationId: string) =>
+    request<Conversation>(`/api/conversations/${conversationId}/decline`, {
+      method: 'POST',
+    }),
   chatMessages: (id: string, page = 0, size = 40) =>
     request<PageResponse<ChatMessage>>(`/api/conversations/${id}/messages`, { query: { page, size } }),
   sendChatMessage: (

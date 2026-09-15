@@ -201,7 +201,12 @@ function ConversationRow({
             <Body style={{ fontWeight: unread ? '700' : '600', flexShrink: 1 }} numberOfLines={1}>
               {displayTitle}
             </Body>
-            {isGroup && (
+            {conversation.myStatus === 'INVITED' ? (
+              <Badge
+                label={t('chat.invite')}
+                tone={{ bg: '#e0f2fe', fg: '#0369a1' }}
+              />
+            ) : isGroup && (
               <Badge
                 label={
                   conversation.participants && conversation.participants.length > 0

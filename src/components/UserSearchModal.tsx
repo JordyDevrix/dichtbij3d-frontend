@@ -122,7 +122,7 @@ export function UserSearchModal({
     setAddingUserId(targetUser.id);
     try {
       const updated = await api.addParticipant(conversationId, targetUser.id);
-      toast.success(`${targetUser.displayName} ${t('chat.addedSuccess')}`);
+      toast.success(`${targetUser.displayName} ${t('chat.invitedSuccess')}`);
       onParticipantAdded?.(updated);
       onClose();
     } catch (err: any) {
@@ -136,10 +136,8 @@ export function UserSearchModal({
     if (selectedUsers.length === 0 || submitting) return;
     setSubmitting(true);
     try {
-      const isMulti = selectedUsers.length > 1 || groupTitle.trim().length > 0;
       const conversation = await api.startConversation({
-        userId: isMulti ? undefined : selectedUsers[0].id,
-        userIds: isMulti ? selectedUsers.map((u) => u.id) : undefined,
+        userIds: selectedUsers.map((u) => u.id),
         title: groupTitle.trim().length > 0 ? groupTitle.trim() : undefined,
         advertId,
         message: firstMessage.trim().length > 0 ? firstMessage.trim() : undefined,
@@ -166,7 +164,7 @@ export function UserSearchModal({
     <Sheet
       open={open}
       onClose={onClose}
-      title={mode === 'add-to-chat' ? t('chat.addCollaborator') : t('chat.collaborate')}
+      title={mode === 'add-to-chat' ? t('chat.inviteCollaborator') : t('chat.collaborate')}
       width={600}
     >
       <View style={{ gap: spacing.md }}>
@@ -400,7 +398,7 @@ export function UserSearchModal({
                           />
                         ) : (
                           <Button
-                            title={t('chat.addPerson')}
+                            title={t('chat.invitePerson')}
                             icon="userPlus"
                             variant="outline"
                             size="sm"

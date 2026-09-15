@@ -14,7 +14,7 @@ import { api, ApiError } from '../../src/api';
 import { absoluteUrl } from '../../src/api/client';
 import type { ChatMessage, Conversation } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
-import { Avatar, Badge, Body, Button, Card, EmptyState, IconButton, Muted, Row, Spinner } from '../../src/components/ui';
+import { Avatar, Badge, Body, Button, Card, EmptyState, IconButton, Muted, Row, Sheet, Spinner } from '../../src/components/ui';
 import { UserSearchModal } from '../../src/components/UserSearchModal';
 import { useAuth } from '../../src/context/AuthContext';
 import { useI18n } from '../../src/i18n';
@@ -47,6 +47,8 @@ export default function ConversationScreen() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [addCollaboratorOpen, setAddCollaboratorOpen] = useState(false);
+  const [participantsListOpen, setParticipantsListOpen] = useState(false);
+  const [processingInvite, setProcessingInvite] = useState<'accept' | 'decline' | null>(null);
 
   const listRef = useRef<ScrollView>(null);
   const pinnedToBottom = useRef(true);
@@ -107,9 +109,37 @@ export default function ConversationScreen() {
     }
   };
 
+  const handleAcceptInvite = async () => {
+    if (!id || processingInvite) return;
+    setProcessingInvite('accept');
+    try {
+      const updated = await api.acceptInvite(id);
+      setConversation(updated);
+      toast.success(t('chat.inviteAccepted'));
+      void load(false);
+    } catch (err: any) {
+      toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
+    } finally {
+      setProcessingInvite(null);
+    }
+  };
+
+  const handleDeclineInvite = async () => {
+    if (!id || processingInvite) return;
+    setProcessingInvite('decline');
+    try {
+      await api.declineInvite(id);
+      toast.success(t('chat.inviteDeclined'));
+      router.replace('/messages');
+    } catch (err: any) {
+      toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
+      setProcessingInvite(null);
+    }
+  };
+
   const send = async () => {
     const body = draft.trim();
-    if (!body || !id || sending) return;
+    if (!body || !id || sending || conversation?.myStatus === 'INVITED') return;
     setSending(true);
     setDraft('');
     try {
@@ -126,7 +156,7 @@ export default function ConversationScreen() {
   };
 
   const attachFile = async () => {
-    if (!id || uploadingFile) return;
+    if (!id || uploadingFile || conversation?.myStatus === 'INVITED') return;
     setUploadingFile(true);
     try {
       const uploads = await pickAndUploadFiles('chat');
@@ -229,7 +259,16 @@ export default function ConversationScreen() {
             <Icon name="back" size={15} color={colors.textMuted} />
           </Pressable>
           {isGroup ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+            <Pressable
+              onPress={() => setParticipantsListOpen(true)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.sm,
+                flex: 1,
+                ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : null),
+              }}
+            >
               <View
                 style={{
                   width: 36,
@@ -248,11 +287,14 @@ export default function ConversationScreen() {
                 <Body style={{ fontWeight: '700' }} numberOfLines={1}>
                   {displayTitle}
                 </Body>
-                <Muted numberOfLines={1} style={{ fontSize: 12 }}>
-                  {conversation?.participants?.length ?? 0} {t('chat.participantsCount')}
-                </Muted>
+                <Row gap={4} style={{ alignItems: 'center' }}>
+                  <Muted numberOfLines={1} style={{ fontSize: 12 }}>
+                    {conversation?.participants?.length ?? 0} {t('chat.participantsCount')}
+                  </Muted>
+                  <Icon name="chevronDown" size={10} color={colors.textMuted} />
+                </Row>
               </View>
-            </View>
+            </Pressable>
           ) : peer ? (
             <Pressable
               onPress={() => router.push(`/user/${peer.id}` as any)}
@@ -349,99 +391,237 @@ export default function ConversationScreen() {
         )}
       </ScrollView>
 
-      {/* ----------------------------------------------------------- composer */}
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          paddingBottom: spacing.sm,
-        }}
-      >
-        <Row
-          gap={spacing.sm}
+      {/* ----------------------------------------------------------- composer or invite banner */}
+      {conversation?.myStatus === 'INVITED' ? (
+        <View
           style={{
-            width: '100%',
-            maxWidth: 760,
-            alignSelf: 'center',
+            backgroundColor: colors.surface,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            paddingVertical: spacing.md,
             paddingHorizontal: spacing.md,
-            paddingTop: spacing.sm,
-            alignItems: 'flex-end',
           }}
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('chat.attachFile')}
-            disabled={uploadingFile || sending}
-            onPress={() => void attachFile()}
+          <View
             style={{
-              width: 44,
-              height: 44,
+              width: '100%',
+              maxWidth: 760,
+              alignSelf: 'center',
+              backgroundColor: '#f0f9ff',
               borderRadius: radius.lg,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: colors.surfaceAlt,
               borderWidth: 1,
-              borderColor: colors.border,
-              opacity: uploadingFile ? 0.6 : 1,
+              borderColor: '#bae6fd',
+              padding: spacing.md,
+              gap: spacing.sm,
             }}
           >
-            {uploadingFile ? (
-              <Spinner />
-            ) : (
-              <Icon name="cube" size={17} color={colors.orange} />
-            )}
-          </Pressable>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={t('chat.placeholder')}
-            placeholderTextColor={colors.textFaint}
-            multiline
-            maxLength={4000}
-            onSubmitEditing={Platform.OS === 'web' ? undefined : () => void send()}
-            onKeyPress={(event: any) => {
-              // Enter sends, shift+enter makes a new line — the usual chat contract.
-              if (Platform.OS === 'web' && event.nativeEvent?.key === 'Enter' && !event.nativeEvent?.shiftKey) {
-                event.preventDefault?.();
-                void send();
-              }
-            }}
+            <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
+              <Icon name="envelope" size={18} color="#0284c7" />
+              <Body style={{ fontWeight: '700', color: '#0369a1' }}>
+                {t('chat.inviteTitle')}
+              </Body>
+            </Row>
+            <Text style={{ fontSize: 13, color: '#334155', lineHeight: 18 }}>
+              {t('chat.inviteSubtitle')}
+            </Text>
+            <Row gap={spacing.sm} style={{ marginTop: spacing.xs, justifyContent: 'flex-end' }}>
+              <Button
+                title={t('chat.declineInvite')}
+                variant="outline"
+                size="sm"
+                icon="close"
+                loading={processingInvite === 'decline'}
+                disabled={processingInvite !== null}
+                onPress={() => void handleDeclineInvite()}
+                style={{ borderColor: colors.border }}
+              />
+              <Button
+                title={t('chat.acceptInvite')}
+                size="sm"
+                icon="check"
+                loading={processingInvite === 'accept'}
+                disabled={processingInvite !== null}
+                onPress={() => void handleAcceptInvite()}
+              />
+            </Row>
+          </View>
+        </View>
+      ) : (
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            paddingBottom: spacing.sm,
+          }}
+        >
+          <Row
+            gap={spacing.sm}
             style={{
-              flex: 1,
-              minHeight: 44,
-              maxHeight: 140,
+              width: '100%',
+              maxWidth: 760,
+              alignSelf: 'center',
               paddingHorizontal: spacing.md,
-              paddingVertical: 11,
-              borderRadius: radius.lg,
-              borderWidth: 1,
-              borderColor: colors.border,
-              backgroundColor: colors.surfaceAlt,
-              color: colors.ink,
-              fontSize: 14,
-              ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null),
-            }}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('chat.send')}
-            disabled={!draft.trim() || sending}
-            onPress={() => void send()}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: radius.lg,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: draft.trim() ? colors.orange : colors.surfaceAlt,
-              borderWidth: draft.trim() ? 0 : 1,
-              borderColor: colors.border,
+              paddingTop: spacing.sm,
+              alignItems: 'flex-end',
             }}
           >
-            <Icon name="send" size={15} color={draft.trim() ? colors.white : colors.textFaint} />
-          </Pressable>
-        </Row>
-      </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('chat.attachFile')}
+              disabled={uploadingFile || sending}
+              onPress={() => void attachFile()}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: radius.lg,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surfaceAlt,
+                borderWidth: 1,
+                borderColor: colors.border,
+                opacity: uploadingFile ? 0.6 : 1,
+              }}
+            >
+              {uploadingFile ? (
+                <Spinner />
+              ) : (
+                <Icon name="cube" size={17} color={colors.orange} />
+              )}
+            </Pressable>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={t('chat.placeholder')}
+              placeholderTextColor={colors.textFaint}
+              multiline
+              maxLength={4000}
+              onSubmitEditing={Platform.OS === 'web' ? undefined : () => void send()}
+              onKeyPress={(event: any) => {
+                // Enter sends, shift+enter makes a new line — the usual chat contract.
+                if (Platform.OS === 'web' && event.nativeEvent?.key === 'Enter' && !event.nativeEvent?.shiftKey) {
+                  event.preventDefault?.();
+                  void send();
+                }
+              }}
+              style={{
+                flex: 1,
+                minHeight: 44,
+                maxHeight: 140,
+                paddingHorizontal: spacing.md,
+                paddingVertical: 11,
+                borderRadius: radius.lg,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surfaceAlt,
+                color: colors.ink,
+                fontSize: 14,
+                ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null),
+              }}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('chat.send')}
+              disabled={!draft.trim() || sending}
+              onPress={() => void send()}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: radius.lg,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: draft.trim() ? colors.orange : colors.surfaceAlt,
+                borderWidth: draft.trim() ? 0 : 1,
+                borderColor: colors.border,
+              }}
+            >
+              <Icon name="send" size={15} color={draft.trim() ? colors.white : colors.textFaint} />
+            </Pressable>
+          </Row>
+        </View>
+      )}
+
+      {/* ----------------------------------------------------------- participants sheet */}
+      <Sheet
+        open={participantsListOpen}
+        onClose={() => setParticipantsListOpen(false)}
+        title={t('chat.collaborators')}
+        width={480}
+      >
+        <View style={{ gap: spacing.md }}>
+          <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <Muted style={{ fontSize: 13 }}>
+              {conversation?.participants?.length ?? 0} {t('chat.participantsCount')}
+            </Muted>
+            <Button
+              title={t('chat.addCollaborator')}
+              variant="outline"
+              size="sm"
+              icon="userPlus"
+              onPress={() => {
+                setParticipantsListOpen(false);
+                setAddCollaboratorOpen(true);
+              }}
+            />
+          </Row>
+
+          <View style={{ gap: spacing.xs }}>
+            {conversation?.participants?.map((p) => {
+              const detail = conversation.participantDetails?.find((d) => d.user.id === p.id);
+              const isInvited = detail?.status === 'INVITED';
+              return (
+                <Pressable
+                  key={p.id}
+                  onPress={() => {
+                    setParticipantsListOpen(false);
+                    router.push(`/user/${p.id}` as any);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: spacing.sm,
+                    paddingHorizontal: spacing.sm,
+                    borderRadius: radius.md,
+                    backgroundColor: colors.surfaceAlt,
+                  }}
+                >
+                  <Row gap={spacing.sm} style={{ alignItems: 'center', flex: 1 }}>
+                    <Avatar name={p.displayName} uri={absoluteUrl(p.avatarUrl)} size={36} />
+                    <View style={{ flex: 1 }}>
+                      <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
+                        <Body style={{ fontWeight: '600' }} numberOfLines={1}>
+                          {p.displayName}
+                        </Body>
+                        {p.id === user?.id && (
+                          <Muted style={{ fontSize: 11 }}>(jij)</Muted>
+                        )}
+                      </Row>
+                      {!!p.city && (
+                        <Muted style={{ fontSize: 11 }}>{p.city}</Muted>
+                      )}
+                    </View>
+                  </Row>
+
+                  <View>
+                    {isInvited ? (
+                      <Badge
+                        label={t('chat.invitedStatus')}
+                        tone={{ bg: '#e0f2fe', fg: '#0369a1' }}
+                      />
+                    ) : (
+                      <Badge
+                        label={t('chat.joinedStatus')}
+                        tone={{ bg: colors.surface, fg: colors.textMuted }}
+                      />
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Sheet>
 
       <UserSearchModal
         open={addCollaboratorOpen}

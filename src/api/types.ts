@@ -346,12 +346,22 @@ export interface ConversationAdvert {
   coverImageUrl: string | null;
 }
 
+export type ParticipantStatus = 'INVITED' | 'JOINED' | 'DECLINED';
+
+export interface ConversationParticipantDetail {
+  user: PublicUser;
+  status: ParticipantStatus;
+  joinedAt: string;
+}
+
 export interface Conversation {
   id: string;
   title?: string | null;
   isGroup?: boolean;
   peer: PublicUser;
   participants?: PublicUser[];
+  participantDetails?: ConversationParticipantDetail[];
+  myStatus?: ParticipantStatus;
   advert: ConversationAdvert | null;
   lastMessage: string | null;
   lastMessageAt: string;
