@@ -21,6 +21,7 @@ import {
   Spinner,
   SwitchRow,
 } from '../../src/components/ui';
+import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
 import { useTheme } from '../../src/theme/ThemeContext';
@@ -31,6 +32,7 @@ import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 export default function AdminBannerScreen() {
   const { t } = useI18n();
   const toast = useToast();
+  const { isAdmin, booting } = useAuth();
   const { isWide } = useBreakpoint();
   const { scheme } = useTheme();
 
@@ -49,6 +51,7 @@ export default function AdminBannerScreen() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (booting || !isAdmin) return;
     setLoading(true);
     try {
       const banner = await api.adminBanner();
@@ -65,11 +68,13 @@ export default function AdminBannerScreen() {
     } finally {
       setLoading(false);
     }
-  }, [t, toast]);
+  }, [booting, isAdmin, t, toast]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!booting && isAdmin) {
+      void load();
+    }
+  }, [booting, isAdmin, load]);
 
   const handleUploadImage = async () => {
     setUploading(true);

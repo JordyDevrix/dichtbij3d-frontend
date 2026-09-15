@@ -5,6 +5,7 @@ import { api, ApiError } from '../../src/api';
 import type { AdminAdvert } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
 import { Badge, Body, Button, Card, EmptyState, Muted, Pagination, Row, Spinner } from '../../src/components/ui';
+import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
 import { advertTypeColor, colors, spacing, statusColor } from '../../src/theme/theme';
@@ -14,6 +15,7 @@ export default function AdminAdvertsScreen() {
   const router = useRouter();
   const { t, locale } = useI18n();
   const toast = useToast();
+  const { isAdmin, booting } = useAuth();
   const [adverts, setAdverts] = useState<AdminAdvert[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -21,6 +23,7 @@ export default function AdminAdvertsScreen() {
   const [total, setTotal] = useState(0);
 
   const load = useCallback(async (nextPage: number) => {
+    if (booting || !isAdmin) return;
     setLoading(true);
     try {
       const result = await api.adminAdverts(nextPage, 20);
@@ -35,11 +38,13 @@ export default function AdminAdvertsScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [booting, isAdmin]);
 
   useEffect(() => {
-    void load(0);
-  }, [load]);
+    if (!booting && isAdmin) {
+      void load(0);
+    }
+  }, [booting, isAdmin, load]);
 
   const restore = async (advert: AdminAdvert) => {
     try {

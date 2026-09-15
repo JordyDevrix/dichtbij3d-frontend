@@ -1,7 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { api } from '../api';
+import { ApiError } from '../api/client';
 import { clearTokens, currentRefreshToken, loadTokens, onUnauthorized, saveTokens } from '../api/client';
+import { getItem, getItemSync, removeItem, setItem, StorageKeys } from '../api/storage';
 import type { AuthResponse, Role, UserProfile } from '../api/types';
 import { useI18n } from '../i18n';
 
@@ -39,8 +41,18 @@ interface AuthValue {
 const AuthContext = createContext<AuthValue>({} as AuthValue);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [booting, setBooting] = useState(true);
+  const initialUser = useMemo(() => {
+    try {
+      const raw = getItemSync(StorageKeys.user);
+      if (raw) return JSON.parse(raw) as UserProfile;
+    } catch {
+      // ignore
+    }
+    return null;
+  }, []);
+
+  const [user, setUser] = useState<UserProfile | null>(initialUser);
+  const [booting, setBooting] = useState(!initialUser);
   const [busy, setBusy] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -52,6 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const applyProfile = useCallback(
     (profile: UserProfile | null) => {
       setUser(profile);
+      if (profile) {
+        void setItem(StorageKeys.user, JSON.stringify(profile));
+      } else {
+        void removeItem(StorageKeys.user);
+      }
       if (profile?.locale && profile.locale !== localeRef.current) {
         setLocale(profile.locale as any);
       }
@@ -70,21 +87,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profile = await api.me();
       applyProfile(profile);
       await refreshUnread();
-    } catch {
-      applyProfile(null);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        applyProfile(null);
+      }
     }
   }, [applyProfile, refreshUnread]);
 
   useEffect(() => {
     onUnauthorized(() => {
       setUser(null);
+      void removeItem(StorageKeys.user);
       setUnreadCount(0);
       setUnreadMessages(0);
     });
     (async () => {
-      const { accessToken } = await loadTokens();
-      if (accessToken) await refreshProfile();
-      setBooting(false);
+      try {
+        const { accessToken } = await loadTokens();
+        if (accessToken) {
+          if (!user) {
+            const cached = await getItem(StorageKeys.user);
+            if (cached) {
+              try {
+                setUser(JSON.parse(cached));
+              } catch {
+                // ignore
+              }
+            }
+          }
+          await refreshProfile();
+        } else {
+          setUser(null);
+          await removeItem(StorageKeys.user);
+        }
+      } finally {
+        setBooting(false);
+      }
     })();
     return () => onUnauthorized(null);
   }, [refreshProfile]);

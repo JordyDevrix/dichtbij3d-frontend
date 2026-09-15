@@ -6,15 +6,17 @@ import type { Report } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
 import { Icon } from '../../src/components/Icon';
 import { Badge, Body, Button, Card, Muted, Pagination, Row, Spinner } from '../../src/components/ui';
+import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
-import { colors, spacing } from '../../src/theme/theme';
+import { colors, radius, spacing } from '../../src/theme/theme';
 import { formatDateTime } from '../../src/utils/format';
 
 export default function AdminReportsScreen() {
   const router = useRouter();
   const { t, locale } = useI18n();
   const toast = useToast();
+  const { isAdmin, booting } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,7 @@ export default function AdminReportsScreen() {
   const pagedReports = reports.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   const load = useCallback(async () => {
+    if (booting || !isAdmin) return;
     setLoading(true);
     try {
       setReports(await api.adminReports());
@@ -33,11 +36,13 @@ export default function AdminReportsScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [booting, isAdmin]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!booting && isAdmin) {
+      void load();
+    }
+  }, [booting, isAdmin, load]);
 
   const handle = async (report: Report, dismiss: boolean) => {
     setBusyId(report.id);

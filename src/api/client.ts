@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { getItem, removeItem, setItem, StorageKeys } from './storage';
+import { getItem, getItemSync, removeItem, setItem, StorageKeys } from './storage';
 import type { AuthResponse } from './types';
 
 /* ------------------------------------------------------------------ base URL */
@@ -78,15 +78,33 @@ let refreshToken: string | null = null;
 let unauthorizedHandler: (() => void) | null = null;
 let maintenanceHandler: ((payload?: any) => void) | null = null;
 
+let tokensPromise: Promise<{ accessToken: string | null; refreshToken: string | null }> | null = null;
+
+// Synchronously initialize tokens from storage on web / memory if available
+try {
+  accessToken = getItemSync(StorageKeys.accessToken);
+  refreshToken = getItemSync(StorageKeys.refreshToken);
+} catch {
+  // ignore
+}
+
 export async function loadTokens() {
-  accessToken = await getItem(StorageKeys.accessToken);
-  refreshToken = await getItem(StorageKeys.refreshToken);
-  return { accessToken, refreshToken };
+  if (!tokensPromise) {
+    tokensPromise = (async () => {
+      const at = await getItem(StorageKeys.accessToken);
+      const rt = await getItem(StorageKeys.refreshToken);
+      accessToken = at;
+      refreshToken = rt;
+      return { accessToken: at, refreshToken: rt };
+    })();
+  }
+  return tokensPromise;
 }
 
 export async function saveTokens(auth: AuthResponse) {
   accessToken = auth.accessToken ?? null;
   refreshToken = auth.refreshToken ?? null;
+  tokensPromise = Promise.resolve({ accessToken, refreshToken });
   if (accessToken) await setItem(StorageKeys.accessToken, accessToken);
   if (refreshToken) await setItem(StorageKeys.refreshToken, refreshToken);
 }
@@ -94,8 +112,10 @@ export async function saveTokens(auth: AuthResponse) {
 export async function clearTokens() {
   accessToken = null;
   refreshToken = null;
+  tokensPromise = Promise.resolve({ accessToken: null, refreshToken: null });
   await removeItem(StorageKeys.accessToken);
   await removeItem(StorageKeys.refreshToken);
+  await removeItem(StorageKeys.user);
 }
 
 export function currentRefreshToken() {
@@ -153,6 +173,9 @@ interface RequestOptions {
 let refreshPromise: Promise<boolean> | null = null;
 
 async function performRefresh(): Promise<boolean> {
+  if (!refreshToken) {
+    await loadTokens();
+  }
   if (!refreshToken) return false;
   if (!refreshPromise) {
     refreshPromise = (async () => {
@@ -184,6 +207,10 @@ async function performRefresh(): Promise<boolean> {
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, query, auth = true, raw = false } = options;
+  if (auth && !accessToken) {
+    await loadTokens();
+  }
+
   const headers: Record<string, string> = { Accept: 'application/json', 'X-Locale': activeLocale };
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
@@ -200,7 +227,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     throw new ApiError(0, error?.message || 'Network request failed', 'NETWORK');
   }
 
-  if (response.status === 401 && auth && !options._retried && refreshToken) {
+  if (response.status === 401 && auth && !options._retried) {
     const refreshed = await performRefresh();
     if (refreshed) return request<T>(path, { ...options, _retried: true });
     await clearTokens();

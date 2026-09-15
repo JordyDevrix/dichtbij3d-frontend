@@ -5,6 +5,7 @@ import { api } from '../../src/api';
 import type { AdminMetrics, AuditLogEntry } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
 import { Badge, Body, Button, Card, EmptyState, H2, H3, Muted, Row, Spinner, Stat } from '../../src/components/ui';
+import { useAuth } from '../../src/context/AuthContext';
 import { useMaintenance } from '../../src/context/MaintenanceContext';
 import { useI18n } from '../../src/i18n';
 import { advertTypeColor, colors, radius, spacing } from '../../src/theme/theme';
@@ -39,6 +40,7 @@ function BarChart({ data, title }: { data: { day: string; count: number }[]; tit
 export default function AdminOverviewScreen() {
   const { t, locale } = useI18n();
   const router = useRouter();
+  const { isAdmin, booting } = useAuth();
   const { maintenance, isMaintenanceActive } = useMaintenance();
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [audit, setAudit] = useState<AuditLogEntry[]>([]);
@@ -46,6 +48,7 @@ export default function AdminOverviewScreen() {
   const [failed, setFailed] = useState(false);
 
   const load = useCallback(() => {
+    if (booting || !isAdmin) return;
     setLoading(true);
     setFailed(false);
     Promise.all([api.adminMetrics(), api.adminAuditLog(0, 25)])
@@ -55,11 +58,13 @@ export default function AdminOverviewScreen() {
       })
       .catch(() => setFailed(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [booting, isAdmin]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (!booting && isAdmin) {
+      load();
+    }
+  }, [booting, isAdmin, load]);
 
   const typeRows = useMemo(() => {
     if (!metrics) return [];

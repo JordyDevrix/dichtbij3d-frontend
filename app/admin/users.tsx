@@ -23,6 +23,7 @@ import {
   Sheet,
   Spinner,
 } from '../../src/components/ui';
+import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
 import { colors, spacing } from '../../src/theme/theme';
@@ -32,6 +33,7 @@ export default function AdminUsersScreen() {
   const router = useRouter();
   const { t, locale } = useI18n();
   const toast = useToast();
+  const { isAdmin, booting } = useAuth();
 
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -44,6 +46,7 @@ export default function AdminUsersScreen() {
   const [reason, setReason] = useState('');
 
   const load = useCallback(async (q: string, targetPage = 0) => {
+    if (booting || !isAdmin) return;
     setLoading(true);
     try {
       const res = await api.adminUsers(q || undefined, targetPage, 20);
@@ -58,12 +61,14 @@ export default function AdminUsersScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [booting, isAdmin]);
 
   useEffect(() => {
-    const handle = setTimeout(() => void load(query.trim(), 0), 250);
-    return () => clearTimeout(handle);
-  }, [query, load]);
+    if (!booting && isAdmin) {
+      const handle = setTimeout(() => void load(query.trim(), 0), 250);
+      return () => clearTimeout(handle);
+    }
+  }, [booting, isAdmin, load, query]);
 
   const run = async (id: string, fn: () => Promise<void>, message: string) => {
     setBusyId(id);

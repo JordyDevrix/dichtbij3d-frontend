@@ -21,16 +21,19 @@ import {
   Spinner,
   SwitchRow,
 } from '../../src/components/ui';
+import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
-import { colors, radius, spacing, typography } from '../../src/theme/theme';
+import { colors, radius, shadow, spacing, typography } from '../../src/theme/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
+import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 
 const ANNOUNCEMENT_TYPES: AnnouncementType[] = ['INFO', 'EVENT', 'UPDATE', 'WARNING'];
 
 export default function AdminAnnouncementsScreen() {
   const { t, locale } = useI18n();
   const toast = useToast();
+  const { isAdmin, booting } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<PlatformAnnouncement[]>([]);
@@ -49,6 +52,7 @@ export default function AdminAnnouncementsScreen() {
   const [active, setActive] = useState(true);
 
   const load = useCallback(async () => {
+    if (booting || !isAdmin) return;
     setLoading(true);
     try {
       const data = await api.adminAnnouncements();
@@ -58,11 +62,13 @@ export default function AdminAnnouncementsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [t, toast]);
+  }, [booting, isAdmin, t, toast]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!booting && isAdmin) {
+      void load();
+    }
+  }, [booting, isAdmin, load]);
 
   const openCreate = () => {
     setEditingItem(null);

@@ -19,6 +19,7 @@ import {
   Spinner,
   SwitchRow,
 } from '../../src/components/ui';
+import { useAuth } from '../../src/context/AuthContext';
 import { useMaintenance } from '../../src/context/MaintenanceContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
@@ -29,6 +30,7 @@ import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 export default function AdminMaintenanceScreen() {
   const { t, locale } = useI18n();
   const toast = useToast();
+  const { isAdmin, booting } = useAuth();
   const { setMaintenance } = useMaintenance();
   const { isWide } = useBreakpoint();
 
@@ -41,6 +43,7 @@ export default function AdminMaintenanceScreen() {
   const [until, setUntil] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (booting || !isAdmin) return;
     setLoading(true);
     try {
       const status = await api.adminMaintenance();
@@ -54,11 +57,13 @@ export default function AdminMaintenanceScreen() {
     } finally {
       setLoading(false);
     }
-  }, [t, toast, setMaintenance]);
+  }, [booting, isAdmin, t, toast, setMaintenance]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!booting && isAdmin) {
+      void load();
+    }
+  }, [booting, isAdmin, load]);
 
   const handleSave = async (overrideEnabled?: boolean) => {
     setSaving(true);
