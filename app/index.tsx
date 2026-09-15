@@ -446,10 +446,15 @@ export default function HomeScreen() {
                 ) : (
                   <ScrollView
                     horizontal
+                    nestedScrollEnabled
                     showsHorizontalScrollIndicator={false}
+                    style={{
+                      marginHorizontal: isPhone ? -spacing.lg : 0,
+                    }}
                     contentContainerStyle={{
-                      gap: spacing.lg,
-                      paddingRight: spacing.lg,
+                      gap: spacing.md,
+                      paddingHorizontal: isPhone ? spacing.lg : 0,
+                      paddingRight: isPhone ? spacing.xxl : spacing.lg,
                       paddingVertical: spacing.xs,
                     }}
                   >
@@ -457,7 +462,7 @@ export default function HomeScreen() {
                       <View
                         key={advert.id}
                         style={{
-                          width: isPhone ? 285 : 315,
+                          width: isPhone ? 280 : 315,
                           flexShrink: 0,
                         }}
                       >
