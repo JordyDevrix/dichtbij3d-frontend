@@ -46,23 +46,43 @@ export default function AdminOverviewScreen() {
   const [audit, setAudit] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     if (booting || !isAdmin) return;
     setLoading(true);
     setFailed(false);
-    Promise.all([api.adminMetrics(), api.adminAuditLog(0, 25)])
-      .then(([m, log]) => {
-        setMetrics(m);
-        setAudit(log.content);
-      })
-      .catch(() => setFailed(true))
-      .finally(() => setLoading(false));
-  }, [booting, isAdmin]);
+    setErrorMessage(null);
+    try {
+      const [metricsRes, auditRes] = await Promise.allSettled([
+        api.adminMetrics(),
+        api.adminAuditLog(0, 25),
+      ]);
+
+      if (metricsRes.status === 'fulfilled') {
+        setMetrics(metricsRes.value);
+      } else {
+        setFailed(true);
+        const err = metricsRes.reason;
+        setErrorMessage(err instanceof Error ? err.message : t('errors.generic'));
+      }
+
+      if (auditRes.status === 'fulfilled') {
+        setAudit(auditRes.value.content);
+      } else {
+        setAudit([]);
+      }
+    } catch (err: any) {
+      setFailed(true);
+      setErrorMessage(err?.message || t('errors.generic'));
+    } finally {
+      setLoading(false);
+    }
+  }, [booting, isAdmin, t]);
 
   useEffect(() => {
     if (!booting && isAdmin) {
-      load();
+      void load();
     }
   }, [booting, isAdmin, load]);
 
@@ -85,8 +105,8 @@ export default function AdminOverviewScreen() {
           <EmptyState
             icon="warning"
             title={t('common.somethingWentWrong')}
-            body={failed ? t('errors.generic') : undefined}
-            action={<Button title={t('common.retry')} icon="refresh" variant="outline" onPress={load} />}
+            body={errorMessage || (failed ? t('errors.generic') : undefined)}
+            action={<Button title={t('common.retry')} icon="refresh" variant="outline" onPress={() => void load()} />}
           />
         </Card>
       ) : (

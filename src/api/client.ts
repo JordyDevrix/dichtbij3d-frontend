@@ -177,44 +177,48 @@ async function performRefresh(): Promise<boolean> {
     await loadTokens();
   }
   if (!refreshToken) return false;
-  if (!refreshPromise) {
-    refreshPromise = (async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
-        });
-        if (!response.ok) {
-          await clearTokens();
-          return false;
-        }
-        const auth = (await response.json()) as AuthResponse;
-        await saveTokens(auth);
-        return !!auth.accessToken;
-      } catch {
+  if (refreshPromise) return refreshPromise;
+
+  const currentRefresh = refreshToken;
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: currentRefresh }),
+      });
+      if (!response.ok) {
         return false;
-      } finally {
-        // allow a new refresh on the next 401
-        setTimeout(() => {
-          refreshPromise = null;
-        }, 0);
       }
-    })();
-  }
+      const auth = (await response.json()) as AuthResponse;
+      await saveTokens(auth);
+      return !!auth.accessToken;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
   return refreshPromise;
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, query, auth = true, raw = false } = options;
-  if (auth && !accessToken) {
-    await loadTokens();
+
+  if (auth) {
+    if (refreshPromise) {
+      await refreshPromise;
+    }
+    if (!accessToken) {
+      await loadTokens();
+    }
   }
 
+  const usedToken = accessToken;
   const headers: Record<string, string> = { Accept: 'application/json', 'X-Locale': activeLocale };
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
-  if (auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  if (auth && usedToken) headers.Authorization = `Bearer ${usedToken}`;
 
   let response: Response;
   try {
@@ -228,6 +232,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   if (response.status === 401 && auth && !options._retried) {
+    // If the access token was already refreshed by another concurrent request while this request was in flight,
+    // retry immediately with the newly refreshed token.
+    if (accessToken && accessToken !== usedToken) {
+      return request<T>(path, { ...options, _retried: true });
+    }
     const refreshed = await performRefresh();
     if (refreshed) return request<T>(path, { ...options, _retried: true });
     await clearTokens();
