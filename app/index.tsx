@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Image, Platform, Pressable, ScrollView, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { api } from '../src/api';
 import { absoluteUrl } from '../src/api/client';
@@ -28,6 +29,7 @@ import {
 } from '../src/components/ui';
 import { useAuth } from '../src/context/AuthContext';
 import { useI18n } from '../src/i18n';
+import { useTheme } from '../src/theme/ThemeContext';
 import { advertTypeColor, colors, layout, radius, shadow, spacing, typography } from '../src/theme/theme';
 import { formatDate, numberFmt } from '../src/utils/format';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
@@ -46,6 +48,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const { isWide, isPhone } = useBreakpoint();
+  const { scheme } = useTheme();
 
   const [banner, setBanner] = useState<PlatformBanner | null>(null);
   const [announcements, setAnnouncements] = useState<PlatformAnnouncement[]>([]);
@@ -206,7 +209,7 @@ export default function HomeScreen() {
               resizeMode="cover"
             />
 
-            {/* Centered content grid with floating card */}
+            {/* Centered content grid with floating frosted glass card */}
             <View
               style={{
                 width: '100%',
@@ -220,17 +223,30 @@ export default function HomeScreen() {
                 zIndex: 2,
               }}
             >
-              <View
+              <BlurView
+                intensity={85}
+                tint={scheme === 'dark' ? 'dark' : 'light'}
                 style={[
                   {
                     maxWidth: 520,
                     width: '100%',
-                    backgroundColor: colors.surface,
+                    backgroundColor: scheme === 'dark' ? 'rgba(21, 26, 33, 0.82)' : 'rgba(255, 255, 255, 0.88)',
                     borderRadius: radius.xl,
                     padding: spacing.xxl,
                     gap: spacing.lg,
                     borderWidth: 1,
-                    borderColor: colors.border,
+                    borderColor: scheme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+                    overflow: 'hidden',
+                    ...(Platform.OS === 'web'
+                      ? ({
+                          backdropFilter: 'saturate(180%) blur(20px)',
+                          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+                          boxShadow:
+                            scheme === 'dark'
+                              ? '0 16px 40px rgba(0, 0, 0, 0.45)'
+                              : '0 16px 40px rgba(0, 0, 0, 0.08)',
+                        } as any)
+                      : null),
                   },
                   shadow.raised,
                 ]}
@@ -274,7 +290,7 @@ export default function HomeScreen() {
                     onPress={() => router.push('/marketplace')}
                   />
                 </Row>
-              </View>
+              </BlurView>
             </View>
           </View>
         ) : (
