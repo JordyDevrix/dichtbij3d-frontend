@@ -76,7 +76,6 @@ export function Footer() {
               {t('footer.marketplace')}
             </Text>
             <FooterLink label={t('footer.marketplace')} onPress={() => router.push('/')} />
-            <FooterLink label={t('footer.models')} onPress={() => router.push('/models')} />
             <FooterLink label={t('footer.calculator')} onPress={() => router.push('/calculator')} />
             <FooterLink label={t('footer.createAdvert')} onPress={() => router.push('/create')} />
           </View>

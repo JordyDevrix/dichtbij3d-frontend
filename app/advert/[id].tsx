@@ -34,6 +34,7 @@ import { useGoBack } from '../../src/hooks/useGoBack';
 import { useI18n } from '../../src/i18n';
 import { advertTypeColor, colors, radius, spacing, statusColor } from '../../src/theme/theme';
 import { formatDate, money, timeAgo, toCents } from '../../src/utils/format';
+import { downloadFile } from '../../src/utils/download';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { useStartChat } from '../../src/hooks/useStartChat';
 
@@ -64,6 +65,7 @@ export default function AdvertDetailScreen() {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
 
   const openedAt = useRef(Date.now());
   const pinged = useRef(false);
@@ -129,9 +131,10 @@ export default function AdvertDetailScreen() {
   const isOwner = user?.id === advert.author.id;
   // A sale advert is bought; a request advert is applied for. The page follows that split.
   const isSale = advert.type === 'MODEL_FOR_SALE' || advert.type === 'PRINT_FOR_SALE';
+  const isFree = advert.priceCents == null || advert.priceCents <= 0;
   // The seller can delete the model behind a sale advert; the advert stays up but is unbuyable.
   const modelRemoved = advert.modelRemoved === true;
-  const canBuy = isSale && advert.priceCents != null && advert.status === 'OPEN' && !isOwner && !modelRemoved;
+  const canBuy = isSale && advert.priceCents != null && advert.priceCents > 0 && advert.status === 'OPEN' && !isOwner && !modelRemoved;
   const typeTone = advertTypeColor[advert.type];
   const statusTone = statusColor[advert.status] ?? statusColor.OPEN;
   const images = (
@@ -139,6 +142,18 @@ export default function AdvertDetailScreen() {
       ? advert.imageUrls.map((url) => absoluteUrl(url)!).filter(Boolean)
       : [absoluteUrl(advert.model?.thumbnailUrl)].filter(Boolean)
   ) as string[];
+
+  const handleDownload = async (advertId: string, fileId: string, fileName: string, downloadUrl?: string | null) => {
+    setDownloadingFileId(fileId);
+    try {
+      const url = downloadUrl || api.advertFileDownloadUrl(advertId, fileId);
+      await downloadFile(url, fileName);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
+    } finally {
+      setDownloadingFileId(null);
+    }
+  };
 
   const run = async (action: () => Promise<unknown>, successMessage?: string) => {
     setBusy(true);
@@ -210,8 +225,12 @@ export default function AdvertDetailScreen() {
   };
 
   const priceBlock = () => {
-    if (advert.priceCents != null)
+    if (advert.priceCents != null) {
+      if (advert.priceCents <= 0) {
+        return <H1 style={{ color: colors.success }}>{t('common.free')}</H1>;
+      }
       return <H1 style={{ color: colors.orange }}>{money(advert.priceCents, locale, advert.currency)}</H1>;
+    }
     if (advert.budgetMinCents != null || advert.budgetMaxCents != null)
       return (
         <H2 style={{ color: colors.orange }}>
@@ -355,39 +374,119 @@ export default function AdvertDetailScreen() {
                 </Card>
               )}
 
-              {advert.model && (
-                <Pressable onPress={() => router.push(`/model/${advert.model!.id}`)}>
-                  <Card style={{ marginTop: spacing.md, backgroundColor: colors.surfaceAlt }}>
-                    <Row>
-                      {advert.model.thumbnailUrl ? (
-                        <AppImage
-                          uri={absoluteUrl(advert.model.thumbnailUrl)}
-                          style={{ width: 56, height: 42, borderRadius: radius.sm }}
-                        />
-                      ) : (
-                        <Icon name="cube" size={16} color={colors.orange} />
-                      )}
-                      <View style={{ flex: 1 }}>
-                        <Muted>{t('advert.linkedModel')}</Muted>
-                        <Body style={{ fontWeight: '700' }}>{advert.model.title}</Body>
-                        <Row gap={spacing.md}>
-                          <Row gap={4}>
-                            <Icon name="layers" size={11} color={colors.textFaint} />
-                            <Muted>{advert.model.fileCount}</Muted>
+              {((advert.models && advert.models.length > 0) || advert.model) && (
+                <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+                  <Body style={{ fontWeight: '700' }}>{t('create.attachModel')}</Body>
+                  {((advert.models && advert.models.length > 0)
+                    ? advert.models
+                    : [{ model: advert.model!, files: [], purchaseRequests: [], myPurchaseStatus: null }]
+                  ).map((mDetail, mIdx) => {
+                    const m = mDetail.model;
+                    const files = mDetail.files;
+                    const hasAccess = isFree || m.hasAccess || isOwner || advert.canModerate;
+                    return (
+                      <Card key={m.id || mIdx} style={{ backgroundColor: colors.surfaceAlt, gap: spacing.sm }}>
+                        <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Row gap={spacing.sm} style={{ alignItems: 'center', flex: 1 }}>
+                            {m.thumbnailUrl ? (
+                              <AppImage
+                                uri={absoluteUrl(m.thumbnailUrl)}
+                                style={{ width: 44, height: 44, borderRadius: radius.sm }}
+                              />
+                            ) : (
+                              <View
+                                style={{
+                                  width: 44,
+                                  height: 44,
+                                  borderRadius: radius.sm,
+                                  backgroundColor: colors.surface,
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <Icon name="cube" size={22} color={colors.orange} />
+                              </View>
+                            )}
+                            <View style={{ flex: 1, gap: 2 }}>
+                              <Body style={{ fontWeight: '700' }}>{m.title}</Body>
+                              <Row gap={spacing.md}>
+                                {m.fileCount > 0 && (
+                                  <Row gap={4}>
+                                    <Icon name="layers" size={11} color={colors.textFaint} />
+                                    <Muted>{m.fileCount}</Muted>
+                                  </Row>
+                                )}
+                                {m.downloadCount > 0 && (
+                                  <Row gap={4}>
+                                    <Icon name="download" size={11} color={colors.textFaint} />
+                                    <Muted>{m.downloadCount}</Muted>
+                                  </Row>
+                                )}
+                                {hasAccess && !isFree && (
+                                  <Badge label={t('models.owned')} tone={{ bg: colors.successSoft, fg: colors.success }} />
+                                )}
+                                {isFree && (
+                                  <Badge label={t('common.free')} tone={{ bg: colors.successSoft, fg: colors.success }} />
+                                )}
+                              </Row>
+                            </View>
                           </Row>
-                          <Row gap={4}>
-                            <Icon name="download" size={11} color={colors.textFaint} />
-                            <Muted>{advert.model.downloadCount}</Muted>
-                          </Row>
-                          {advert.model.hasAccess && (
-                            <Badge label={t('models.owned')} tone={{ bg: colors.successSoft, fg: colors.success }} />
-                          )}
                         </Row>
-                      </View>
-                      <Icon name="external" size={13} color={colors.textFaint} />
-                    </Row>
-                  </Card>
-                </Pressable>
+
+                        {files.length > 0 && (
+                          <View style={{ gap: spacing.xs, marginTop: spacing.xs }}>
+                            <Divider />
+                            {files.map((file) => (
+                              <Row
+                                key={file.id}
+                                style={{
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  paddingVertical: 4,
+                                  gap: spacing.sm,
+                                }}
+                              >
+                                <Row gap={spacing.xs} style={{ alignItems: 'center', flex: 1 }}>
+                                  <Icon name="cube" size={14} color={colors.textFaint} />
+                                  <Body style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>
+                                    {file.fileName}
+                                  </Body>
+                                  {file.sizeBytes ? (
+                                    <Muted style={{ fontSize: 11 }}>
+                                      {(file.sizeBytes / 1024 / 1024).toFixed(1)} MB
+                                    </Muted>
+                                  ) : null}
+                                </Row>
+                                {hasAccess ? (
+                                  <Button
+                                    title={t('models.download')}
+                                    icon="download"
+                                    size="sm"
+                                    variant="outline"
+                                    loading={downloadingFileId === file.id}
+                                    onPress={() =>
+                                      void handleDownload(
+                                        advert.id,
+                                        file.id,
+                                        file.fileName,
+                                        file.downloadUrl || api.advertFileDownloadUrl(advert.id, file.id),
+                                      )
+                                    }
+                                  />
+                                ) : (
+                                  <Badge
+                                    label={t('advert.buyNow')}
+                                    tone={{ bg: colors.surface, fg: colors.textFaint }}
+                                  />
+                                )}
+                              </Row>
+                            ))}
+                          </View>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </View>
               )}
             </View>
           </Card>

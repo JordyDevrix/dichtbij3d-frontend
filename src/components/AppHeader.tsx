@@ -25,7 +25,6 @@ export interface NavItem {
 /** Desktop top navigation — browsing destinations only. */
 export const PRIMARY_NAV: NavItem[] = [
   { href: '/', labelKey: 'nav.marketplace', icon: 'layers' },
-  { href: '/models', labelKey: 'nav.models', icon: 'cubes' },
   { href: '/calculator', labelKey: 'nav.calculator', icon: 'calculator' },
 ];
 
@@ -35,7 +34,7 @@ export const PRIMARY_NAV: NavItem[] = [
  */
 export const TAB_ITEMS: NavItem[] = [
   { href: '/', labelKey: 'nav.marketplace', icon: 'layers' },
-  { href: '/models', labelKey: 'nav.models', icon: 'cubes' },
+  { href: '/messages', labelKey: 'chat.title', icon: 'envelope' },
   { href: '/create', labelKey: 'nav.create', icon: 'plus' },
   { href: '/notifications', labelKey: 'nav.notifications', icon: 'bell' },
   { href: '/profile', labelKey: 'nav.profile', icon: 'user' },
@@ -304,7 +303,6 @@ export function AppHeader() {
             badge={unreadMessages}
             onPress={() => go('/messages')}
           />
-          <MenuItem icon="cubes" label={t('models.mine')} onPress={() => go('/models')} />
           <MenuItem icon="star" label={t('nav.favourites')} onPress={() => go('/favourites')} />
           <MenuItem icon="calculator" label={t('nav.calculator')} onPress={() => go('/calculator')} />
           <MenuItem icon="shield" label={t('nav.security')} onPress={() => go('/settings/security')} />

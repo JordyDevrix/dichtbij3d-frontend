@@ -7,7 +7,6 @@ import { ADVERT_TYPES, CATEGORIES } from '../src/api/types';
 import type { AdvertType, Category, ModelSummary, Tag } from '../src/api/types';
 import { Icon } from '../src/components/Icon';
 import { AppImage } from '../src/components/AppImage';
-import { ModelUploadSheet } from '../src/components/ModelUploadSheet';
 import { Page } from '../src/components/Page';
 import {
   Body,
@@ -32,7 +31,7 @@ import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { useI18n } from '../src/i18n';
 import { advertTypeColor, colors, radius, spacing } from '../src/theme/theme';
 import { toCents } from '../src/utils/format';
-import { pickAndUploadImages } from '../src/utils/upload';
+import { pickAndUploadImages, pickAndUploadFiles } from '../src/utils/upload';
 
 const TYPE_ICONS: Record<AdvertType, 'print' | 'cube' | 'coins' | 'box'> = {
   PRINT_REQUEST: 'print',
@@ -65,14 +64,22 @@ export default function CreateAdvertScreen() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
   const [images, setImages] = useState<{ key: string; url: string }[]>([]);
-  const [modelId, setModelId] = useState<string | null>(null);
-  const [uploadOpen, setUploadOpen] = useState(false);
+  const [models, setModels] = useState<{
+    id?: string;
+    title: string;
+    files: {
+      objectKey: string;
+      fileName: string;
+      contentType?: string;
+      sizeBytes: number;
+    }[];
+  }[]>([]);
+  const [uploadingModels, setUploadingModels] = useState(false);
   const [thumbnailModalOpen, setThumbnailModalOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
 
   const [tags, setTags] = useState<Tag[]>([]);
   const [loadingAdvert, setLoadingAdvert] = useState(false);
-  const [myModels, setMyModels] = useState<ModelSummary[]>([]);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +99,6 @@ export default function CreateAdvertScreen() {
 
   useEffect(() => {
     if (!user) return;
-    api.myModels().then(setMyModels).catch(() => undefined);
     if (!isEditing) setCity((prev) => prev || user.city || '');
   }, [user, isEditing]);
 
@@ -117,7 +123,28 @@ export default function CreateAdvertScreen() {
         setCity(advert.city ?? '');
         setDeadline(advert.deadline ?? '');
         setSelectedTags(advert.tags.map((tag) => tag.slug));
-        setModelId(advert.model?.id ?? null);
+        if (advert.models && advert.models.length > 0) {
+          setModels(
+            advert.models.map((m) => ({
+              id: m.model.id,
+              title: m.model.title,
+              files: m.files.map((f) => ({
+                objectKey: '',
+                fileName: f.fileName,
+                contentType: f.contentType,
+                sizeBytes: f.sizeBytes,
+              })),
+            }))
+          );
+        } else if (advert.model) {
+          setModels([
+            {
+              id: advert.model.id,
+              title: advert.model.title,
+              files: [],
+            },
+          ]);
+        }
         setImages(
           advert.imageUrls
             .map((url, index) => ({ key: advert.imageKeys?.[index] ?? '', url: absoluteUrl(url) ?? url }))
@@ -219,11 +246,47 @@ export default function CreateAdvertScreen() {
     });
   };
 
+  const addModelFiles = async () => {
+    setUploadingModels(true);
+    try {
+      const uploaded = await pickAndUploadFiles('models');
+      if (uploaded.length > 0) {
+        const newItems = uploaded.map((f) => ({
+          title: f.fileName.replace(/\.[^/.]+$/, ''),
+          files: [
+            {
+              objectKey: f.objectKey,
+              fileName: f.fileName,
+              sizeBytes: f.sizeBytes,
+            },
+          ],
+        }));
+        setModels((prev) => [...prev, ...newItems]);
+        clearField('models');
+        toast.success(t('create.modelSelected'));
+      }
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
+    } finally {
+      setUploadingModels(false);
+    }
+  };
+
+  const removeModel = (index: number) => {
+    setModels((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateModelTitle = (index: number, newTitle: string) => {
+    setModels((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, title: newTitle } : item))
+    );
+  };
+
   /** Everything the backend would reject, checked up front and reported per field. */
   const validate = () => {
     const errors: Record<string, string> = {};
     if (title.trim().length < 4) errors.title = t('create.titleTooShort');
-    if (needsModel && !modelId) errors.modelId = t('create.attachModelRequired');
+    if (needsModel && models.length === 0) errors.models = t('create.attachModelRequired');
     if (description.trim().length < 10) errors.description = t('create.descriptionTooShort');
     if (deadline.trim() && !isValidDate(deadline.trim())) errors.deadline = t('create.invalidDate');
 
@@ -260,14 +323,19 @@ export default function CreateAdvertScreen() {
         category,
         title: title.trim(),
         description: description.trim(),
-        priceCents: isRequest ? undefined : toCents(price),
+        priceCents: isRequest ? undefined : (price.trim() ? toCents(price) : undefined),
         allowBidding,
-        budgetMinCents: isRequest ? toCents(budgetMin) : undefined,
-        budgetMaxCents: isRequest ? toCents(budgetMax) : undefined,
+        budgetMinCents: isRequest ? (budgetMin.trim() ? toCents(budgetMin) : undefined) : undefined,
+        budgetMaxCents: isRequest ? (budgetMax.trim() ? toCents(budgetMax) : undefined) : undefined,
         hiddenAfterAccept,
         city: city.trim() || undefined,
         deadline: deadline.trim() || undefined,
-        modelId: modelId ?? undefined,
+        modelIds: models.map((m) => m.id).filter(Boolean) as string[],
+        models: models.map((m) => ({
+          id: m.id,
+          title: m.title.trim() || '3D Model',
+          files: m.files.filter((f) => f.objectKey),
+        })),
         tags: selectedTags,
         imageKeys: images.map((image) => image.key),
       };
@@ -376,40 +444,82 @@ export default function CreateAdvertScreen() {
         <Muted>{t('create.categoryHint')}</Muted>
 
         <View style={{ gap: spacing.sm }}>
-          <Body style={{ fontWeight: '600' }}>{needsModel ? t('create.attachModel') : t('create.linkModel')}</Body>
-          {needsModel && <Muted>{t('create.attachModelHint')}</Muted>}
-          {myModels.length > 0 ? (
-            <Select
-              label={t('create.pickFromLibrary')}
-              value={modelId ?? ''}
-              error={fieldErrors.modelId}
-              options={[
-                { value: '', label: '—' },
-                ...myModels.map((model) => ({ value: model.id, label: model.title })),
-              ]}
-              onChange={(value) => {
-                setModelId(value || null);
-                clearField('modelId');
-                if (value && images.length === 0) {
-                  const selectedModel = myModels.find((m) => m.id === value);
-                  if (selectedModel?.thumbnailUrl) {
-                    const key = selectedModel.thumbnailUrl.replace(/^\/api\/files\//, '');
-                    setImages([{ key, url: selectedModel.thumbnailUrl }]);
-                  }
-                }
-              }}
-              icon="cube"
-            />
+          <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <Body style={{ fontWeight: '600' }}>{t('create.attachModel')}</Body>
+            {models.length > 0 && (
+              <View
+                style={{
+                  backgroundColor: colors.surfaceAlt,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: radius.pill,
+                }}
+              >
+                <Muted style={{ fontSize: 12, fontWeight: '600' }}>{models.length}</Muted>
+              </View>
+            )}
+          </Row>
+          <Muted>{t('create.attachModelHint')}</Muted>
+
+          {fieldErrors.models && (
+            <Body style={{ color: colors.danger, fontSize: 13 }}>{fieldErrors.models}</Body>
+          )}
+
+          {models.length > 0 ? (
+            <View style={{ gap: spacing.xs, marginTop: spacing.xs }}>
+              {models.map((item, idx) => (
+                <View
+                  key={item.id || `${item.title}-${idx}`}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: spacing.sm,
+                    backgroundColor: colors.surfaceAlt,
+                    borderRadius: radius.md,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    gap: spacing.sm,
+                  }}
+                >
+                  <Icon name="cube" size={20} color={colors.orange} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Input
+                      value={item.title}
+                      onChangeText={(val) => updateModelTitle(idx, val)}
+                      placeholder={t('create.modelTitlePlaceholder')}
+                    />
+                    {item.files.length > 0 && (
+                      <Muted style={{ fontSize: 11 }}>
+                        {item.files.map((f) => `${f.fileName}${f.sizeBytes ? ` (${(f.sizeBytes / 1024 / 1024).toFixed(1)} MB)` : ''}`).join(', ')}
+                      </Muted>
+                    )}
+                  </View>
+                  <Pressable
+                    accessibilityLabel={t('create.removeModel')}
+                    onPress={() => removeModel(idx)}
+                    style={({ pressed }) => ({
+                      padding: 8,
+                      borderRadius: radius.sm,
+                      opacity: pressed ? 0.6 : 1,
+                    })}
+                  >
+                    <Icon name="close" size={16} color={colors.danger} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
           ) : (
             <Muted>{t('create.noModelsYet')}</Muted>
           )}
-          <Row>
+
+          <Row style={{ marginTop: spacing.xs }}>
             <Button
-              title={t('create.uploadNewModel')}
+              title={t('create.uploadModels')}
               icon="upload"
               size="sm"
               variant="outline"
-              onPress={() => setUploadOpen(true)}
+              loading={uploadingModels}
+              onPress={addModelFiles}
             />
           </Row>
         </View>
@@ -742,23 +852,6 @@ export default function CreateAdvertScreen() {
         </Card>
       )}
 
-      <ModelUploadSheet
-        open={uploadOpen}
-        onClose={() => setUploadOpen(false)}
-        defaultCategory={category}
-        onCreated={(model) => {
-          // The advert itself is the listing, so the model is not published twice.
-          setMyModels((prev) => [model, ...prev]);
-          setModelId(model.id);
-          clearField('modelId');
-          if (model.thumbnailUrl && images.length === 0) {
-            const key = model.thumbnailUrl.replace(/^\/api\/files\//, '');
-            setImages([{ key, url: model.thumbnailUrl }]);
-          }
-          toast.success(t('create.modelSelected'));
-        }}
-      />
-
       {/* Thumbnail Selection Overlay Modal */}
       <Sheet
         open={thumbnailModalOpen}
@@ -900,6 +993,7 @@ function fieldLabel(field: string, t: (key: string) => string) {
       return t('profile.city');
     case 'tags':
       return t('marketplace.tags');
+    case 'models':
     case 'modelId':
       return t('create.attachModel');
     case 'category':

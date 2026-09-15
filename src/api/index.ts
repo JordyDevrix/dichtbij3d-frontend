@@ -6,6 +6,7 @@ import type {
   AdvertCreateRequest,
   AdvertDetail,
   AdvertList,
+  AdvertModelInput,
   AdvertSearchParams,
   AdvertSummary,
   AppNotification,
@@ -18,6 +19,7 @@ import type {
   Bid,
   CostEstimateRequest,
   CostEstimateResponse,
+  MessageKind,
   MessageResponse,
   ModelCreateRequest,
   ModelDetail,
@@ -189,6 +191,10 @@ export const api = {
   acquireModel: (id: string) => request<MessageResponse>(`/api/models/${id}/acquire`, { method: 'POST' }),
   modelDownloadUrl: (modelId: string, fileId: string) =>
     `${API_BASE_URL}/api/models/${modelId}/files/${fileId}/download`,
+  advertFileDownloadUrl: (advertId: string, fileId: string) =>
+    `${API_BASE_URL}/api/adverts/${advertId}/files/${fileId}/download`,
+  chatFileDownloadUrl: (conversationId: string, messageId: string) =>
+    `${API_BASE_URL}/api/conversations/${conversationId}/messages/${messageId}/download`,
 
   /* ---------------------------------------------------------------- notifications */
   notifications: (page = 0, size = 30) =>
@@ -206,8 +212,23 @@ export const api = {
     request<Conversation>('/api/conversations', { method: 'POST', body }),
   chatMessages: (id: string, page = 0, size = 40) =>
     request<PageResponse<ChatMessage>>(`/api/conversations/${id}/messages`, { query: { page, size } }),
-  sendChatMessage: (id: string, body: string) =>
-    request<ChatMessage>(`/api/conversations/${id}/messages`, { method: 'POST', body: { body } }),
+  sendChatMessage: (
+    id: string,
+    data:
+      | string
+      | {
+          body?: string;
+          kind?: MessageKind;
+          fileName?: string;
+          fileSize?: number;
+          objectKey?: string;
+          contentType?: string;
+        },
+  ) =>
+    request<ChatMessage>(`/api/conversations/${id}/messages`, {
+      method: 'POST',
+      body: typeof data === 'string' ? { body: data } : data,
+    }),
   markConversationRead: (id: string) =>
     request<MessageResponse>(`/api/conversations/${id}/read`, { method: 'POST' }),
   unreadMessageCount: () => request<{ count: number }>('/api/conversations/unread-count'),

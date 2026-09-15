@@ -20,6 +20,9 @@ import { useI18n } from '../../src/i18n';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { colors, radius, shadow, spacing } from '../../src/theme/theme';
 import { formatDateTime } from '../../src/utils/format';
+import { pickAndUploadFiles } from '../../src/utils/upload';
+import { downloadFile } from '../../src/utils/download';
+import { useToast } from '../../src/context/ToastContext';
 
 const PAGE_SIZE = 40;
 const POLL_MS = 6000;
@@ -32,11 +35,13 @@ export default function ConversationScreen() {
   const { isWide } = useBreakpoint();
   const { user, booting, refreshUnread } = useAuth();
 
+  const toast = useToast();
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [missing, setMissing] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -115,6 +120,39 @@ export default function ConversationScreen() {
       if (err instanceof ApiError && err.status === 404) setMissing(true);
     } finally {
       setSending(false);
+    }
+  };
+
+  const attachFile = async () => {
+    if (!id || uploadingFile) return;
+    setUploadingFile(true);
+    try {
+      const uploads = await pickAndUploadFiles('chat');
+      if (uploads.length > 0) {
+        for (const upload of uploads) {
+          const message = await api.sendChatMessage(id, {
+            kind: 'FILE',
+            fileName: upload.fileName,
+            fileSize: upload.sizeBytes,
+            objectKey: upload.objectKey,
+            body: upload.fileName,
+          });
+          pinnedToBottom.current = true;
+          merge([message]);
+        }
+      }
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleDownload = async (url: string, fileName: string) => {
+    try {
+      await downloadFile(url, fileName);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
     }
   };
 
@@ -253,6 +291,7 @@ export default function ConversationScreen() {
                 previous={messages[index - 1]}
                 next={messages[index + 1]}
                 locale={locale}
+                onDownload={handleDownload}
               />
             ))}
           </>
@@ -279,6 +318,29 @@ export default function ConversationScreen() {
             alignItems: 'flex-end',
           }}
         >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('chat.attachFile')}
+            disabled={uploadingFile || sending}
+            onPress={() => void attachFile()}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: radius.lg,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.surfaceAlt,
+              borderWidth: 1,
+              borderColor: colors.border,
+              opacity: uploadingFile ? 0.6 : 1,
+            }}
+          >
+            {uploadingFile ? (
+              <Spinner />
+            ) : (
+              <Icon name="cube" size={17} color={colors.orange} />
+            )}
+          </Pressable>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -352,12 +414,16 @@ function Bubble({
   previous,
   next,
   locale,
+  onDownload,
 }: {
   message: ChatMessage;
   previous?: ChatMessage;
   next?: ChatMessage;
   locale: string;
+  onDownload?: (url: string, fileName: string) => void;
 }) {
+  const { t } = useI18n();
+
   if (message.kind === 'SYSTEM')
     return (
       <View style={{ alignItems: 'center', paddingVertical: spacing.sm }}>
@@ -377,7 +443,83 @@ function Bubble({
       </View>
     );
 
-  const grouped = previous?.senderId === message.senderId && previous?.kind === 'TEXT';
+  const grouped = previous?.senderId === message.senderId && previous?.kind === message.kind;
+
+  if (message.kind === 'FILE') {
+    const isMine = message.mine;
+    const fileName = message.fileName || message.body;
+    return (
+      <View
+        style={{
+          alignItems: isMine ? 'flex-end' : 'flex-start',
+          marginTop: grouped ? 2 : spacing.sm,
+        }}
+      >
+        <View
+          style={{
+            maxWidth: '82%',
+            padding: spacing.sm,
+            borderRadius: radius.lg,
+            borderBottomRightRadius: isMine ? 4 : radius.lg,
+            borderBottomLeftRadius: isMine ? radius.lg : 4,
+            backgroundColor: isMine ? colors.orangeSofter : colors.surface,
+            borderWidth: 1,
+            borderColor: isMine ? colors.orangeBorder : colors.border,
+            gap: spacing.xs,
+            ...shadow.card,
+          }}
+        >
+          <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: radius.md,
+                backgroundColor: isMine ? colors.surface : colors.surfaceAlt,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon name="cube" size={18} color={colors.orange} />
+            </View>
+            <View style={{ flex: 1, gap: 1 }}>
+              <Body style={{ fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
+                {fileName}
+              </Body>
+              {message.fileSize ? (
+                <Muted style={{ fontSize: 11 }}>
+                  {(message.fileSize / 1024 / 1024).toFixed(1)} MB
+                </Muted>
+              ) : null}
+            </View>
+          </Row>
+          {message.body && message.body !== fileName && (
+            <Text style={{ fontSize: 13, color: colors.ink }}>{message.body}</Text>
+          )}
+          <Button
+            title={t('chat.downloadFile')}
+            icon="download"
+            size="sm"
+            variant="outline"
+            onPress={() => {
+              const url =
+                message.fileUrl ||
+                api.chatFileDownloadUrl(message.conversationId, message.id);
+              onDownload?.(url, fileName);
+            }}
+          />
+        </View>
+        {endsBurst(message, next) && (
+          <Text style={{ fontSize: 10, color: colors.textFaint, marginTop: 3, marginHorizontal: 4 }}>
+            {isToday(message.createdAt)
+              ? clock(message.createdAt, locale)
+              : formatDateTime(message.createdAt, locale)}
+          </Text>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View
       style={{

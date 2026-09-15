@@ -209,6 +209,7 @@ export interface AdvertDetail {
   acceptedBy: PublicUser | null;
   acceptedAt: string | null;
   model: ModelSummary | null;
+  models?: ModelDetail[];
   /** The attached model was deleted by its owner, so the advert has no files behind it. */
   modelRemoved?: boolean;
   reactions: Reaction[];
@@ -218,6 +219,18 @@ export interface AdvertDetail {
   canModerate: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AdvertModelInput {
+  id?: string;
+  title?: string;
+  description?: string;
+  files: {
+    objectKey: string;
+    fileName: string;
+    contentType?: string;
+    sizeBytes: number;
+  }[];
 }
 
 export interface AdvertCreateRequest {
@@ -234,6 +247,8 @@ export interface AdvertCreateRequest {
   postalCode?: string | null;
   deadline?: string | null;
   modelId?: string | null;
+  modelIds?: string[];
+  models?: AdvertModelInput[];
   tags?: string[];
   imageKeys?: string[];
 }
@@ -341,13 +356,18 @@ export interface Conversation {
   createdAt: string;
 }
 
+export type MessageKind = 'TEXT' | 'SYSTEM' | 'FILE';
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
   body: string;
-  kind: 'TEXT' | 'SYSTEM';
+  kind: MessageKind;
   senderId: string;
   mine: boolean;
+  fileName?: string | null;
+  fileSize?: number | null;
+  fileUrl?: string | null;
   createdAt: string;
 }
 
