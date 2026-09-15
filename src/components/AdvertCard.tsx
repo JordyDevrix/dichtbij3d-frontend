@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, View, ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../api';
 import { absoluteUrl } from '../api/client';
@@ -20,9 +20,10 @@ import { ShareModal, shareAdvert } from './ShareModal';
 interface Props {
   advert: AdvertSummary;
   onChanged?: () => void;
+  style?: ViewStyle;
 }
 
-export function AdvertCard({ advert, onChanged }: Props) {
+export function AdvertCard({ advert, onChanged, style }: Props) {
   const router = useRouter();
   const { t, locale } = useI18n();
   const { user, isAdmin } = useAuth();
@@ -100,7 +101,18 @@ export function AdvertCard({ advert, onChanged }: Props) {
   };
 
   return (
-    <View ref={ref} style={{ flexGrow: 1, flexShrink: 1, flexBasis: isPhone ? '100%' : 300, maxWidth: isPhone ? '100%' : 460 }}>
+    <View
+      ref={ref}
+      style={[
+        {
+          flexGrow: 1,
+          flexShrink: 1,
+          flexBasis: isPhone ? '100%' : 300,
+          maxWidth: isPhone ? '100%' : 460,
+        },
+        style,
+      ]}
+    >
       <Pressable
         onPress={() => router.push(`/advert/${advert.id}`)}
         onLongPress={openMenu}
@@ -109,6 +121,7 @@ export function AdvertCard({ advert, onChanged }: Props) {
         onHoverOut={() => setHovered(false)}
         style={[
           {
+            flex: 1,
             backgroundColor: colors.surface,
             borderRadius: radius.lg,
             borderWidth: 1,
@@ -207,60 +220,64 @@ export function AdvertCard({ advert, onChanged }: Props) {
           </View>
         </View>
 
-        <View style={{ padding: spacing.lg, gap: spacing.sm }}>
-          <H3 numberOfLines={2}>{advert.title}</H3>
-          <Muted numberOfLines={2}>{advert.excerpt}</Muted>
+        <View style={{ padding: spacing.lg, gap: spacing.sm, flex: 1, justifyContent: 'space-between' }}>
+          <View style={{ gap: spacing.sm }}>
+            <H3 numberOfLines={2}>{advert.title}</H3>
+            <Muted numberOfLines={2}>{advert.excerpt}</Muted>
 
-          {advert.tags.length > 0 && (
-            <Row gap={6} style={{ flexWrap: 'wrap' }}>
-              {advert.tags.slice(0, 3).map((tag) => (
-                <Chip key={tag.id} label={tag.label} size="sm" />
-              ))}
-              {advert.tags.length > 3 && (
-                <Muted style={typography.tiny}>+{advert.tags.length - 3}</Muted>
-              )}
-            </Row>
-          )}
-
-          <Row style={{ marginTop: spacing.xs, justifyContent: 'space-between' }}>
-            <H2>{priceLabel()}</H2>
-            {advert.allowBidding && (
-              <Row gap={spacing.xs}>
-                <Muted>{t('advert.highestBid')}</Muted>
-                <H3>{advert.highestBidCents ? money(advert.highestBidCents, locale, advert.currency) : '—'}</H3>
-                <Muted>
-                  {advert.bidCount} {t('advert.bids')}
-                </Muted>
+            {advert.tags.length > 0 && (
+              <Row gap={6} style={{ flexWrap: 'wrap' }}>
+                {advert.tags.slice(0, 3).map((tag) => (
+                  <Chip key={tag.id} label={tag.label} size="sm" />
+                ))}
+                {advert.tags.length > 3 && (
+                  <Muted style={typography.tiny}>+{advert.tags.length - 3}</Muted>
+                )}
               </Row>
             )}
-          </Row>
+          </View>
 
-          <View style={{ height: 1, backgroundColor: colors.border, marginTop: spacing.xs }} />
+          <View style={{ gap: spacing.xs, marginTop: spacing.xs }}>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <H2>{priceLabel()}</H2>
+              {advert.allowBidding && (
+                <Row gap={spacing.xs}>
+                  <Muted>{t('advert.highestBid')}</Muted>
+                  <H3>{advert.highestBidCents ? money(advert.highestBidCents, locale, advert.currency) : '—'}</H3>
+                  <Muted>
+                    {advert.bidCount} {t('advert.bids')}
+                  </Muted>
+                </Row>
+              )}
+            </Row>
 
-          <Row style={{ justifyContent: 'space-between' }}>
-            <Pressable
-              onPress={() => router.push(`/user/${advert.author.id}`)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 }}
-            >
-              <Avatar name={advert.author.displayName} uri={absoluteUrl(advert.author.avatarUrl)} size={22} />
-              <Muted numberOfLines={1} style={{ flexShrink: 1, fontSize: 12 }}>
-                {advert.author.displayName}
-                {advert.city ? ` · ${advert.city}` : ''}
-              </Muted>
-            </Pressable>
-            <Row gap={spacing.md}>
-              <Row gap={4}>
-                <Icon name="eye" size={11} color={colors.textFaint} />
-                <Muted>{advert.viewCount}</Muted>
-              </Row>
-              <Row gap={4}>
-                <Icon name="comments" size={11} color={colors.textFaint} />
-                <Muted>{advert.reactionCount}</Muted>
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.xs }} />
+
+            <Row style={{ justifyContent: 'space-between' }}>
+              <Pressable
+                onPress={() => router.push(`/user/${advert.author.id}`)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 }}
+              >
+                <Avatar name={advert.author.displayName} uri={absoluteUrl(advert.author.avatarUrl)} size={22} />
+                <Muted numberOfLines={1} style={{ flexShrink: 1, fontSize: 12 }}>
+                  {advert.author.displayName}
+                  {advert.city ? ` · ${advert.city}` : ''}
+                </Muted>
+              </Pressable>
+              <Row gap={spacing.md}>
+                <Row gap={4}>
+                  <Icon name="eye" size={11} color={colors.textFaint} />
+                  <Muted>{advert.viewCount}</Muted>
+                </Row>
+                <Row gap={4}>
+                  <Icon name="comments" size={11} color={colors.textFaint} />
+                  <Muted>{advert.reactionCount}</Muted>
+                </Row>
               </Row>
             </Row>
-          </Row>
 
-          <Muted style={typography.tiny}>{timeAgo(advert.createdAt, t, locale)}</Muted>
+            <Muted style={typography.tiny}>{timeAgo(advert.createdAt, t, locale)}</Muted>
+          </View>
         </View>
       </Pressable>
 

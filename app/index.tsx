@@ -455,7 +455,9 @@ export default function HomeScreen() {
                       gap: spacing.md,
                       paddingHorizontal: isPhone ? spacing.lg : 0,
                       paddingRight: isPhone ? spacing.xxl : spacing.lg,
-                      paddingVertical: spacing.xs,
+                      paddingTop: spacing.xs,
+                      paddingBottom: spacing.md,
+                      alignItems: 'stretch',
                     }}
                   >
                     {items.map((advert) => (
@@ -466,7 +468,15 @@ export default function HomeScreen() {
                           flexShrink: 0,
                         }}
                       >
-                        <AdvertCard advert={advert} onChanged={loadData} />
+                        <AdvertCard
+                          advert={advert}
+                          style={{
+                            flexBasis: 'auto',
+                            maxWidth: '100%',
+                            height: '100%',
+                          }}
+                          onChanged={loadData}
+                        />
                       </View>
                     ))}
                   </ScrollView>
