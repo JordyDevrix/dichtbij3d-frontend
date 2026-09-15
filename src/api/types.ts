@@ -94,6 +94,7 @@ export interface UserProfile {
   mutedNotifications: NotificationType[];
   enabled: boolean;
   totpEnabled: boolean;
+  emailMfaEnabled?: boolean;
   passkeyCount: number;
   createdAt?: string | null;
 }
@@ -117,6 +118,7 @@ export interface AuthResponse {
   user?: UserProfile | null;
   mfaRequired?: boolean;
   mfaToken?: string | null;
+  mfaMethods?: ('totp' | 'email')[] | null;
 }
 
 export interface TotpSetupResponse {
@@ -427,6 +429,7 @@ export interface AdminUser {
   enabled: boolean;
   disabledReason: string | null;
   totpEnabled: boolean;
+  emailMfaEnabled?: boolean;
   advertCount: number;
   lastLoginAt: string | null;
   createdAt: string;

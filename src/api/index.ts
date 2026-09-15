@@ -76,6 +76,14 @@ export const api = {
   totpDisable: (code: string) =>
     request<MessageResponse>('/api/auth/mfa/totp/disable', { method: 'POST', body: { code } }),
 
+  emailMfaSetup: () => request<MessageResponse>('/api/auth/mfa/email/setup', { method: 'POST' }),
+  emailMfaEnable: (code: string) =>
+    request<MessageResponse>('/api/auth/mfa/email/enable', { method: 'POST', body: { code } }),
+  emailMfaDisable: (body?: { code?: string; password?: string }) =>
+    request<MessageResponse>('/api/auth/mfa/email/disable', { method: 'POST', body: body ?? {} }),
+  emailMfaSend: (mfaToken: string) =>
+    request<MessageResponse>('/api/auth/mfa/email/send', { method: 'POST', body: { mfaToken }, auth: false }),
+
   passkeys: () => request<Passkey[]>('/api/auth/passkeys'),
   passkeyRegisterOptions: () =>
     request<Record<string, any>>('/api/auth/passkeys/register/options', { method: 'POST' }),

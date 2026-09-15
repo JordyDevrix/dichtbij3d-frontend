@@ -9,6 +9,7 @@ interface LoginResult {
   ok: boolean;
   mfaRequired?: boolean;
   mfaToken?: string | null;
+  mfaMethods?: ('totp' | 'email')[] | null;
 }
 
 interface AuthValue {
@@ -95,7 +96,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleAuthResponse = useCallback(
     async (auth: AuthResponse): Promise<LoginResult> => {
-      if (auth.mfaRequired) return { ok: false, mfaRequired: true, mfaToken: auth.mfaToken };
+      if (auth.mfaRequired) {
+        return {
+          ok: false,
+          mfaRequired: true,
+          mfaToken: auth.mfaToken,
+          mfaMethods: auth.mfaMethods,
+        };
+      }
       await saveTokens(auth);
       if (auth.user) {
         applyProfile(auth.user);

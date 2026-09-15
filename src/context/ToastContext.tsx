@@ -15,12 +15,14 @@ interface ToastValue {
   toast: (message: string, tone?: ToastTone) => void;
   success: (message: string) => void;
   error: (message: string) => void;
+  info: (message: string) => void;
 }
 
 const ToastContext = createContext<ToastValue>({
   toast: () => undefined,
   success: () => undefined,
   error: () => undefined,
+  info: () => undefined,
 });
 
 /** Read lazily so a theme swap is reflected without reloading the module. */
@@ -48,6 +50,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       toast,
       success: (message: string) => toast(message, 'success'),
       error: (message: string) => toast(message, 'error'),
+      info: (message: string) => toast(message, 'info'),
     }),
     [toast],
   );

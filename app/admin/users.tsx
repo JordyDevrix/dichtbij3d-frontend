@@ -120,6 +120,9 @@ export default function AdminUsersScreen() {
                     {user.totpEnabled && (
                       <Badge label="TOTP" tone={{ bg: colors.infoSoft, fg: colors.info }} />
                     )}
+                    {user.emailMfaEnabled && (
+                      <Badge label="Email MFA" tone={{ bg: colors.warningSoft, fg: colors.orange }} />
+                    )}
                   </Row>
                   <Muted>{user.email}</Muted>
                   <Muted>

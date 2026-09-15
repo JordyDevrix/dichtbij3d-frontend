@@ -30,7 +30,14 @@ export default function LoginScreen() {
     try {
       const result = await login(email.trim(), password);
       if (result.mfaRequired && result.mfaToken) {
-        router.push({ pathname: '/auth/mfa', params: { token: result.mfaToken, redirect: redirect ?? '' } });
+        router.push({
+          pathname: '/auth/mfa',
+          params: {
+            token: result.mfaToken,
+            redirect: redirect ?? '',
+            methods: result.mfaMethods?.join(',') ?? '',
+          },
+        });
         return;
       }
       if (result.ok) done();

@@ -44,6 +44,9 @@ export default function SecurityScreen() {
   const [totpCode, setTotpCode] = useState('');
   const [disableCode, setDisableCode] = useState('');
 
+  const [emailSetupStep, setEmailSetupStep] = useState(false);
+  const [emailCode, setEmailCode] = useState('');
+
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [passkeyLabel, setPasskeyLabel] = useState('');
   const [loadingPasskeys, setLoadingPasskeys] = useState(true);
@@ -254,6 +257,105 @@ export default function SecurityScreen() {
               variant="outline"
               loading={busy}
               onPress={() => wrap(async () => setSetup(await api.totpSetup()))}
+            />
+          </View>
+        )}
+      </Card>
+
+      <Card style={{ gap: spacing.md }}>
+        <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm }}>
+          <H2>{t('security.emailMfa')}</H2>
+          <Badge
+            label={user.emailMfaEnabled ? t('security.enabled') : t('security.disabled')}
+            tone={
+              user.emailMfaEnabled
+                ? { bg: colors.successSoft, fg: colors.success }
+                : { bg: colors.surface, fg: colors.textMuted }
+            }
+          />
+        </Row>
+        <Muted>{t('security.emailMfaHelp')}</Muted>
+
+        {user.emailMfaEnabled ? (
+          <View style={{ alignItems: isWide ? 'flex-start' : 'stretch' }}>
+            <Button
+              title={t('security.disableEmailMfa')}
+              icon="ban"
+              variant="danger"
+              loading={busy}
+              onPress={() =>
+                wrap(async () => {
+                  await api.emailMfaDisable();
+                  await refreshProfile();
+                  toast.success(t('security.emailMfaDisabled'));
+                })
+              }
+            />
+          </View>
+        ) : emailSetupStep ? (
+          <View style={{ gap: spacing.md }}>
+            <Muted>{t('security.emailMfaCodeSent')}</Muted>
+            <View style={{ flexDirection: isWide ? 'row' : 'column', gap: spacing.md, alignItems: isWide ? 'flex-end' : 'stretch' }}>
+              <View style={{ flex: 1 }}>
+                <Input
+                  label={t('security.codeFromEmail')}
+                  value={emailCode}
+                  onChangeText={setEmailCode}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  icon="shield"
+                />
+              </View>
+              <Button
+                title={t('security.enableEmailMfa')}
+                icon="check"
+                loading={busy}
+                onPress={() =>
+                  wrap(async () => {
+                    await api.emailMfaEnable(emailCode.trim());
+                    setEmailCode('');
+                    setEmailSetupStep(false);
+                    await refreshProfile();
+                    toast.success(t('security.emailMfaEnabled'));
+                  })
+                }
+              />
+              <Button
+                title={t('security.resendEmailCode')}
+                icon="envelope"
+                variant="outline"
+                loading={busy}
+                onPress={() =>
+                  wrap(async () => {
+                    await api.emailMfaSetup();
+                    toast.success(t('security.emailCodeResent'));
+                  })
+                }
+              />
+              <Button
+                title={t('common.cancel')}
+                variant="ghost"
+                onPress={() => {
+                  setEmailSetupStep(false);
+                  setEmailCode('');
+                }}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={{ alignItems: isWide ? 'flex-start' : 'stretch' }}>
+            <Button
+              title={t('security.setupEmailMfa')}
+              icon="envelope"
+              variant="outline"
+              loading={busy}
+              onPress={() =>
+                wrap(async () => {
+                  await api.emailMfaSetup();
+                  setEmailSetupStep(true);
+                  toast.info(t('security.emailMfaCodeSent'));
+                })
+              }
             />
           </View>
         )}
