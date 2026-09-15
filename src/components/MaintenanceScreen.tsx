@@ -95,12 +95,6 @@ export function MaintenanceScreen() {
             <Icon name="wrench" size={36} color={colors.orange} />
           </View>
 
-          {/* Status Badge */}
-          <Badge
-            label={t('maintenance.badge')}
-            tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
-          />
-
           {/* Title & Message */}
           <View style={{ gap: spacing.sm, alignItems: 'center' }}>
             <H1 style={{ textAlign: 'center', fontSize: isWide ? 26 : 22, color: colors.ink }}>

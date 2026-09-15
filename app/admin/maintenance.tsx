@@ -302,11 +302,6 @@ export default function AdminMaintenanceScreen() {
                 <Icon name="wrench" size={28} color={colors.orange} />
               </View>
 
-              <Badge
-                label={t('maintenance.badge')}
-                tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
-              />
-
               <View style={{ gap: spacing.sm, alignItems: 'center' }}>
                 <H1 style={{ textAlign: 'center', fontSize: 22, color: colors.ink }}>
                   {title.trim() || t('maintenance.defaultTitle')}
