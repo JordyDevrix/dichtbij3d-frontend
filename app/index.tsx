@@ -185,7 +185,7 @@ export default function HomeScreen() {
           maxWidth: layout.maxWidth,
           alignSelf: 'center',
           paddingHorizontal: isWide ? spacing.xxl : spacing.lg,
-          paddingVertical: isWide ? spacing.xxl : spacing.xl,
+          paddingVertical: isWide ? 56 : 36,
         }}
       >
         {banner && banner.enabled ? (
@@ -193,13 +193,13 @@ export default function HomeScreen() {
             style={{
               flexDirection: isWide && bannerImgUrl ? 'row' : 'column',
               alignItems: isWide && bannerImgUrl ? 'center' : 'stretch',
-              gap: isWide ? spacing.xxl : spacing.xl,
+              gap: isWide ? 48 : spacing.xl,
             }}
           >
             <View
               style={{
                 flex: 1,
-                gap: spacing.md,
+                gap: spacing.lg,
                 justifyContent: 'center',
               }}
             >
@@ -211,15 +211,15 @@ export default function HomeScreen() {
                   />
                 </Row>
               )}
-              <H1 style={{ fontSize: isWide ? 38 : 26, lineHeight: isWide ? 44 : 32, maxWidth: 640 }}>
+              <H1 style={{ fontSize: isWide ? 40 : 26, lineHeight: isWide ? 48 : 34, maxWidth: 660 }}>
                 {banner.title}
               </H1>
               {banner.subtitle && (
-                <Body style={{ maxWidth: 580, color: colors.textMuted, fontSize: isWide ? 16 : 14 }}>
+                <Body style={{ maxWidth: 600, color: colors.textMuted, fontSize: isWide ? 16 : 14, lineHeight: isWide ? 24 : 20 }}>
                   {banner.subtitle}
                 </Body>
               )}
-              <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+              <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
                 {banner.buttonText && (
                   <Button
                     title={banner.buttonText}
@@ -247,8 +247,8 @@ export default function HomeScreen() {
             {bannerImgUrl && (
               <View
                 style={{
-                  width: isWide ? 420 : '100%',
-                  height: isWide ? 260 : 220,
+                  width: isWide ? 440 : '100%',
+                  height: isWide ? 280 : 220,
                   borderRadius: radius.xl,
                   overflow: 'hidden',
                   backgroundColor: colors.surfaceAlt,
@@ -265,18 +265,20 @@ export default function HomeScreen() {
             )}
           </View>
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <View style={{ gap: spacing.lg }}>
             <Row gap={6}>
               <Icon name="bolt" size={11} color={colors.orange} />
               <Body style={{ ...typography.tiny, color: colors.orange, textTransform: 'uppercase' }}>
                 {t('common.tagline')}
               </Body>
             </Row>
-            <H1 style={{ fontSize: isWide ? 40 : 27, lineHeight: isWide ? 46 : 33, maxWidth: 660 }}>
+            <H1 style={{ fontSize: isWide ? 42 : 28, lineHeight: isWide ? 50 : 36, maxWidth: 680 }}>
               {t('marketplace.heroTitle')}
             </H1>
-            <Body style={{ maxWidth: 600, color: colors.textMuted }}>{t('home.welcomeSubtitle')}</Body>
-            <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+            <Body style={{ maxWidth: 620, color: colors.textMuted, fontSize: isWide ? 16 : 15, lineHeight: isWide ? 24 : 22 }}>
+              {t('home.welcomeSubtitle')}
+            </Body>
+            <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
               <Button
                 title={t('home.viewMarketplace')}
                 icon="layers"
@@ -310,13 +312,13 @@ export default function HomeScreen() {
               maxWidth: layout.maxWidth,
               alignSelf: 'center',
               paddingHorizontal: isWide ? spacing.xxl : spacing.lg,
-              paddingVertical: spacing.md,
+              paddingVertical: spacing.lg,
             }}
           >
             <Row
               style={{
                 flexWrap: 'wrap',
-                gap: isWide ? spacing.xl : spacing.md,
+                gap: isWide ? 44 : spacing.lg,
                 justifyContent: isWide ? 'flex-start' : 'space-between',
               }}
             >
@@ -326,7 +328,7 @@ export default function HomeScreen() {
                 { icon: 'cubes' as const, value: stats.models, label: t('marketplace.statModels') },
                 { icon: 'eye' as const, value: stats.views, label: t('marketplace.statViews') },
               ].map((item) => (
-                <Row key={item.label} gap={spacing.xs} style={{ alignItems: 'center' }}>
+                <Row key={item.label} gap={spacing.sm} style={{ alignItems: 'center' }}>
                   <Icon name={item.icon} size={13} color={colors.orange} />
                   <Body style={{ fontWeight: '700', color: colors.ink }}>{numberFmt(item.value, locale)}</Body>
                   <Muted style={typography.tiny}>{item.label}</Muted>
@@ -340,12 +342,21 @@ export default function HomeScreen() {
   );
 
   return (
-    <Page refreshing={refreshing} onRefresh={onRefresh} hero={heroContent}>
+    <Page
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      hero={heroContent}
+      contentStyle={{
+        gap: isWide ? 56 : 40,
+        paddingTop: isWide ? 44 : 28,
+        paddingBottom: isWide ? 72 : 48,
+      }}
+    >
       {/* ----------------- ANNOUNCEMENTS & EVENTS SECTION ----------------- */}
       {announcements.length > 0 && (
-        <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
+        <View style={{ gap: spacing.lg }}>
           <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <Row gap={spacing.sm}>
+            <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
               <Icon name="bell" size={16} color={colors.orange} />
               <H2>{t('home.announcements')}</H2>
             </Row>
@@ -358,7 +369,7 @@ export default function HomeScreen() {
                 style={{
                   backgroundColor: colors.surface,
                   borderColor: ann.type === 'WARNING' ? colors.danger : colors.border,
-                  padding: spacing.lg,
+                  padding: isWide ? spacing.xl : spacing.lg,
                 }}
               >
                 <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: spacing.sm }}>
@@ -406,40 +417,41 @@ export default function HomeScreen() {
       {loadingSections ? (
         <Spinner label={t('common.loading')} />
       ) : (
-        <View style={{ gap: spacing.xxl, marginTop: spacing.md }}>
+        <View style={{ gap: isWide ? 64 : 48 }}>
           {SECTIONS_CONFIG.map((section) => {
             const items = sections[section.type] || [];
             const tone = advertTypeColor[section.type];
 
             return (
-              <View key={section.type} style={{ gap: spacing.md }}>
+              <View key={section.type} style={{ gap: spacing.lg }}>
                 {/* Section Header */}
                 <Row
                   style={{
                     justifyContent: 'space-between',
-                    alignItems: 'center',
+                    alignItems: 'flex-end',
                     flexWrap: 'wrap',
-                    gap: spacing.sm,
+                    gap: spacing.md,
+                    marginBottom: 2,
                   }}
                 >
-                  <View style={{ gap: 2, flex: 1, minWidth: 220 }}>
-                    <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
+                  <View style={{ gap: 4, flex: 1, minWidth: 220 }}>
+                    <Row gap={spacing.md} style={{ alignItems: 'center' }}>
                       <View
                         style={{
-                          width: 28,
-                          height: 28,
+                          width: 30,
+                          height: 30,
                           borderRadius: radius.md,
                           backgroundColor: tone.bg,
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <Icon name={section.icon} size={13} color={tone.fg} />
+                        <Icon name={section.icon} size={14} color={tone.fg} />
                       </View>
                       <H2>{section.title}</H2>
                       <Badge label={`${items.length}`} tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }} />
                     </Row>
-                    <Muted>{section.subtitle}</Muted>
+                    <Muted style={{ fontSize: isWide ? 14 : 13 }}>{section.subtitle}</Muted>
                   </View>
 
                   <Button
@@ -477,11 +489,11 @@ export default function HomeScreen() {
                       marginHorizontal: isPhone ? -spacing.lg : 0,
                     }}
                     contentContainerStyle={{
-                      gap: spacing.md,
+                      gap: isWide ? 20 : spacing.md,
                       paddingHorizontal: isPhone ? spacing.lg : 0,
                       paddingRight: isPhone ? spacing.xxl : spacing.lg,
-                      paddingTop: spacing.xs,
-                      paddingBottom: spacing.md,
+                      paddingTop: 6,
+                      paddingBottom: spacing.lg,
                       alignItems: 'stretch',
                     }}
                   >
@@ -489,7 +501,7 @@ export default function HomeScreen() {
                       <View
                         key={advert.id}
                         style={{
-                          width: isPhone ? 280 : 315,
+                          width: isPhone ? 285 : 320,
                           flexShrink: 0,
                         }}
                       >
