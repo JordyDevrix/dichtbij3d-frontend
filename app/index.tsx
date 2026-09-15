@@ -577,115 +577,125 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* ----------------- 4 HORIZONTAL ADVERT SECTIONS ----------------- */}
+      {/* ----------------- HORIZONTAL ADVERT SECTIONS ----------------- */}
       {loadingSections ? (
         <Spinner label={t('common.loading')} />
       ) : (
-        <View style={{ gap: isWide ? 64 : 48 }}>
-          {SECTIONS_CONFIG.map((section) => {
-            const items = sections[section.type] || [];
-            const tone = advertTypeColor[section.type];
+        (() => {
+          const activeSections = SECTIONS_CONFIG.filter(
+            (section) => (sections[section.type] || []).length > 0
+          );
 
+          if (activeSections.length === 0) {
             return (
-              <View key={section.type} style={{ gap: spacing.lg }}>
-                {/* Section Header */}
-                <Row
-                  style={{
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-end',
-                    flexWrap: 'wrap',
-                    gap: spacing.md,
-                    marginBottom: 2,
-                  }}
-                >
-                  <View style={{ gap: 4, flex: 1, minWidth: 220 }}>
-                    <Row gap={spacing.md} style={{ alignItems: 'center' }}>
-                      <View
-                        style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: radius.md,
-                          backgroundColor: tone.bg,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Icon name={section.icon} size={14} color={tone.fg} />
-                      </View>
-                      <H2>{section.title}</H2>
-                      <Badge label={`${items.length}`} tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }} />
-                    </Row>
-                    <Muted style={{ fontSize: isWide ? 14 : 13 }}>{section.subtitle}</Muted>
-                  </View>
-
-                  <Button
-                    title={t('home.viewAll')}
-                    icon="arrowRight"
-                    variant="outline"
-                    size="sm"
-                    onPress={() => router.push(`/marketplace?type=${section.type}` as any)}
-                  />
-                </Row>
-
-                {/* Horizontal Scroll Advert Row */}
-                {items.length === 0 ? (
-                  <Card style={{ padding: spacing.xl }}>
-                    <EmptyState
-                      icon={section.icon}
-                      title={t('home.noAdverts')}
-                      body={section.subtitle}
-                      action={
-                        <Button
-                          title={t('home.postAdvert')}
-                          icon="plus"
-                          size="sm"
-                          onPress={() => router.push(user ? '/create' : '/auth/login')}
-                        />
-                      }
+              <Card style={{ padding: spacing.xxl }}>
+                <EmptyState
+                  icon="layers"
+                  title={t('home.noAdverts')}
+                  body={t('home.welcomeSubtitle')}
+                  action={
+                    <Button
+                      title={t('home.postAdvert')}
+                      icon="plus"
+                      size="md"
+                      onPress={() => router.push(user ? '/create' : '/auth/login')}
                     />
-                  </Card>
-                ) : (
-                  <ScrollView
-                    horizontal
-                    nestedScrollEnabled
-                    showsHorizontalScrollIndicator={false}
-                    style={{
-                      marginHorizontal: isPhone ? -spacing.lg : 0,
-                    }}
-                    contentContainerStyle={{
-                      gap: isWide ? 20 : spacing.md,
-                      paddingHorizontal: isPhone ? spacing.lg : 0,
-                      paddingRight: isPhone ? spacing.xxl : spacing.lg,
-                      paddingTop: 6,
-                      paddingBottom: spacing.lg,
-                      alignItems: 'stretch',
-                    }}
-                  >
-                    {items.map((advert) => (
-                      <View
-                        key={advert.id}
-                        style={{
-                          width: isPhone ? 285 : 320,
-                          flexShrink: 0,
-                        }}
-                      >
-                        <AdvertCard
-                          advert={advert}
-                          style={{
-                            flexBasis: 'auto',
-                            maxWidth: '100%',
-                            height: '100%',
-                          }}
-                          onChanged={loadData}
-                        />
-                      </View>
-                    ))}
-                  </ScrollView>
-                )}
-              </View>
+                  }
+                />
+              </Card>
             );
-          })}
-        </View>
+          }
+
+          return (
+            <View style={{ gap: isWide ? 64 : 48 }}>
+              {activeSections.map((section) => {
+                const items = sections[section.type] || [];
+                const tone = advertTypeColor[section.type];
+
+                return (
+                  <View key={section.type} style={{ gap: spacing.lg }}>
+                    {/* Section Header */}
+                    <Row
+                      style={{
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-end',
+                        flexWrap: 'wrap',
+                        gap: spacing.md,
+                        marginBottom: 2,
+                      }}
+                    >
+                      <View style={{ gap: 4, flex: 1, minWidth: 220 }}>
+                        <Row gap={spacing.md} style={{ alignItems: 'center' }}>
+                          <View
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: radius.md,
+                              backgroundColor: tone.bg,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Icon name={section.icon} size={14} color={tone.fg} />
+                          </View>
+                          <H2>{section.title}</H2>
+                          <Badge label={`${items.length}`} tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }} />
+                        </Row>
+                        <Muted style={{ fontSize: isWide ? 14 : 13 }}>{section.subtitle}</Muted>
+                      </View>
+
+                      <Button
+                        title={t('home.viewAll')}
+                        icon="arrowRight"
+                        variant="outline"
+                        size="sm"
+                        onPress={() => router.push(`/marketplace?type=${section.type}` as any)}
+                      />
+                    </Row>
+
+                    {/* Horizontal Scroll Advert Row */}
+                    <ScrollView
+                      horizontal
+                      nestedScrollEnabled
+                      showsHorizontalScrollIndicator={false}
+                      style={{
+                        marginHorizontal: isPhone ? -spacing.lg : 0,
+                      }}
+                      contentContainerStyle={{
+                        gap: isWide ? 20 : spacing.md,
+                        paddingHorizontal: isPhone ? spacing.lg : 0,
+                        paddingRight: isPhone ? spacing.xxl : spacing.lg,
+                        paddingTop: 6,
+                        paddingBottom: spacing.lg,
+                        alignItems: 'stretch',
+                      }}
+                    >
+                      {items.map((advert) => (
+                        <View
+                          key={advert.id}
+                          style={{
+                            width: isPhone ? 285 : 320,
+                            flexShrink: 0,
+                          }}
+                        >
+                          <AdvertCard
+                            advert={advert}
+                            style={{
+                              flexBasis: 'auto',
+                              maxWidth: '100%',
+                              height: '100%',
+                            }}
+                            onChanged={loadData}
+                          />
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })()
       )}
     </Page>
   );
