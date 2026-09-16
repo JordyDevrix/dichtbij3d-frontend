@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View, ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../api';
@@ -10,6 +10,7 @@ import { Button } from './ui';
 
 declare global {
   interface Window {
+    __DICHTBIJ3D_GOOGLE_CLIENT_ID__?: string;
     google?: {
       accounts: {
         id: {
@@ -39,31 +40,50 @@ declare global {
   }
 }
 
-// Global cached client ID promise so we only fetch /api/auth/config once
-let cachedClientIdPromise: Promise<string | null> | null = null;
+let resolvedClientId: string | null = null;
+let clientIdFetchPromise: Promise<string | null> | null = null;
 
 export function fetchGoogleClientId(): Promise<string | null> {
-  if (cachedClientIdPromise) return cachedClientIdPromise;
+  if (resolvedClientId) return Promise.resolve(resolvedClientId);
+  if (clientIdFetchPromise) return clientIdFetchPromise;
 
-  cachedClientIdPromise = (async () => {
+  clientIdFetchPromise = (async () => {
+    // 1. Check window runtime variable (injected by env.sh in docker)
+    if (typeof window !== 'undefined') {
+      const runtime = window.__DICHTBIJ3D_GOOGLE_CLIENT_ID__;
+      if (typeof runtime === 'string' && runtime.trim().length > 0) {
+        resolvedClientId = runtime.trim();
+        return resolvedClientId;
+      }
+    }
+
+    // 2. Check build-time environment variable
     const envId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-    if (envId && envId.trim().length > 0) return envId.trim();
+    if (envId && envId.trim().length > 0) {
+      resolvedClientId = envId.trim();
+      return resolvedClientId;
+    }
 
+    // 3. Fetch from backend /api/auth/config
     try {
       const config = await api.authConfig();
-      if (config.googleEnabled && config.googleClientId) {
-        return config.googleClientId;
+      if (config.googleEnabled && config.googleClientId && config.googleClientId.trim().length > 0) {
+        resolvedClientId = config.googleClientId.trim();
+        return resolvedClientId;
       }
     } catch {
-      // Backend not reachable or config unavailable
+      // Backend not yet reachable or config failed
     }
+
+    // Reset promise so subsequent calls can retry
+    clientIdFetchPromise = null;
     return null;
   })();
 
-  return cachedClientIdPromise;
+  return clientIdFetchPromise;
 }
 
-let gsiScriptLoadingPromise: Promise<void> | null = null;
+let gsiScriptPromise: Promise<void> | null = null;
 
 function loadGsiScript(): Promise<void> {
   if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -72,11 +92,11 @@ function loadGsiScript(): Promise<void> {
   if (window.google?.accounts?.id) {
     return Promise.resolve();
   }
-  if (gsiScriptLoadingPromise) {
-    return gsiScriptLoadingPromise;
+  if (gsiScriptPromise) {
+    return gsiScriptPromise;
   }
 
-  gsiScriptLoadingPromise = new Promise<void>((resolve, reject) => {
+  gsiScriptPromise = new Promise<void>((resolve, reject) => {
     const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
     if (existing) {
       existing.addEventListener('load', () => resolve());
@@ -94,7 +114,7 @@ function loadGsiScript(): Promise<void> {
     document.head.appendChild(script);
   });
 
-  return gsiScriptLoadingPromise;
+  return gsiScriptPromise;
 }
 
 export interface GoogleSignInButtonProps {
@@ -117,173 +137,193 @@ export function GoogleSignInButton({
   const router = useRouter();
   const toast = useToast();
 
-  const [clientId, setClientId] = useState<string | null>(null);
+  const [clientId, setClientId] = useState<string | null>(() => resolvedClientId);
   const [loading, setLoading] = useState(false);
-  const [isGsiReady, setIsGsiReady] = useState(false);
+  const [buttonRendered, setButtonRendered] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const initializedRef = useRef(false);
 
+  const handleCredentialResponse = useCallback(
+    async (credential: string) => {
+      setLoading(true);
+      try {
+        const result = await loginWithGoogle(credential);
+        if (result.mfaRequired && result.mfaToken) {
+          router.push({
+            pathname: '/auth/mfa',
+            params: {
+              token: result.mfaToken,
+              redirect: redirect ?? '',
+              methods: result.mfaMethods?.join(',') ?? '',
+              maskedEmail: result.maskedEmail ?? '',
+            },
+          });
+          return;
+        }
+        if (result.ok) {
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.replace((redirect as string) || '/');
+          }
+        }
+      } catch (err) {
+        const msg = err instanceof ApiError ? err.message : t('auth.googleAuthFailed');
+        onError?.(msg);
+        toast.error(msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loginWithGoogle, router, redirect, onSuccess, onError, toast, t],
+  );
+
+  const tryRenderGoogleButton = useCallback(
+    (id: string, el: HTMLDivElement) => {
+      if (!window.google?.accounts?.id) return;
+
+      try {
+        window.google.accounts.id.initialize({
+          client_id: id,
+          callback: (res) => {
+            if (res?.credential) {
+              void handleCredentialResponse(res.credential);
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        const googleText =
+          mode === 'signup' ? 'signup_with' : mode === 'signin' ? 'signin_with' : 'continue_with';
+
+        // Clear existing children before rendering
+        el.innerHTML = '';
+        window.google.accounts.id.renderButton(el, {
+          theme: 'outline',
+          size: 'large',
+          type: 'standard',
+          shape: 'rectangular',
+          text: googleText,
+          logo_alignment: 'left',
+          width: 320,
+          locale: locale || 'nl',
+        });
+        setButtonRendered(true);
+      } catch (e) {
+        // Render error or popup blocker
+      }
+    },
+    [handleCredentialResponse, mode, locale],
+  );
+
+  // Initialize client ID and GSI SDK
   useEffect(() => {
     let active = true;
+
     fetchGoogleClientId().then((id) => {
-      if (active) setClientId(id);
+      if (!active) return;
+      if (id) {
+        setClientId(id);
+      }
     });
-    return () => {
-      active = false;
-    };
-  }, []);
 
-  useEffect(() => {
-    if (Platform.OS !== 'web' || !clientId) return;
-
-    let active = true;
-    loadGsiScript()
-      .then(() => {
-        if (active) setIsGsiReady(true);
-      })
-      .catch(() => {
-        // GSI failed to load (e.g. adblocker or network error)
+    if (Platform.OS === 'web') {
+      loadGsiScript().then(() => {
+        if (!active) return;
+        if (resolvedClientId && containerRef.current) {
+          tryRenderGoogleButton(resolvedClientId, containerRef.current);
+        }
       });
+    }
 
     return () => {
       active = false;
     };
-  }, [clientId]);
+  }, [tryRenderGoogleButton]);
 
-  const handleCredentialResponse = async (credential: string) => {
+  // If clientId or container updates, render Google button
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !clientId || !containerRef.current) return;
+    if (window.google?.accounts?.id) {
+      tryRenderGoogleButton(clientId, containerRef.current);
+    }
+  }, [clientId, tryRenderGoogleButton]);
+
+  const handleCustomButtonClick = async () => {
+    if (loading) return;
+
+    // If client ID is known and GSI is ready, prompt account chooser
+    if (clientId && window.google?.accounts?.id) {
+      window.google.accounts.id.prompt();
+      return;
+    }
+
+    // Try fetching client ID on demand if not yet loaded
     setLoading(true);
     try {
-      const result = await loginWithGoogle(credential);
-      if (result.mfaRequired && result.mfaToken) {
-        router.push({
-          pathname: '/auth/mfa',
-          params: {
-            token: result.mfaToken,
-            redirect: redirect ?? '',
-            methods: result.mfaMethods?.join(',') ?? '',
-            maskedEmail: result.maskedEmail ?? '',
-          },
-        });
-        return;
-      }
-      if (result.ok) {
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.replace((redirect as string) || '/');
+      const id = await fetchGoogleClientId();
+      if (id) {
+        setClientId(id);
+        if (window.google?.accounts?.id) {
+          window.google.accounts.id.prompt();
+          return;
         }
+      } else {
+        toast.error('Google Sign-In is niet geconfigureerd op de server (GOOGLE_OAUTH_CLIENT_ID ontbreekt).');
       }
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : t('auth.googleAuthFailed');
-      onError?.(msg);
-      toast.error(msg);
+    } catch {
+      toast.error(t('auth.googleAuthFailed'));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (Platform.OS !== 'web' || !isGsiReady || !clientId || !containerRef.current) {
-      return;
-    }
-
-    try {
-      window.google?.accounts.id.initialize({
-        client_id: clientId,
-        callback: (res) => {
-          if (res?.credential) {
-            void handleCredentialResponse(res.credential);
-          }
-        },
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
-      initializedRef.current = true;
-
-      // Render official Google button
-      const googleText = mode === 'signup' ? 'signup_with' : mode === 'signin' ? 'signin_with' : 'continue_with';
-      window.google?.accounts.id.renderButton(containerRef.current, {
-        theme: 'outline',
-        size: 'large',
-        type: 'standard',
-        shape: 'rectangular',
-        text: googleText,
-        logo_alignment: 'left',
-        width: 320,
-        locale: locale || 'nl',
-      });
-    } catch {
-      // ignore
-    }
-  }, [isGsiReady, clientId, mode, locale]);
-
-  if (!clientId) {
-    return null;
-  }
-
-  const buttonText =
+  const buttonTitle =
     mode === 'signup'
       ? t('auth.continueWithGoogle')
       : mode === 'signin'
       ? t('auth.loginWithGoogle')
       : t('auth.continueWithGoogle');
 
-  if (Platform.OS === 'web') {
-    return (
-      <View style={[styles.wrapper, style]}>
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="small" color={colors.orange} />
-          </View>
-        )}
+  return (
+    <View style={[styles.container, style]}>
+      {Platform.OS === 'web' && (
         <div
           ref={(el) => {
             containerRef.current = el;
+            if (el && clientId && window.google?.accounts?.id && !buttonRendered) {
+              tryRenderGoogleButton(clientId, el);
+            }
           }}
           style={{
-            display: 'flex',
+            display: buttonRendered ? 'flex' : 'none',
             justifyContent: 'center',
             alignItems: 'center',
             width: '100%',
             minHeight: 44,
           }}
         />
-      </View>
-    );
-  }
+      )}
 
-  // Fallback for native/other environments
-  return (
-    <Button
-      title={buttonText}
-      icon="google"
-      variant="outline"
-      full
-      loading={loading}
-      style={style}
-      onPress={() => {
-        if (window?.google?.accounts?.id) {
-          window.google.accounts.id.prompt();
-        }
-      }}
-    />
+      {(!buttonRendered || Platform.OS !== 'web') && (
+        <Button
+          title={buttonTitle}
+          icon="google"
+          variant="outline"
+          full
+          loading={loading}
+          onPress={handleCustomButtonClick}
+        />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  container: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
     minHeight: 44,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-    borderRadius: radius.md,
   },
 });

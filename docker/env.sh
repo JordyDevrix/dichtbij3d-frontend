@@ -4,10 +4,12 @@
 set -e
 
 escaped=$(printf '%s' "${API_URL:-}" | sed 's/\\/\\\\/g; s/"/\\"/g')
+escaped_google_id=$(printf '%s' "${GOOGLE_OAUTH_CLIENT_ID:-${GOOGLE_CLIENT_ID:-${EXPO_PUBLIC_GOOGLE_CLIENT_ID:-}}}" | sed 's/\\/\\\\/g; s/"/\\"/g')
 
 cat > /usr/share/nginx/html/env.js <<EOF
 // Generated at container start. Empty string = same origin (nginx proxies /api).
 window.__DICHTBIJ3D_API_URL__ = "${escaped}";
+window.__DICHTBIJ3D_GOOGLE_CLIENT_ID__ = "${escaped_google_id}";
 EOF
 
 # nginx resolves the backend name per request, so it needs an explicit resolver.
