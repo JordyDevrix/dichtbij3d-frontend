@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View, ViewStyle } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Platform, View, ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useI18n } from '../i18n';
-import { colors, radius, spacing } from '../theme/theme';
 import { Button } from './ui';
+import { GoogleIcon } from './GoogleIcon';
 
 declare global {
   interface Window {
@@ -20,19 +20,6 @@ declare global {
             auto_select?: boolean;
             cancel_on_tap_outside?: boolean;
           }) => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: {
-              type?: 'standard' | 'icon';
-              theme?: 'outline' | 'filled_blue' | 'filled_black';
-              size?: 'large' | 'medium' | 'small';
-              text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
-              shape?: 'rectangular' | 'pill' | 'circle' | 'square';
-              logo_alignment?: 'left' | 'center';
-              width?: number | string;
-              locale?: string;
-            },
-          ) => void;
           prompt: (notification?: (notification: any) => void) => void;
         };
       };
@@ -117,6 +104,69 @@ function loadGsiScript(): Promise<void> {
   return gsiScriptPromise;
 }
 
+function openGoogleOAuthPopup(clientId: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('Window not available'));
+      return;
+    }
+
+    const redirectUri = window.location.origin + '/auth/login';
+    const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const state = Math.random().toString(36).substring(2);
+
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
+      clientId,
+    )}&response_type=id_token&scope=openid%20email%20profile&redirect_uri=${encodeURIComponent(
+      redirectUri,
+    )}&nonce=${nonce}&state=${state}&prompt=select_account`;
+
+    const width = 500;
+    const height = 620;
+    const left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
+    const top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
+
+    const popup = window.open(
+      authUrl,
+      'google_oauth_popup',
+      `width=${width},height=${height},left=${left},top=${top},status=no,toolbar=no,menubar=no`,
+    );
+
+    if (!popup) {
+      reject(new Error('Popup geblokkeerd door browser. Sta popups toe voor deze site.'));
+      return;
+    }
+
+    const timer = setInterval(() => {
+      try {
+        if (popup.closed) {
+          clearInterval(timer);
+          reject(new Error('Inloggen met Google geannuleerd'));
+          return;
+        }
+
+        const href = popup.location.href;
+        if (href && href.startsWith(window.location.origin)) {
+          const hash = popup.location.hash || '';
+          const params = new URLSearchParams(hash.replace(/^#/, ''));
+          const idToken = params.get('id_token');
+          popup.close();
+          clearInterval(timer);
+
+          if (idToken) {
+            resolve(idToken);
+          } else {
+            const errorParam = params.get('error') || new URLSearchParams(popup.location.search).get('error');
+            reject(new Error(errorParam || 'Geen token ontvangen van Google'));
+          }
+        }
+      } catch {
+        // Cross-origin navigation inside popup is expected until redirected back
+      }
+    }, 250);
+  });
+}
+
 export interface GoogleSignInButtonProps {
   mode?: 'signin' | 'signup' | 'continue';
   redirect?: string;
@@ -132,21 +182,25 @@ export function GoogleSignInButton({
   onError,
   style,
 }: GoogleSignInButtonProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { loginWithGoogle } = useAuth();
   const router = useRouter();
   const toast = useToast();
 
-  const [clientId, setClientId] = useState<string | null>(() => resolvedClientId);
   const [loading, setLoading] = useState(false);
-  const [buttonRendered, setButtonRendered] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const handleCredentialResponse = useCallback(
-    async (credential: string) => {
+  useEffect(() => {
+    void fetchGoogleClientId();
+    if (Platform.OS === 'web') {
+      void loadGsiScript();
+    }
+  }, []);
+
+  const handleIdToken = useCallback(
+    async (idToken: string) => {
       setLoading(true);
       try {
-        const result = await loginWithGoogle(credential);
+        const result = await loginWithGoogle(idToken);
         if (result.mfaRequired && result.mfaToken) {
           router.push({
             pathname: '/auth/mfa',
@@ -177,102 +231,46 @@ export function GoogleSignInButton({
     [loginWithGoogle, router, redirect, onSuccess, onError, toast, t],
   );
 
-  const tryRenderGoogleButton = useCallback(
-    (id: string, el: HTMLDivElement) => {
-      if (!window.google?.accounts?.id) return;
-
-      try {
-        window.google.accounts.id.initialize({
-          client_id: id,
-          callback: (res) => {
-            if (res?.credential) {
-              void handleCredentialResponse(res.credential);
-            }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
-
-        const googleText =
-          mode === 'signup' ? 'signup_with' : mode === 'signin' ? 'signin_with' : 'continue_with';
-
-        // Clear existing children before rendering
-        el.innerHTML = '';
-        window.google.accounts.id.renderButton(el, {
-          theme: 'outline',
-          size: 'large',
-          type: 'standard',
-          shape: 'rectangular',
-          text: googleText,
-          logo_alignment: 'left',
-          width: 320,
-          locale: locale || 'nl',
-        });
-        setButtonRendered(true);
-      } catch (e) {
-        // Render error or popup blocker
-      }
-    },
-    [handleCredentialResponse, mode, locale],
-  );
-
-  // Initialize client ID and GSI SDK
-  useEffect(() => {
-    let active = true;
-
-    fetchGoogleClientId().then((id) => {
-      if (!active) return;
-      if (id) {
-        setClientId(id);
-      }
-    });
-
-    if (Platform.OS === 'web') {
-      loadGsiScript().then(() => {
-        if (!active) return;
-        if (resolvedClientId && containerRef.current) {
-          tryRenderGoogleButton(resolvedClientId, containerRef.current);
-        }
-      });
-    }
-
-    return () => {
-      active = false;
-    };
-  }, [tryRenderGoogleButton]);
-
-  // If clientId or container updates, render Google button
-  useEffect(() => {
-    if (Platform.OS !== 'web' || !clientId || !containerRef.current) return;
-    if (window.google?.accounts?.id) {
-      tryRenderGoogleButton(clientId, containerRef.current);
-    }
-  }, [clientId, tryRenderGoogleButton]);
-
-  const handleCustomButtonClick = async () => {
+  const handlePress = async () => {
     if (loading) return;
 
-    // If client ID is known and GSI is ready, prompt account chooser
-    if (clientId && window.google?.accounts?.id) {
-      window.google.accounts.id.prompt();
-      return;
-    }
-
-    // Try fetching client ID on demand if not yet loaded
     setLoading(true);
     try {
-      const id = await fetchGoogleClientId();
-      if (id) {
-        setClientId(id);
-        if (window.google?.accounts?.id) {
-          window.google.accounts.id.prompt();
-          return;
-        }
-      } else {
+      const clientId = await fetchGoogleClientId();
+      if (!clientId) {
         toast.error('Google Sign-In is niet geconfigureerd op de server (GOOGLE_OAUTH_CLIENT_ID ontbreekt).');
+        setLoading(false);
+        return;
       }
-    } catch {
-      toast.error(t('auth.googleAuthFailed'));
+
+      // Initialize GIS if available
+      if (typeof window !== 'undefined' && window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: (res) => {
+              if (res?.credential) {
+                void handleIdToken(res.credential);
+              }
+            },
+            auto_select: false,
+          });
+        } catch {
+          // ignore
+        }
+      }
+
+      // Trigger OAuth Popup
+      const idToken = await openGoogleOAuthPopup(clientId);
+      if (idToken) {
+        await handleIdToken(idToken);
+      }
+    } catch (err: any) {
+      const msg = err?.message || t('auth.googleAuthFailed');
+      if (msg !== 'Inloggen met Google geannuleerd' && msg !== 'Sign in cancelled') {
+        onError?.(msg);
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -286,44 +284,16 @@ export function GoogleSignInButton({
       : t('auth.continueWithGoogle');
 
   return (
-    <View style={[styles.container, style]}>
-      {Platform.OS === 'web' && (
-        <div
-          ref={(el) => {
-            containerRef.current = el;
-            if (el && clientId && window.google?.accounts?.id && !buttonRendered) {
-              tryRenderGoogleButton(clientId, el);
-            }
-          }}
-          style={{
-            display: buttonRendered ? 'flex' : 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            minHeight: 44,
-          }}
-        />
-      )}
-
-      {(!buttonRendered || Platform.OS !== 'web') && (
-        <Button
-          title={buttonTitle}
-          icon="google"
-          variant="outline"
-          full
-          loading={loading}
-          onPress={handleCustomButtonClick}
-        />
-      )}
-    </View>
+    <Button
+      title={buttonTitle}
+      iconElement={<GoogleIcon size={16} />}
+      variant="outline"
+      full
+      loading={loading}
+      onPress={handlePress}
+      style={style}
+    />
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-});
+export default GoogleSignInButton;

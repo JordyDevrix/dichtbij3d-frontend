@@ -33,6 +33,7 @@ export interface ButtonProps {
   variant?: ButtonVariant;
   size?: ButtonSize;
   icon?: IconName;
+  iconElement?: React.ReactNode;
   iconRight?: IconName;
   loading?: boolean;
   disabled?: boolean;
@@ -46,6 +47,7 @@ export function Button({
   variant = 'primary',
   size = 'md',
   icon,
+  iconElement,
   iconRight,
   loading,
   disabled,
@@ -99,6 +101,8 @@ export function Button({
     >
       {loading ? (
         <ActivityIndicator size="small" color={p.fg} />
+      ) : iconElement ? (
+        iconElement
       ) : (
         icon && <Icon name={icon} size={s.icon} color={p.fg} />
       )}
