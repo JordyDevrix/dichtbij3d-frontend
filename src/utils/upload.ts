@@ -179,3 +179,41 @@ export async function pickAndUploadFiles(folder = 'models'): Promise<UploadRespo
   }
   return uploads;
 }
+
+/** Determines if a URL, filename or MIME type corresponds to a video format. */
+export function isVideoUrlOrType(urlOrName?: string | null, mime?: string | null): boolean {
+  if (!urlOrName && !mime) return false;
+  if (mime && mime.toLowerCase().startsWith('video/')) return true;
+  if (!urlOrName) return false;
+  const clean = urlOrName.toLowerCase().split('?')[0].split('#')[0];
+  const videoExts = ['.mp4', '.webm', '.mov', '.m4v', '.ogv', '.ogg', '.mkv'];
+  return videoExts.some(ext => clean.endsWith(ext));
+}
+
+/** Auto-detects whether the given file or URL is an IMAGE or VIDEO. */
+export function detectMediaType(urlOrName?: string | null, mime?: string | null): 'IMAGE' | 'VIDEO' {
+  return isVideoUrlOrType(urlOrName, mime) ? 'VIDEO' : 'IMAGE';
+}
+
+/** Opens the media library/picker to pick an image or video file for banner backgrounds. */
+export async function pickAndUploadBannerMedia(
+  folder = 'banners',
+): Promise<{ upload: UploadResponse; mediaType: 'IMAGE' | 'VIDEO' } | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images', 'videos'],
+    quality: 0.9,
+    allowsMultipleSelection: false,
+  });
+  if (result.canceled || !result.assets?.length) return null;
+  const asset = result.assets[0];
+  const isVideo = asset.type === 'video' || isVideoUrlOrType(asset.fileName || asset.uri, asset.mimeType);
+  const mediaType: 'IMAGE' | 'VIDEO' = isVideo ? 'VIDEO' : 'IMAGE';
+  const ext = isVideo ? (asset.fileName?.substring(asset.fileName.lastIndexOf('.')) || '.mp4') : '.jpg';
+  const name = asset.fileName || `${isVideo ? 'banner-video' : 'banner-image'}-${Date.now()}${ext}`;
+  const mime = asset.mimeType || (isVideo ? 'video/mp4' : 'image/jpeg');
+
+  const file = await toUploadable(asset.uri, name, mime, !isVideo);
+  const upload = await api.upload(file as any, folder);
+  return { upload, mediaType };
+}
+

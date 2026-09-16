@@ -12,6 +12,7 @@ import type {
   PublicStats,
 } from '../src/api/types';
 import { AdvertCard } from '../src/components/AdvertCard';
+import { HeroBackgroundSlider } from '../src/components/HeroBackgroundSlider';
 import { Icon, IconName } from '../src/components/Icon';
 import { Page } from '../src/components/Page';
 import {
@@ -171,7 +172,11 @@ export default function HomeScreen() {
     }
   };
 
-  const bannerImgUrl = banner?.imageUrl ? absoluteUrl(banner.imageUrl) : null;
+  const hasBannerMedia = !!(
+    banner &&
+    banner.enabled &&
+    ((banner.media && banner.media.length > 0) || !!banner.imageUrl)
+  );
 
   const heroContent = (
     <View
@@ -182,7 +187,7 @@ export default function HomeScreen() {
         borderBottomColor: colors.border,
       }}
     >
-      {banner && banner.enabled && bannerImgUrl ? (
+      {banner && banner.enabled && hasBannerMedia ? (
         isWide ? (
           /* ---------------- DESKTOP & ULTRAWIDE HERO BANNER ---------------- */
           <View
@@ -194,9 +199,9 @@ export default function HomeScreen() {
               overflow: 'hidden',
             }}
           >
-            {/* 100% full-width centered background image (true aspect ratio, NO dark filters) */}
-            <Image
-              source={{ uri: bannerImgUrl }}
+            <HeroBackgroundSlider
+              media={banner.media}
+              fallbackImageUrl={banner.imageUrl}
               style={{
                 position: 'absolute',
                 top: 0,
@@ -206,97 +211,102 @@ export default function HomeScreen() {
                 width: '100%',
                 height: '100%',
               }}
-              resizeMode="cover"
-            />
-
-            {/* Centered content grid with floating frosted glass card */}
-            <View
-              style={{
-                width: '100%',
-                maxWidth: layout.maxWidth,
-                height: '100%',
-                alignSelf: 'center',
-                paddingHorizontal: spacing.xxl,
-                justifyContent: 'center',
-                alignItems: 'flex-start',
-                position: 'relative',
-                zIndex: 2,
-              }}
             >
-              <BlurView
-                intensity={85}
-                tint={scheme === 'dark' ? 'dark' : 'light'}
-                style={[
-                  {
-                    maxWidth: 520,
-                    width: '100%',
-                    backgroundColor: scheme === 'dark' ? 'rgba(21, 26, 33, 0.82)' : 'rgba(255, 255, 255, 0.88)',
-                    borderRadius: radius.xl,
-                    padding: spacing.xxl,
-                    gap: spacing.lg,
-                    borderWidth: 1,
-                    borderColor: scheme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
-                    overflow: 'hidden',
-                    ...(Platform.OS === 'web'
-                      ? ({
-                          backdropFilter: 'saturate(180%) blur(20px)',
-                          WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-                          boxShadow:
-                            scheme === 'dark'
-                              ? '0 16px 40px rgba(0, 0, 0, 0.45)'
-                              : '0 16px 40px rgba(0, 0, 0, 0.08)',
-                        } as any)
-                      : null),
-                  },
-                  shadow.raised,
-                ]}
+              {/* Centered content grid with floating frosted glass card */}
+              <View
+                style={{
+                  width: '100%',
+                  maxWidth: layout.maxWidth,
+                  height: '100%',
+                  alignSelf: 'center',
+                  paddingHorizontal: spacing.xxl,
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                  position: 'relative',
+                  zIndex: 2,
+                }}
               >
-                {banner.badgeText && (
-                  <Row gap={6}>
-                    <Badge
-                      label={banner.badgeText}
-                      tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
+                <BlurView
+                  intensity={85}
+                  tint={scheme === 'dark' ? 'dark' : 'light'}
+                  style={[
+                    {
+                      maxWidth: 520,
+                      width: '100%',
+                      backgroundColor:
+                        scheme === 'dark'
+                          ? 'rgba(21, 26, 33, 0.82)'
+                          : 'rgba(255, 255, 255, 0.88)',
+                      borderRadius: radius.xl,
+                      padding: spacing.xxl,
+                      gap: spacing.lg,
+                      borderWidth: 1,
+                      borderColor:
+                        scheme === 'dark'
+                          ? 'rgba(255, 255, 255, 0.12)'
+                          : 'rgba(0, 0, 0, 0.08)',
+                      overflow: 'hidden',
+                      ...(Platform.OS === 'web'
+                        ? ({
+                            backdropFilter: 'saturate(180%) blur(20px)',
+                            WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+                            boxShadow:
+                              scheme === 'dark'
+                                ? '0 16px 40px rgba(0, 0, 0, 0.45)'
+                                : '0 16px 40px rgba(0, 0, 0, 0.08)',
+                          } as any)
+                        : null),
+                    },
+                    shadow.raised,
+                  ]}
+                >
+                  {banner.badgeText && (
+                    <Row gap={6}>
+                      <Badge
+                        label={banner.badgeText}
+                        tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
+                      />
+                    </Row>
+                  )}
+                  <H1 style={{ fontSize: 32, lineHeight: 38 }}>
+                    {banner.title}
+                  </H1>
+                  {banner.subtitle && (
+                    <Body style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                      {banner.subtitle}
+                    </Body>
+                  )}
+                  <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+                    {banner.buttonText && (
+                      <Button
+                        title={banner.buttonText}
+                        icon="arrowRight"
+                        size="md"
+                        onPress={() => {
+                          if (banner.linkUrl?.startsWith('http')) {
+                            if (Platform.OS === 'web') window.open(banner.linkUrl, '_blank');
+                          } else {
+                            router.push((banner.linkUrl || '/marketplace') as any);
+                          }
+                        }}
+                      />
+                    )}
+                    <Button
+                      title={t('home.viewMarketplace')}
+                      icon="layers"
+                      variant={banner.buttonText ? 'outline' : 'primary'}
+                      size="md"
+                      onPress={() => router.push('/marketplace')}
                     />
                   </Row>
-                )}
-                <H1 style={{ fontSize: 32, lineHeight: 38 }}>
-                  {banner.title}
-                </H1>
-                {banner.subtitle && (
-                  <Body style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-                    {banner.subtitle}
-                  </Body>
-                )}
-                <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
-                  {banner.buttonText && (
-                    <Button
-                      title={banner.buttonText}
-                      icon="arrowRight"
-                      size="md"
-                      onPress={() => {
-                        if (banner.linkUrl?.startsWith('http')) {
-                          if (Platform.OS === 'web') window.open(banner.linkUrl, '_blank');
-                        } else {
-                          router.push((banner.linkUrl || '/marketplace') as any);
-                        }
-                      }}
-                    />
-                  )}
-                  <Button
-                    title={t('home.viewMarketplace')}
-                    icon="layers"
-                    variant={banner.buttonText ? 'outline' : 'primary'}
-                    size="md"
-                    onPress={() => router.push('/marketplace')}
-                  />
-                </Row>
-              </BlurView>
-            </View>
+                </BlurView>
+              </View>
+            </HeroBackgroundSlider>
           </View>
         ) : (
           /* ---------------- MOBILE & PHONE HERO BANNER ---------------- */
           <View style={{ width: '100%' }}>
-            {/* Top Image: clean 16:9 aspect ratio, edge-to-edge full width, no filter */}
+            {/* Top Slider: clean 16:9 aspect ratio, edge-to-edge full width */}
             <View
               style={{
                 width: '100%',
@@ -305,14 +315,14 @@ export default function HomeScreen() {
                 overflow: 'hidden',
               }}
             >
-              <Image
-                source={{ uri: bannerImgUrl }}
+              <HeroBackgroundSlider
+                media={banner.media}
+                fallbackImageUrl={banner.imageUrl}
                 style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
               />
             </View>
 
-            {/* Bottom Text Content under the image */}
+            {/* Bottom Text Content under the slider */}
             <View
               style={{
                 paddingHorizontal: spacing.lg,
@@ -363,7 +373,7 @@ export default function HomeScreen() {
             </View>
           </View>
         )
-      ) : banner && banner.enabled && !bannerImgUrl ? (
+      ) : banner && banner.enabled && !hasBannerMedia ? (
         /* ---------------- CUSTOM BANNER (NO IMAGE) ---------------- */
         <View
           style={{

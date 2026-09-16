@@ -567,6 +567,26 @@ export interface AdvertList {
 
 export type AnnouncementType = 'INFO' | 'EVENT' | 'UPDATE' | 'WARNING';
 
+export type BannerMediaType = 'IMAGE' | 'VIDEO';
+
+export interface PlatformBannerMedia {
+  id?: string | null;
+  mediaType: BannerMediaType;
+  mediaUrl: string;
+  mediaKey?: string | null;
+  durationSeconds: number;
+  sortOrder: number;
+}
+
+export interface PlatformBannerMediaUpdateRequest {
+  id?: string | null;
+  mediaType: BannerMediaType;
+  mediaUrl: string;
+  mediaKey?: string | null;
+  durationSeconds: number;
+  sortOrder: number;
+}
+
 export interface PlatformBanner {
   enabled: boolean;
   title: string;
@@ -576,6 +596,7 @@ export interface PlatformBanner {
   linkUrl: string | null;
   imageUrl: string | null;
   imageKey: string | null;
+  media: PlatformBannerMedia[];
   updatedAt: string;
 }
 
@@ -588,6 +609,7 @@ export interface PlatformBannerUpdateRequest {
   linkUrl?: string | null;
   imageKey?: string | null;
   imageUrl?: string | null;
+  media?: PlatformBannerMediaUpdateRequest[] | null;
 }
 
 export interface PlatformAnnouncement {
