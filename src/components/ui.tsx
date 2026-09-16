@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StyleProp,
   Switch,
   Text,
   TextInput,
@@ -38,7 +39,7 @@ export interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   full?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Button({
@@ -127,7 +128,7 @@ export function IconButton({
   size?: number;
   color?: string;
   label?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -162,7 +163,7 @@ export function Card({
   flat,
 }: {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   padded?: boolean;
   /** Drop the shadow — useful for cards inside other surfaces. */
   flat?: boolean;
@@ -233,7 +234,7 @@ export interface InputProps extends TextInputProps {
   error?: string | null;
   icon?: IconName;
   password?: boolean;
-  containerStyle?: ViewStyle;
+  containerStyle?: StyleProp<ViewStyle>;
 }
 
 export function Input({ label, hint, error, icon, password, containerStyle, style, ...rest }: InputProps) {
@@ -400,11 +401,11 @@ export function Avatar({ name, uri, size = 40 }: { name: string; uri?: string | 
 
 /* ------------------------------------------------------------------ Misc */
 
-export function Divider({ style }: { style?: ViewStyle }) {
+export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
   return <View style={[{ height: 1, backgroundColor: colors.border }, style]} />;
 }
 
-export function Row({ children, gap = spacing.sm, style }: { children: React.ReactNode; gap?: number; style?: ViewStyle }) {
+export function Row({ children, gap = spacing.sm, style }: { children: React.ReactNode; gap?: number; style?: StyleProp<ViewStyle> }) {
   return <View style={[{ flexDirection: 'row', alignItems: 'center', gap }, style]}>{children}</View>;
 }
 

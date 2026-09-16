@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { api, ApiError } from '../../src/api';
 import type { AnnouncementType, PlatformAnnouncement } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
@@ -16,7 +16,6 @@ import {
   Input,
   Muted,
   Row,
-  Select,
   Sheet,
   Spinner,
   SwitchRow,
@@ -34,6 +33,7 @@ export default function AdminAnnouncementsScreen() {
   const { t, locale } = useI18n();
   const toast = useToast();
   const { isAdmin, booting } = useAuth();
+  const { isWide } = useBreakpoint();
 
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<PlatformAnnouncement[]>([]);
@@ -150,7 +150,7 @@ export default function AdminAnnouncementsScreen() {
       case 'EVENT':
         return { bg: colors.orangeSoft, fg: colors.orangeDarker };
       case 'UPDATE':
-        return { bg: colors.surfaceAlt, fg: colors.orange };
+        return { bg: colors.infoSoft, fg: colors.info };
       default:
         return { bg: colors.surfaceAlt, fg: colors.textMuted };
     }
@@ -170,32 +170,31 @@ export default function AdminAnnouncementsScreen() {
   };
 
   return (
-    <AdminShell>
-      <Row style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
-        <View style={{ gap: 4 }}>
-          <H2>{t('admin.announcementsTitle')}</H2>
-          <Muted>{t('admin.announcementsSubtitle')}</Muted>
-        </View>
-
+    <AdminShell
+      title={t('admin.announcementsTitle')}
+      subtitle={t('admin.announcementsSubtitle')}
+      headerActions={
         <Button
           title={t('admin.newAnnouncement')}
           icon="plus"
+          size="sm"
           onPress={openCreate}
         />
-      </Row>
-
+      }
+    >
       {loading ? (
         <Spinner />
       ) : items.length === 0 ? (
-        <Card>
+        <Card style={{ padding: spacing.xl }}>
           <EmptyState
             icon="bell"
-            title={t('home.noAnnouncements')}
-            body={t('admin.announcementsSubtitle')}
+            title="Geen aankondigingen"
+            body="Er zijn momenteel geen aankondigingen geplaatst. Maak er een aan om nieuws of evenementen op de homepage te tonen."
             action={
               <Button
                 title={t('admin.newAnnouncement')}
                 icon="plus"
+                variant="primary"
                 onPress={openCreate}
               />
             }
@@ -207,36 +206,59 @@ export default function AdminAnnouncementsScreen() {
             <Card
               key={item.id}
               style={{
-                backgroundColor: colors.surface,
-                borderColor: item.type === 'WARNING' ? colors.danger : colors.border,
-                opacity: item.active ? 1 : 0.65,
+                gap: spacing.md,
+                borderLeftWidth: 4,
+                borderLeftColor: item.active
+                  ? item.type === 'WARNING'
+                    ? colors.danger
+                    : colors.orange
+                  : colors.border,
               }}
             >
               <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: spacing.sm }}>
-                <Row gap={spacing.sm} style={{ flex: 1, minWidth: 260, alignItems: 'center' }}>
-                  <Icon name={getAnnouncementIcon(item.type)} size={16} color={colors.orange} />
-                  <H3 style={{ flexShrink: 1 }}>{item.title}</H3>
-                  <Badge label={item.type} tone={getAnnouncementBadgeTone(item.type)} />
-                  <Badge
-                    label={item.active ? t('admin.active') : t('security.disabled')}
-                    tone={
-                      item.active
-                        ? { bg: colors.orangeSoft, fg: colors.orangeDarker }
-                        : { bg: colors.surfaceAlt, fg: colors.textMuted }
-                    }
-                  />
+                <Row gap={spacing.sm} style={{ flex: 1, minWidth: 240, alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: radius.md,
+                      backgroundColor: colors.surfaceAlt,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon
+                      name={getAnnouncementIcon(item.type)}
+                      size={15}
+                      color={item.type === 'WARNING' ? colors.danger : colors.orange}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Row gap={spacing.xs} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                      <H3 style={{ fontSize: 16 }}>{item.title}</H3>
+                      <Badge label={item.type} tone={getAnnouncementBadgeTone(item.type)} />
+                      <Badge
+                        label={item.active ? t('admin.active') : 'Inactief'}
+                        tone={
+                          item.active
+                            ? { bg: colors.successSoft, fg: colors.success }
+                            : { bg: colors.surfaceAlt, fg: colors.textMuted }
+                        }
+                      />
+                    </Row>
+                  </View>
                 </Row>
 
                 <Row gap={spacing.xs}>
                   <Button
-                    title={t('common.edit')}
+                    title={t('advert.edit')}
                     icon="edit"
                     variant="ghost"
                     size="sm"
                     onPress={() => openEdit(item)}
                   />
                   <Button
-                    title={t('common.delete')}
+                    title=""
                     icon="trash"
                     variant="danger"
                     size="sm"
@@ -245,9 +267,9 @@ export default function AdminAnnouncementsScreen() {
                 </Row>
               </Row>
 
-              <Body style={{ color: colors.textMuted, marginTop: spacing.sm }}>{item.content}</Body>
+              <Body style={{ color: colors.textMuted, fontSize: 14 }}>{item.content}</Body>
 
-              <Row style={{ justifyContent: 'space-between', marginTop: spacing.md, flexWrap: 'wrap', gap: spacing.sm }}>
+              <Row style={{ justifyContent: 'space-between', marginTop: spacing.xs, flexWrap: 'wrap', gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
                 <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
                   {item.eventDate && (
                     <Row gap={4} style={{ alignItems: 'center' }}>
@@ -275,12 +297,12 @@ export default function AdminAnnouncementsScreen() {
         </View>
       )}
 
-      {/* Create / Edit Sheet */}
+      {/* ----------------- CREATE / EDIT SHEET WITH ACCURATE LIVE PREVIEW ----------------- */}
       <Sheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title={editingItem ? t('admin.editAnnouncement') : t('admin.newAnnouncement')}
-        width={560}
+        width={620}
       >
         <View style={{ gap: spacing.lg }}>
           <SwitchRow
@@ -293,7 +315,7 @@ export default function AdminAnnouncementsScreen() {
             label={t('admin.announcementTitle')}
             value={title}
             onChangeText={setTitle}
-            placeholder="Bijv. Onderhoud gepland of Maker Faire 2026"
+            placeholder="Bijv. Gepland onderhoud of Maker Faire 2026"
             icon="bell"
           />
 
@@ -326,7 +348,7 @@ export default function AdminAnnouncementsScreen() {
             label={t('admin.announcementEventDate')}
             value={eventDate}
             onChangeText={setEventDate}
-            placeholder="2026-10-15"
+            placeholder="JJJJ-MM-DD (bijv. 2026-10-15)"
             icon="calendar"
           />
 
@@ -349,6 +371,60 @@ export default function AdminAnnouncementsScreen() {
               />
             </View>
           </Row>
+
+          {/* ACCURATE LIVE PREVIEW CARD */}
+          <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
+            <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
+              <Icon name="eye" size={13} color={colors.orange} />
+              <Muted style={{ fontWeight: '700', color: colors.ink, fontSize: 13 }}>
+                {t('admin.livePreview')}
+              </Muted>
+            </Row>
+            <Muted style={typography.tiny}>
+              {t('admin.announcementPreviewHint')}
+            </Muted>
+
+            <Card
+              style={{
+                backgroundColor: colors.surface,
+                borderColor: type === 'WARNING' ? colors.danger : colors.border,
+                borderWidth: 1.5,
+                padding: spacing.md,
+                marginTop: 4,
+              }}
+            >
+              <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: spacing.sm }}>
+                <Row gap={spacing.sm} style={{ flex: 1, minWidth: 200, alignItems: 'center' }}>
+                  <Icon name={getAnnouncementIcon(type)} size={15} color={colors.orange} />
+                  <H3 style={{ flexShrink: 1, fontSize: 15 }}>{title || 'Titel van aankondiging'}</H3>
+                  <Badge label={type} tone={getAnnouncementBadgeTone(type)} />
+                </Row>
+                {eventDate ? (
+                  <Row gap={4} style={{ alignItems: 'center' }}>
+                    <Icon name="calendar" size={12} color={colors.textFaint} />
+                    <Muted style={typography.tiny}>
+                      {eventDate}
+                    </Muted>
+                  </Row>
+                ) : null}
+              </Row>
+
+              <Body style={{ color: colors.textMuted, marginTop: spacing.sm, fontSize: 13.5 }}>
+                {content || 'De inhoud van de mededeling wordt hier weergegeven...'}
+              </Body>
+
+              {linkUrl ? (
+                <Row style={{ marginTop: spacing.md }}>
+                  <Button
+                    title={linkText || t('home.readMore')}
+                    icon="arrowRight"
+                    variant="ghost"
+                    size="sm"
+                  />
+                </Row>
+              ) : null}
+            </Card>
+          </View>
 
           <Row style={{ justifyContent: 'space-between', marginTop: spacing.sm }}>
             <Button
@@ -377,7 +453,7 @@ export default function AdminAnnouncementsScreen() {
           <Body>{t('admin.deleteAnnouncementConfirm')}</Body>
           {deleteConfirmItem && (
             <Card style={{ backgroundColor: colors.surfaceAlt }}>
-              <H3>{deleteConfirmItem.title}</H3>
+              <H3 style={{ fontSize: 15 }}>{deleteConfirmItem.title}</H3>
             </Card>
           )}
           <Row style={{ justifyContent: 'flex-end', gap: spacing.sm }}>

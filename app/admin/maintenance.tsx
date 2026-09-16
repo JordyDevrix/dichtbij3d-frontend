@@ -98,16 +98,22 @@ export default function AdminMaintenanceScreen() {
   };
 
   return (
-    <AdminShell>
+    <AdminShell
+      title={t('admin.maintenanceTitle')}
+      subtitle={t('admin.maintenanceSubtitle')}
+      headerActions={
+        <Button
+          title={t('common.save')}
+          icon="check"
+          loading={saving}
+          onPress={() => handleSave()}
+        />
+      }
+    >
       {loading ? (
         <Spinner />
       ) : (
         <View style={{ gap: spacing.xl }}>
-          <View style={{ gap: 4 }}>
-            <H2>{t('admin.maintenanceTitle')}</H2>
-            <Muted>{t('admin.maintenanceSubtitle')}</Muted>
-          </View>
-
           {/* Current Status Overview Banner */}
           <Card
             style={{
@@ -117,8 +123,8 @@ export default function AdminMaintenanceScreen() {
               gap: spacing.md,
             }}
           >
-            <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.md }}>
-              <Row gap={spacing.md} style={{ flex: 1, minWidth: 260 }}>
+            <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.md, alignItems: 'center' }}>
+              <Row gap={spacing.md} style={{ flex: 1, minWidth: 260, alignItems: 'center' }}>
                 <View
                   style={{
                     width: 48,
@@ -131,13 +137,13 @@ export default function AdminMaintenanceScreen() {
                 >
                   <Icon
                     name={enabled ? 'powerOff' : 'checkCircle'}
-                    size={24}
+                    size={22}
                     color={colors.white}
                   />
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Row gap={spacing.xs}>
-                    <H3 style={{ color: colors.ink }}>
+                  <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
+                    <H3 style={{ color: colors.ink, fontSize: 16 }}>
                       {enabled
                         ? t('admin.maintenanceStatusActive')
                         : t('admin.maintenanceStatusInactive')}
@@ -151,7 +157,7 @@ export default function AdminMaintenanceScreen() {
                       }
                     />
                   </Row>
-                  <Muted style={{ color: colors.textMuted }}>
+                  <Muted style={typography.tiny}>
                     {enabled
                       ? t('admin.maintenanceActiveDesc')
                       : t('admin.maintenanceInactiveDesc')}
@@ -160,26 +166,23 @@ export default function AdminMaintenanceScreen() {
               </Row>
 
               <Button
-                title={
-                  enabled
-                    ? t('admin.deactivateMaintenance')
-                    : t('admin.activateMaintenance')
-                }
-                icon={enabled ? 'check' : 'powerOff'}
+                title={enabled ? t('admin.deactivateMaintenance') : t('admin.activateMaintenance')}
+                icon={enabled ? 'checkCircle' : 'powerOff'}
                 variant={enabled ? 'outline' : 'danger'}
                 loading={saving}
-                onPress={() => {
-                  const nextState = !enabled;
-                  setEnabled(nextState);
-                  void handleSave(nextState);
-                }}
+                onPress={() => handleSave(!enabled)}
               />
             </Row>
           </Card>
 
-          {/* Settings Form Card */}
+          {/* Maintenance Configuration Card */}
           <Card style={{ gap: spacing.lg }}>
-            <H3>{t('admin.maintenanceSettings')}</H3>
+            <View style={{ gap: 2 }}>
+              <H3 style={{ fontSize: 16 }}>{t('admin.maintenanceSettings')}</H3>
+              <Muted style={typography.tiny}>{t('admin.maintenanceSubtitle')}</Muted>
+            </View>
+
+            <View style={{ height: 1, backgroundColor: colors.border }} />
 
             <SwitchRow
               label={t('admin.maintenanceToggleLabel')}
@@ -188,13 +191,11 @@ export default function AdminMaintenanceScreen() {
               onValueChange={setEnabled}
             />
 
-            <View style={{ height: 1, backgroundColor: colors.border }} />
-
             <Input
               label={t('admin.maintenanceHeadingLabel')}
               value={title}
               onChangeText={setTitle}
-              placeholder="Tijdelijk offline voor onderhoud"
+              placeholder={t('maintenance.defaultTitle')}
               icon="wrench"
             />
 
@@ -203,71 +204,57 @@ export default function AdminMaintenanceScreen() {
               hint={t('admin.maintenanceMessageHint')}
               value={message}
               onChangeText={setMessage}
-              placeholder="Dichtbij3D is momenteel niet bereikbaar wegens gepland onderhoud. We zijn zo snel mogelijk weer terug!"
+              placeholder={t('maintenance.defaultMessage')}
               multiline
             />
 
-            {/* Estimated Completion Time */}
+            {/* Estimated Completion Presets */}
             <View style={{ gap: spacing.sm }}>
-              <Text style={typography.label}>{t('admin.maintenanceUntilLabel')}</Text>
-              <Muted>{t('admin.maintenanceUntilHint')}</Muted>
+              <Muted style={{ fontWeight: '600', color: colors.ink, fontSize: 13 }}>
+                {t('admin.maintenanceUntilLabel')}
+              </Muted>
+              <Muted style={typography.tiny}>
+                {t('admin.maintenanceUntilHint')}
+              </Muted>
 
-              <Row gap={spacing.xs} style={{ flexWrap: 'wrap', marginVertical: spacing.xs }}>
-                <Chip
-                  label="+30 min"
-                  size="sm"
-                  onPress={() => setPresetDuration(0.5)}
-                />
-                <Chip
-                  label="+1 uur"
-                  size="sm"
-                  onPress={() => setPresetDuration(1)}
-                />
-                <Chip
-                  label="+2 uur"
-                  size="sm"
-                  onPress={() => setPresetDuration(2)}
-                />
-                <Chip
-                  label="+4 uur"
-                  size="sm"
-                  onPress={() => setPresetDuration(4)}
-                />
-                <Chip
-                  label="+12 uur"
-                  size="sm"
-                  onPress={() => setPresetDuration(12)}
-                />
-                <Chip
-                  label="+24 uur"
-                  size="sm"
-                  onPress={() => setPresetDuration(24)}
-                />
-                {until && (
+              <Row gap={spacing.xs} style={{ flexWrap: 'wrap' }}>
+                {[
+                  { label: t('admin.preset1h'), hours: 1 },
+                  { label: t('admin.preset2h'), hours: 2 },
+                  { label: t('admin.preset4h'), hours: 4 },
+                  { label: t('admin.preset8h'), hours: 8 },
+                  { label: t('admin.preset24h'), hours: 24 },
+                ].map((preset) => (
                   <Chip
-                    label={t('admin.clearUntil')}
+                    key={preset.label}
+                    label={preset.label}
+                    icon="clock"
+                    onPress={() => setPresetDuration(preset.hours)}
+                  />
+                ))}
+
+                {until && (
+                  <Button
+                    title={t('admin.clearUntil')}
+                    icon="close"
+                    variant="ghost"
                     size="sm"
-                    tone={{ bg: colors.surfaceAlt, fg: colors.danger }}
                     onPress={() => setUntil(null)}
                   />
                 )}
               </Row>
 
-              <Input
-                value={until || ''}
-                onChangeText={(val) => setUntil(val.trim() || null)}
-                placeholder="ISO-8601 formaat (bijv. 2026-09-16T12:00:00Z)"
-                icon="clock"
-              />
-
               {until && (
-                <Muted style={{ color: colors.orangeDarker }}>
-                  {t('maintenance.estimatedUntil')}: {formatDateTime(until, locale)}
-                </Muted>
+                <Row gap={spacing.xs} style={{ alignItems: 'center', marginTop: 4 }}>
+                  <Icon name="calendar" size={12} color={colors.orange} />
+                  <Body style={{ ...typography.tiny, color: colors.orange, fontWeight: '700' }}>
+                    {t('maintenance.estimatedUntil')}: {formatDateTime(until, locale)}
+                  </Body>
+                </Row>
               )}
             </View>
 
-            <Row style={{ justifyContent: 'flex-end', marginTop: spacing.md }}>
+            <Row style={{ justifyContent: 'flex-end', marginTop: spacing.xs }}>
               <Button
                 title={t('common.save')}
                 icon="check"
@@ -277,92 +264,97 @@ export default function AdminMaintenanceScreen() {
             </Row>
           </Card>
 
-          {/* Live Preview of visitor screen */}
+          {/* ----------------- ACCURATE LIVE PREVIEW OF MAINTENANCE SCREEN ----------------- */}
           <View style={{ gap: spacing.md }}>
-            <H3>{t('admin.livePreview')}</H3>
-            <Muted>{t('admin.livePreviewDesc')}</Muted>
+            <View style={{ gap: 2 }}>
+              <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
+                <Icon name="eye" size={16} color={colors.orange} />
+                <H2 style={{ fontSize: 18 }}>{t('admin.livePreview')}</H2>
+              </Row>
+              <Muted style={typography.tiny}>
+                {t('admin.livePreviewDesc')}
+              </Muted>
+            </View>
 
             <Card
               style={{
-                backgroundColor: colors.background,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: radius.xl,
                 padding: isWide ? spacing.xxl : spacing.xl,
-                gap: spacing.lg,
                 alignItems: 'center',
-                borderColor: colors.orangeBorder,
-                borderWidth: 1.5,
+                gap: spacing.lg,
               }}
             >
-              <View
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  backgroundColor: colors.orangeSoft,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 2,
-                  borderColor: colors.orangeBorder,
-                }}
-              >
-                <Icon name="wrench" size={28} color={colors.orange} />
-              </View>
-
-              <View style={{ gap: spacing.sm, alignItems: 'center' }}>
-                <H1 style={{ textAlign: 'center', fontSize: 22, color: colors.ink }}>
-                  {title.trim() || t('maintenance.defaultTitle')}
-                </H1>
-                <Text
-                  style={{
-                    ...typography.body,
-                    textAlign: 'center',
-                    color: colors.textMuted,
-                    lineHeight: 22,
-                    maxWidth: 480,
-                  }}
-                >
-                  {message.trim() || t('maintenance.defaultMessage')}
-                </Text>
-              </View>
-
-              {until && (
+              <View style={{ alignItems: 'center', gap: spacing.sm, maxWidth: 540 }}>
+                {/* Glowing Icon Badge */}
                 <View
                   style={{
-                    flexDirection: 'row',
+                    width: 68,
+                    height: 68,
+                    borderRadius: 34,
+                    backgroundColor: colors.orangeSoft,
                     alignItems: 'center',
-                    gap: spacing.sm,
-                    backgroundColor: colors.surfaceAlt,
-                    paddingVertical: spacing.sm,
-                    paddingHorizontal: spacing.md,
-                    borderRadius: radius.md,
-                    borderWidth: 1,
-                    borderColor: colors.border,
+                    justifyContent: 'center',
+                    marginBottom: spacing.xs,
                   }}
                 >
-                  <Icon name="clock" size={15} color={colors.orange} />
-                  <Muted style={{ fontWeight: '600', color: colors.ink }}>
-                    {t('maintenance.estimatedUntil')}:{' '}
-                    <Text style={{ color: colors.orangeDarker }}>
-                      {formatDateTime(until, locale)}
-                    </Text>
-                  </Muted>
+                  <Icon name="wrench" size={28} color={colors.orange} />
                 </View>
-              )}
 
-              <Row gap={spacing.md} style={{ marginTop: spacing.sm, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <Button
-                  title={t('maintenance.checkStatus')}
-                  icon="refresh"
-                  size="md"
-                  disabled
+                <Badge
+                  label={t('maintenance.badge')}
+                  tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
                 />
-                <Button
-                  title={t('maintenance.adminLogin')}
-                  icon="userShield"
-                  variant="outline"
-                  size="md"
-                  disabled
-                />
-              </Row>
+
+                <H1 style={{ textAlign: 'center', fontSize: 24, lineHeight: 30 }}>
+                  {title || t('maintenance.defaultTitle')}
+                </H1>
+
+                <Body style={{ textAlign: 'center', color: colors.textMuted, fontSize: 14, lineHeight: 22 }}>
+                  {message || t('maintenance.defaultMessage')}
+                </Body>
+
+                {until && (
+                  <View
+                    style={{
+                      marginTop: spacing.sm,
+                      paddingVertical: spacing.sm,
+                      paddingHorizontal: spacing.md,
+                      backgroundColor: colors.surfaceAlt,
+                      borderRadius: radius.md,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
+                      <Icon name="clock" size={13} color={colors.orange} />
+                      <Muted style={typography.tiny}>
+                        {t('maintenance.estimatedUntil')}:{' '}
+                        <Text style={{ fontWeight: '700', color: colors.ink }}>
+                          {formatDateTime(until, locale)}
+                        </Text>
+                      </Muted>
+                    </Row>
+                  </View>
+                )}
+
+                <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
+                  <Button
+                    title={t('maintenance.checkStatus')}
+                    icon="refresh"
+                    variant="outline"
+                    size="sm"
+                  />
+                  <Button
+                    title={t('maintenance.adminLogin')}
+                    icon="userShield"
+                    variant="ghost"
+                    size="sm"
+                  />
+                </Row>
+              </View>
             </Card>
           </View>
         </View>

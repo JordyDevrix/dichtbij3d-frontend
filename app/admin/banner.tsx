@@ -26,7 +26,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
 import { useTheme } from '../../src/theme/ThemeContext';
-import { colors, layout, radius, shadow, spacing } from '../../src/theme/theme';
+import { colors, layout, radius, shadow, spacing, typography } from '../../src/theme/theme';
 import { detectMediaType, pickAndUploadBannerMedia } from '../../src/utils/upload';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 
@@ -34,7 +34,7 @@ export default function AdminBannerScreen() {
   const { t } = useI18n();
   const toast = useToast();
   const { isAdmin, booting } = useAuth();
-  const { isWide } = useBreakpoint();
+  const { isDesktop, isWide } = useBreakpoint();
   const { scheme } = useTheme();
 
   const [loading, setLoading] = useState(true);
@@ -221,76 +221,90 @@ export default function AdminBannerScreen() {
   };
 
   return (
-    <AdminShell>
+    <AdminShell
+      title={t('admin.bannerTitle')}
+      subtitle={t('admin.bannerSubtitle')}
+      headerActions={
+        <Button
+          title={t('common.save')}
+          icon="check"
+          loading={saving}
+          onPress={handleSave}
+        />
+      }
+    >
       {loading ? (
         <Spinner />
       ) : (
         <View style={{ gap: spacing.xl }}>
-          <View style={{ gap: 4 }}>
-            <H2>{t('admin.bannerTitle')}</H2>
-            <Muted>{t('admin.bannerSubtitle')}</Muted>
-          </View>
-
-          {/* Form Card */}
+          {/* Main Form Configuration Card */}
           <Card style={{ gap: spacing.lg }}>
-            <SwitchRow
-              label={t('admin.bannerEnabled')}
-              value={enabled}
-              onValueChange={setEnabled}
-            />
+            <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ gap: 2 }}>
+                <H3 style={{ fontSize: 16 }}>{t('admin.bannerEnabled')}</H3>
+                <Muted style={typography.tiny}>Toon de banner als prominente hero op de homepage</Muted>
+              </View>
+              <SwitchRow
+                label=""
+                value={enabled}
+                onValueChange={setEnabled}
+              />
+            </Row>
 
             <View style={{ height: 1, backgroundColor: colors.border }} />
 
-            <Input
-              label={t('admin.bannerHeading')}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Welkom bij Dichtbij3D"
-              icon="cube"
-            />
+            <View style={{ gap: spacing.md }}>
+              <Input
+                label={t('admin.bannerHeading')}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Welkom bij Dichtbij3D"
+                icon="cube"
+              />
 
-            <Input
-              label={t('admin.bannerSubheading')}
-              value={subtitle}
-              onChangeText={setSubtitle}
-              placeholder="Vind 3D-printers en ontwerpers bij jou in de buurt..."
-              multiline
-            />
+              <Input
+                label={t('admin.bannerSubheading')}
+                value={subtitle}
+                onChangeText={setSubtitle}
+                placeholder="Vind 3D-printers en ontwerpers bij jou in de buurt..."
+                multiline
+              />
 
-            <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
-              <View style={{ flex: 1, minWidth: 200 }}>
-                <Input
-                  label={t('admin.bannerBadge')}
-                  value={badgeText}
-                  onChangeText={setBadgeText}
-                  placeholder="Nieuw / Uitgelicht"
-                  icon="tag"
-                />
-              </View>
-              <View style={{ flex: 1, minWidth: 200 }}>
-                <Input
-                  label={t('admin.bannerButtonText')}
-                  value={buttonText}
-                  onChangeText={setButtonText}
-                  placeholder="Ontdek marktplaats"
-                  icon="link"
-                />
-              </View>
-            </Row>
+              <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
+                <View style={{ flex: 1, minWidth: 220 }}>
+                  <Input
+                    label={t('admin.bannerBadge')}
+                    value={badgeText}
+                    onChangeText={setBadgeText}
+                    placeholder="Nieuw / Uitgelicht"
+                    icon="tag"
+                  />
+                </View>
+                <View style={{ flex: 1, minWidth: 220 }}>
+                  <Input
+                    label={t('admin.bannerButtonText')}
+                    value={buttonText}
+                    onChangeText={setButtonText}
+                    placeholder="Ontdek marktplaats"
+                    icon="link"
+                  />
+                </View>
+              </Row>
 
-            <Input
-              label={t('admin.bannerLinkUrl')}
-              value={linkUrl}
-              onChangeText={setLinkUrl}
-              placeholder="/marketplace"
-              icon="link"
-            />
+              <Input
+                label={t('admin.bannerLinkUrl')}
+                value={linkUrl}
+                onChangeText={setLinkUrl}
+                placeholder="/marketplace of https://..."
+                icon="link"
+              />
+            </View>
 
-            {/* Multiple Backgrounds & Videos Section */}
+            {/* Media Manager Section */}
             <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
               <View style={{ gap: 2 }}>
-                <H3>{t('admin.bannerMediaTitle')}</H3>
-                <Muted>{t('admin.bannerMediaSubtitle')}</Muted>
+                <H3 style={{ fontSize: 16 }}>{t('admin.bannerMediaTitle')}</H3>
+                <Muted style={typography.tiny}>{t('admin.bannerMediaSubtitle')}</Muted>
               </View>
 
               {/* Media Items List */}
@@ -303,8 +317,10 @@ export default function AdminBannerScreen() {
                     borderWidth: 1,
                     borderColor: colors.border,
                     alignItems: 'center',
+                    gap: spacing.xs,
                   }}
                 >
+                  <Icon name="image" size={24} color={colors.textFaint} />
                   <Muted>{t('admin.bannerNoMedia')}</Muted>
                 </View>
               ) : (
@@ -334,11 +350,11 @@ export default function AdminBannerScreen() {
                           }}
                         >
                           {/* Thumbnail & Info */}
-                          <Row gap={spacing.md} style={{ alignItems: 'center', flex: 1, minWidth: 240 }}>
+                          <Row gap={spacing.md} style={{ alignItems: 'center', flex: 1, minWidth: 220 }}>
                             <View
                               style={{
-                                width: 80,
-                                height: 50,
+                                width: 84,
+                                height: 52,
                                 borderRadius: radius.sm,
                                 overflow: 'hidden',
                                 backgroundColor: '#000000',
@@ -374,7 +390,7 @@ export default function AdminBannerScreen() {
                                   position: 'absolute',
                                   top: 4,
                                   left: 4,
-                                  backgroundColor: 'rgba(0,0,0,0.6)',
+                                  backgroundColor: 'rgba(0,0,0,0.65)',
                                   borderRadius: 4,
                                   paddingHorizontal: 4,
                                   paddingVertical: 2,
@@ -388,7 +404,7 @@ export default function AdminBannerScreen() {
                               </View>
                             </View>
 
-                            <View style={{ flex: 1, minWidth: 140 }}>
+                            <View style={{ flex: 1, minWidth: 140, gap: 2 }}>
                               <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
                                 <Badge
                                   label={`#${idx + 1} ${isVid ? 'VIDEO' : 'IMAGE'}`}
@@ -398,99 +414,60 @@ export default function AdminBannerScreen() {
                                       : { bg: colors.surface, fg: colors.textMuted }
                                   }
                                 />
-                                {!isVid && (
-                                  <Badge
-                                    label={`${item.durationSeconds || 5}s`}
-                                    tone={{ bg: colors.surface, fg: colors.textMuted }}
-                                  />
+                                {idx === 0 && (
+                                  <Badge label="Primair" tone={{ bg: colors.successSoft, fg: colors.success }} />
                                 )}
                               </Row>
-                              <Muted
-                                style={{
-                                  fontSize: 12,
-                                  marginTop: 2,
-                                  maxWidth: 260,
-                                }}
-                                numberOfLines={1}
-                              >
+                              <Muted style={{ ...typography.tiny, maxWidth: 300 }} numberOfLines={1}>
                                 {item.mediaUrl}
                               </Muted>
                             </View>
                           </Row>
 
-                          {/* Item Actions */}
+                          {/* Controls (Duration, Reorder, Delete) */}
                           <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-                            {/* Duration settings for images */}
-                            {!isVid && (
-                              <Row gap={4} style={{ alignItems: 'center', marginRight: spacing.xs }}>
-                                <Muted style={{ fontSize: 12 }}>Duur:</Muted>
-                                {[3, 5, 8, 10].map((sec) => (
-                                  <Pressable
-                                    key={sec}
-                                    onPress={() => handleUpdateItemDuration(idx, sec)}
-                                    style={{
-                                      paddingHorizontal: 8,
-                                      paddingVertical: 4,
-                                      borderRadius: radius.sm,
-                                      backgroundColor:
-                                        (item.durationSeconds || 5) === sec
-                                          ? colors.orange
-                                          : colors.surface,
-                                      borderWidth: 1,
-                                      borderColor:
-                                        (item.durationSeconds || 5) === sec
-                                          ? colors.orange
-                                          : colors.border,
-                                    }}
-                                  >
-                                    <Body
-                                      style={{
-                                        fontSize: 12,
-                                        fontWeight: '600',
-                                        color:
-                                          (item.durationSeconds || 5) === sec
-                                            ? colors.white
-                                            : colors.text,
-                                      }}
-                                    >
-                                      {sec}s
-                                    </Body>
-                                  </Pressable>
-                                ))}
-                              </Row>
-                            )}
-
-                            {/* Toggle Media Type */}
                             <Button
-                              title={isVid ? 'Zet als Afbeelding' : 'Zet als Video'}
-                              icon={isVid ? 'image' : 'video'}
+                              title={isVid ? 'Video' : 'Foto'}
+                              icon={isVid ? 'film' : 'image'}
                               variant="ghost"
                               size="sm"
                               onPress={() => handleToggleMediaType(idx)}
                             />
 
-                            {/* Reorder buttons */}
+                            {!isVid && (
+                              <View style={{ width: 64 }}>
+                                <Input
+                                  value={String(item.durationSeconds || 5)}
+                                  onChangeText={(txt) => {
+                                    const parsed = parseInt(txt, 10);
+                                    if (!isNaN(parsed)) handleUpdateItemDuration(idx, parsed);
+                                  }}
+                                  placeholder="5s"
+                                />
+                              </View>
+                            )}
+
                             <Button
-                              icon="arrowUp"
                               title=""
-                              variant="outline"
+                              icon="arrowUp"
+                              variant="ghost"
                               size="sm"
                               disabled={idx === 0}
                               onPress={() => handleMoveUp(idx)}
                             />
+
                             <Button
-                              icon="arrowDown"
                               title=""
-                              variant="outline"
+                              icon="arrowDown"
+                              variant="ghost"
                               size="sm"
                               disabled={idx === mediaList.length - 1}
                               onPress={() => handleMoveDown(idx)}
                             />
 
-                            {/* Delete button */}
                             <Button
-                              icon="trash"
                               title=""
+                              icon="trash"
                               variant="danger"
                               size="sm"
                               onPress={() => handleRemoveMedia(idx)}
@@ -505,7 +482,7 @@ export default function AdminBannerScreen() {
 
               {/* Add Media Controls */}
               <Card flat style={{ gap: spacing.md, backgroundColor: colors.surfaceAlt }}>
-                <H3 style={{ fontSize: 15 }}>{t('admin.bannerAddMedia')}</H3>
+                <H3 style={{ fontSize: 14 }}>{t('admin.bannerAddMedia')}</H3>
 
                 <Row gap={spacing.md} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
                   <Button
@@ -516,7 +493,7 @@ export default function AdminBannerScreen() {
                     onPress={handleUploadMedia}
                   />
 
-                  <View style={{ flex: 1, minWidth: 220 }}>
+                  <View style={{ flex: 1, minWidth: 200 }}>
                     <Input
                       value={newUrl}
                       onChangeText={(txt) => {
@@ -529,7 +506,7 @@ export default function AdminBannerScreen() {
                     />
                   </View>
 
-                  <View style={{ width: 140 }}>
+                  <View style={{ width: 150 }}>
                     <Segmented<'IMAGE' | 'VIDEO'>
                       value={newMediaType}
                       options={[
@@ -541,7 +518,7 @@ export default function AdminBannerScreen() {
                   </View>
 
                   {newMediaType === 'IMAGE' && (
-                    <View style={{ width: 80 }}>
+                    <View style={{ width: 75 }}>
                       <Input
                         value={newDuration}
                         onChangeText={setNewDuration}
@@ -558,13 +535,13 @@ export default function AdminBannerScreen() {
                     onPress={handleAddManualMedia}
                   />
                 </Row>
-                <Muted style={{ fontSize: 12 }}>
+                <Muted style={typography.tiny}>
                   {t('admin.bannerDurationHint')}
                 </Muted>
               </Card>
             </View>
 
-            <Row style={{ justifyContent: 'flex-end', marginTop: spacing.md }}>
+            <Row style={{ justifyContent: 'flex-end', marginTop: spacing.xs }}>
               <Button
                 title={t('common.save')}
                 icon="check"
@@ -574,19 +551,25 @@ export default function AdminBannerScreen() {
             </Row>
           </Card>
 
-          {/* Live Preview Section */}
+          {/* ----------------- ACCURATE LIVE PREVIEW SECTION ----------------- */}
           <View style={{ gap: spacing.md }}>
             <Row style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
-              <View>
-                <H3>Live Preview</H3>
-                <Muted>Directe interactieve weergave zoals op de homepage</Muted>
+              <View style={{ gap: 2 }}>
+                <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
+                  <Icon name="eye" size={16} color={colors.orange} />
+                  <H2 style={{ fontSize: 18 }}>{t('admin.livePreview')}</H2>
+                </Row>
+                <Muted style={typography.tiny}>
+                  {previewMode === 'desktop' ? t('admin.previewDesktopNotice') : t('admin.previewMobileNotice')}
+                </Muted>
               </View>
-              <View style={{ width: 220 }}>
+
+              <View style={{ width: 240 }}>
                 <Segmented<'desktop' | 'mobile'>
                   value={previewMode}
                   options={[
-                    { value: 'desktop', label: 'Desktop', icon: 'laptop' },
-                    { value: 'mobile', label: 'Mobiel', icon: 'phone' },
+                    { value: 'desktop', label: t('admin.desktopPreview'), icon: 'laptop' },
+                    { value: 'mobile', label: t('admin.mobilePreview'), icon: 'phone' },
                   ]}
                   onChange={setPreviewMode}
                 />
@@ -594,7 +577,7 @@ export default function AdminBannerScreen() {
             </Row>
 
             {previewMode === 'desktop' ? (
-              /* ---------------- DESKTOP HERO BANNER PREVIEW ---------------- */
+              /* ---------------- ACCURATE DESKTOP HERO BANNER PREVIEW ---------------- */
               <Card
                 padded={false}
                 flat
@@ -613,7 +596,7 @@ export default function AdminBannerScreen() {
                   media={mediaList}
                   style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
                 >
-                  {/* Floating Frosted Glass Card */}
+                  {/* Floating Frosted Glass Card matching homepage desktop */}
                   <View
                     style={{
                       width: '100%',
@@ -649,7 +632,7 @@ export default function AdminBannerScreen() {
                               ? 'rgba(255, 255, 255, 0.12)'
                               : 'rgba(0, 0, 0, 0.08)',
                           overflow: 'hidden',
-                          ...(Platform.OS === 'web' && mediaList.length > 0
+                          ...(Platform.OS === 'web'
                             ? ({
                                 backdropFilter: 'saturate(180%) blur(20px)',
                                 WebkitBackdropFilter: 'saturate(180%) blur(20px)',
@@ -671,17 +654,24 @@ export default function AdminBannerScreen() {
                           />
                         </Row>
                       ) : null}
+
                       <H1 style={{ fontSize: 32, lineHeight: 38 }}>
                         {title || 'Welkom bij Dichtbij3D'}
                       </H1>
+
                       {subtitle ? (
                         <Body style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
                           {subtitle}
                         </Body>
                       ) : null}
-                      <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+
+                      <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
                         {buttonText ? (
-                          <Button title={buttonText} icon="arrowRight" size="md" />
+                          <Button
+                            title={buttonText}
+                            icon="arrowRight"
+                            size="md"
+                          />
                         ) : null}
                         <Button
                           title={t('home.viewMarketplace')}
@@ -695,71 +685,103 @@ export default function AdminBannerScreen() {
                 </HeroBackgroundSlider>
               </Card>
             ) : (
-              /* ---------------- MOBILE HERO BANNER PREVIEW ---------------- */
+              /* ---------------- ACCURATE MOBILE HERO BANNER PREVIEW ---------------- */
               <View
                 style={{
                   width: '100%',
-                  maxWidth: 420,
-                  alignSelf: 'center',
-                  borderRadius: radius.xl,
-                  overflow: 'hidden',
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: colors.surface,
-                  ...shadow.raised,
+                  alignItems: 'center',
+                  paddingVertical: spacing.md,
                 }}
               >
-                {mediaList.length > 0 && (
+                <View
+                  style={{
+                    width: 375,
+                    maxWidth: '100%',
+                    backgroundColor: colors.surface,
+                    borderRadius: 32,
+                    borderWidth: 2,
+                    borderColor: colors.borderStrong,
+                    overflow: 'hidden',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 24,
+                    elevation: 10,
+                  }}
+                >
+                  {/* Phone Header Mockup Bar */}
                   <View
                     style={{
-                      width: '100%',
-                      aspectRatio: 16 / 9,
+                      height: 28,
                       backgroundColor: colors.surfaceAlt,
-                      overflow: 'hidden',
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingHorizontal: spacing.md,
                     }}
                   >
+                    <Muted style={{ fontSize: 10, fontWeight: '700' }}>09:41</Muted>
+                    <View style={{ width: 44, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong }} />
+                    <Row gap={4}>
+                      <Icon name="bolt" size={9} color={colors.textMuted} />
+                    </Row>
+                  </View>
+
+                  {/* Mobile Media Slider Header */}
+                  <View style={{ width: '100%', height: 210, position: 'relative' }}>
                     <HeroBackgroundSlider
                       media={mediaList}
                       style={{ width: '100%', height: '100%' }}
                     />
                   </View>
-                )}
 
-                <View
-                  style={{
-                    paddingHorizontal: spacing.lg,
-                    paddingVertical: spacing.xl,
-                    gap: spacing.md,
-                    backgroundColor: colors.surface,
-                  }}
-                >
-                  {badgeText ? (
-                    <Row gap={6}>
-                      <Badge
-                        label={badgeText}
-                        tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
+                  {/* Mobile Content Card matching homepage mobile */}
+                  <View
+                    style={{
+                      padding: spacing.lg,
+                      gap: spacing.md,
+                      backgroundColor: colors.surface,
+                      borderBottomLeftRadius: 30,
+                      borderBottomRightRadius: 30,
+                    }}
+                  >
+                    {badgeText ? (
+                      <Row gap={6}>
+                        <Badge
+                          label={badgeText}
+                          tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
+                        />
+                      </Row>
+                    ) : null}
+
+                    <H1 style={{ fontSize: 22, lineHeight: 28 }}>
+                      {title || 'Welkom bij Dichtbij3D'}
+                    </H1>
+
+                    {subtitle ? (
+                      <Body style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
+                        {subtitle}
+                      </Body>
+                    ) : null}
+
+                    <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+                      {buttonText ? (
+                        <Button
+                          title={buttonText}
+                          icon="arrowRight"
+                          size="sm"
+                        />
+                      ) : null}
+                      <Button
+                        title={t('home.viewMarketplace')}
+                        icon="layers"
+                        variant={buttonText ? 'outline' : 'primary'}
+                        size="sm"
                       />
                     </Row>
-                  ) : null}
-                  <H1 style={{ fontSize: 24, lineHeight: 30 }}>
-                    {title || 'Welkom bij Dichtbij3D'}
-                  </H1>
-                  {subtitle ? (
-                    <Body style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
-                      {subtitle}
-                    </Body>
-                  ) : null}
-                  <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
-                    {buttonText ? (
-                      <Button title={buttonText} icon="arrowRight" size="md" />
-                    ) : null}
-                    <Button
-                      title={t('home.viewMarketplace')}
-                      icon="layers"
-                      variant={buttonText ? 'outline' : 'primary'}
-                      size="md"
-                    />
-                  </Row>
+                  </View>
                 </View>
               </View>
             )}
