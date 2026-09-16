@@ -5,8 +5,9 @@ import { ApiError } from '../../src/api';
 import { SELECTABLE_ROLES } from '../../src/api/types';
 import type { Role } from '../../src/api/types';
 import { Page } from '../../src/components/Page';
-import { Body, Button, Card, H1, H3, Input, Muted, Row } from '../../src/components/ui';
+import { Body, Button, Card, Divider, H1, H3, Input, Muted, Row } from '../../src/components/ui';
 import { Logo } from '../../src/components/AppHeader';
+import { GoogleSignInButton } from '../../src/components/GoogleSignInButton';
 import { Icon } from '../../src/components/Icon';
 import { useAuth } from '../../src/context/AuthContext';
 import { useI18n } from '../../src/i18n';
@@ -142,6 +143,18 @@ export default function RegisterScreen() {
 
         <Button title={t('auth.register')} icon="userPlus" full loading={busy} onPress={submit} />
         <Muted style={{ textAlign: 'center' }}>{t('auth.agreeHint')}</Muted>
+
+        <Row gap={spacing.md}>
+          <Divider style={{ flex: 1 }} />
+          <Muted>{t('common.or')}</Muted>
+          <Divider style={{ flex: 1 }} />
+        </Row>
+
+        <GoogleSignInButton
+          mode="signup"
+          redirect={redirect as string}
+          onError={setError}
+        />
 
         <Row style={{ justifyContent: 'center' }} gap={6}>
           <Muted>{t('auth.hasAccount')}</Muted>

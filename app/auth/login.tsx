@@ -5,6 +5,7 @@ import { api, ApiError } from '../../src/api';
 import { Page } from '../../src/components/Page';
 import { Body, Button, Card, Divider, H1, Input, Muted, Row } from '../../src/components/ui';
 import { Logo } from '../../src/components/AppHeader';
+import { GoogleSignInButton } from '../../src/components/GoogleSignInButton';
 import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
@@ -109,6 +110,12 @@ export default function LoginScreen() {
           <Muted>{t('common.or')}</Muted>
           <Divider style={{ flex: 1 }} />
         </Row>
+
+        <GoogleSignInButton
+          mode="signin"
+          redirect={redirect as string}
+          onError={setError}
+        />
 
         <Button
           title={t('auth.loginWithPasskey')}

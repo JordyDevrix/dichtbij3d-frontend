@@ -122,6 +122,11 @@ export interface AuthResponse {
   maskedEmail?: string | null;
 }
 
+export interface AuthConfigResponse {
+  googleClientId: string | null;
+  googleEnabled: boolean;
+}
+
 export interface TotpSetupResponse {
   secret: string;
   otpauthUri: string;

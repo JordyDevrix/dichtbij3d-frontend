@@ -11,6 +11,7 @@ import type {
   AdvertSummary,
   AppNotification,
   AuditLogEntry,
+  AuthConfigResponse,
   AuthResponse,
   BlockedUser,
   Category,
@@ -55,6 +56,11 @@ function toFormData(file: FileLike): FormData {
 
 export const api = {
   /* ---------------------------------------------------------------- auth */
+  authConfig: () => request<AuthConfigResponse>('/api/auth/config', { auth: false }),
+
+  loginWithGoogle: (idToken: string) =>
+    request<AuthResponse>('/api/auth/google', { method: 'POST', body: { idToken }, auth: false }),
+
   register: (body: { email: string; password: string; displayName: string; roles?: Role[]; locale?: string }) =>
     request<AuthResponse>('/api/auth/register', { method: 'POST', body, auth: false }),
 

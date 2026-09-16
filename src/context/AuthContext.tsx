@@ -23,6 +23,7 @@ interface AuthValue {
   isAdmin: boolean;
   hasRole: (role: Role) => boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
+  loginWithGoogle: (idToken: string) => Promise<LoginResult>;
   verifyMfa: (mfaToken: string, code: string, method?: 'TOTP' | 'EMAIL' | 'totp' | 'email') => Promise<boolean>;
   sendMfaEmail: (mfaToken: string) => Promise<boolean>;
   register: (input: { email: string; password: string; displayName: string; roles: Role[] }) => Promise<LoginResult>;
@@ -169,6 +170,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [handleAuthResponse],
   );
 
+  const loginWithGoogle = useCallback(
+    async (idToken: string) => {
+      setBusy(true);
+      try {
+        return await handleAuthResponse(await api.loginWithGoogle(idToken));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [handleAuthResponse],
+  );
+
   const verifyMfa = useCallback(
     async (mfaToken: string, code: string, method?: 'TOTP' | 'EMAIL' | 'totp' | 'email') => {
       setBusy(true);
@@ -245,6 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin: !!user?.roles?.includes('ADMIN'),
       hasRole: (role: Role) => !!user?.roles?.includes(role),
       login,
+      loginWithGoogle,
       verifyMfa,
       sendMfaEmail,
       register,
@@ -261,6 +275,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       booting,
       busy,
       login,
+      loginWithGoogle,
       verifyMfa,
       sendMfaEmail,
       register,

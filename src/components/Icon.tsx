@@ -89,6 +89,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import {
   faFacebook,
+  faGoogle,
   faLinkedin,
   faWhatsapp,
   faXTwitter,
@@ -99,6 +100,7 @@ import { colors } from '../theme/theme';
  * Central icon registry. The app uses Font Awesome only — never emoji.
  */
 export const ICONS = {
+  google: faGoogle,
   whatsapp: faWhatsapp,
   xTwitter: faXTwitter,
   facebook: faFacebook,
