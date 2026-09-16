@@ -51,5 +51,6 @@
     "build:cloud:aab": "npx --yes eas-cli@latest build --platform android --profile production",
     "typecheck": "node --stack-size=4000 ./node_modules/typescript/lib/tsc.js --noEmit"
   },
-  "private": true
+  "private": true,
+  "license": "UNLICENSED"
 }
