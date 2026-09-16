@@ -1,99 +1,68 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Image, Platform, Pressable, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { api, ApiError } from '../../src/api';
-import type { BannerMediaType, HeroBannerDto, HeroBannerSettingsDto } from '../../src/api/types';
+import { absoluteUrl } from '../../src/api/client';
+import type { PlatformBanner } from '../../src/api/types';
 import { AdminShell } from '../../src/components/AdminShell';
-import { BannerMedia } from '../../src/components/BannerMedia';
-import { HeroBanner } from '../../src/components/HeroBanner';
 import { Icon } from '../../src/components/Icon';
 import {
   Badge,
   Body,
   Button,
   Card,
-  EmptyState,
+  H1,
   H2,
   H3,
   Input,
   Muted,
   Row,
   Segmented,
-  Select,
-  Sheet,
   Spinner,
   SwitchRow,
 } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
-import { colors, radius, spacing, typography } from '../../src/theme/theme';
-import { pickAndUploadBannerMedia } from '../../src/utils/upload';
-
-interface BannerFormState {
-  id?: string;
-  title: string;
-  subtitle: string;
-  mediaUrl: string;
-  mediaType: 'AUTO' | 'IMAGE' | 'VIDEO';
-  durationSeconds: string;
-  linkUrl: string;
-  linkText: string;
-  enabled: boolean;
-}
-
-const EMPTY_FORM: BannerFormState = {
-  title: '',
-  subtitle: '',
-  mediaUrl: '',
-  mediaType: 'AUTO',
-  durationSeconds: '',
-  linkUrl: '',
-  linkText: '',
-  enabled: true,
-};
+import { useTheme } from '../../src/theme/ThemeContext';
+import { colors, layout, radius, shadow, spacing } from '../../src/theme/theme';
+import { pickAndUploadImage } from '../../src/utils/upload';
+import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 
 export default function AdminBannerScreen() {
   const { t } = useI18n();
   const toast = useToast();
   const { isAdmin, booting } = useAuth();
+  const { isWide } = useBreakpoint();
+  const { scheme } = useTheme();
 
   const [loading, setLoading] = useState(true);
-  const [banners, setBanners] = useState<HeroBannerDto[]>([]);
-  const [settings, setSettings] = useState<HeroBannerSettingsDto>({
-    slideDurationSeconds: 5,
-    showForLoggedInUsers: false,
-  });
-
-  // Settings form state
-  const [slideDurationInput, setSlideDurationInput] = useState('5');
-  const [showForLoggedIn, setShowForLoggedIn] = useState(false);
-  const [savingSettings, setSavingSettings] = useState(false);
-
-  // Banner modal state
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [form, setForm] = useState<BannerFormState>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [savingBanner, setSavingBanner] = useState(false);
-
-  // Live preview mode
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
-  const [previewKey, setPreviewKey] = useState(0);
 
-  const refreshPreview = () => setPreviewKey((k) => k + 1);
+  const [enabled, setEnabled] = useState(false);
+  const [title, setTitle] = useState('');
+  const [subtitle, setSubtitle] = useState('');
+  const [badgeText, setBadgeText] = useState('');
+  const [buttonText, setButtonText] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [imageKey, setImageKey] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
+  const load = useCallback(async () => {
     if (booting || !isAdmin) return;
     setLoading(true);
     try {
-      const [bannersRes, settingsRes] = await Promise.all([
-        api.adminHeroBanners(),
-        api.adminHeroBannerSettings(),
-      ]);
-      setBanners(bannersRes || []);
-      setSettings(settingsRes);
-      setSlideDurationInput(String(settingsRes.slideDurationSeconds || 5));
-      setShowForLoggedIn(settingsRes.showForLoggedInUsers);
-      refreshPreview();
+      const banner = await api.adminBanner();
+      setEnabled(banner.enabled);
+      setTitle(banner.title || '');
+      setSubtitle(banner.subtitle || '');
+      setBadgeText(banner.badgeText || '');
+      setButtonText(banner.buttonText || '');
+      setLinkUrl(banner.linkUrl || '');
+      setImageKey(banner.imageKey);
+      setImageUrl(banner.imageUrl);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
     } finally {
@@ -103,51 +72,18 @@ export default function AdminBannerScreen() {
 
   useEffect(() => {
     if (!booting && isAdmin) {
-      void loadData();
+      void load();
     }
-  }, [booting, isAdmin, loadData]);
+  }, [booting, isAdmin, load]);
 
-  const saveSettings = async () => {
-    const duration = parseInt(slideDurationInput, 10);
-    if (isNaN(duration) || duration < 1 || duration > 120) {
-      toast.error(t('admin.invalidDuration'));
-      return;
-    }
-
-    setSavingSettings(true);
-    try {
-      const updated = await api.adminUpdateHeroBannerSettings({
-        slideDurationSeconds: duration,
-        showForLoggedInUsers: showForLoggedIn,
-      });
-      setSettings(updated);
-      toast.success(t('admin.settingsSaved'));
-      refreshPreview();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
-    } finally {
-      setSavingSettings(false);
-    }
-  };
-
-  const handleUpload = async () => {
+  const handleUploadImage = async () => {
     setUploading(true);
     try {
-      const uploaded = await pickAndUploadBannerMedia('banners');
+      const uploaded = await pickAndUploadImage('banners');
       if (uploaded) {
-        const url = uploaded.url;
-        const isVideo =
-          url.endsWith('.mp4') ||
-          url.endsWith('.webm') ||
-          url.endsWith('.mov') ||
-          uploaded.objectKey?.toLowerCase().includes('.mp4');
-
-        setForm((prev) => ({
-          ...prev,
-          mediaUrl: url,
-          mediaType: isVideo ? 'VIDEO' : 'IMAGE',
-        }));
-        toast.success(t('admin.mediaUploaded'));
+        setImageKey(uploaded.objectKey);
+        setImageUrl(uploaded.url);
+        toast.success(t('common.save'));
       }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
@@ -156,144 +92,33 @@ export default function AdminBannerScreen() {
     }
   };
 
-  const openCreate = () => {
-    setForm(EMPTY_FORM);
-    setSheetOpen(true);
+  const handleRemoveImage = () => {
+    setImageKey(null);
+    setImageUrl(null);
   };
 
-  const openEdit = (banner: HeroBannerDto) => {
-    setForm({
-      id: banner.id,
-      title: banner.title || '',
-      subtitle: banner.subtitle || '',
-      mediaUrl: banner.mediaUrl,
-      mediaType: banner.mediaType,
-      durationSeconds: banner.durationSeconds ? String(banner.durationSeconds) : '',
-      linkUrl: banner.linkUrl || '',
-      linkText: banner.linkText || '',
-      enabled: banner.enabled,
-    });
-    setSheetOpen(true);
-  };
-
-  const saveBanner = async () => {
-    if (!form.mediaUrl.trim()) {
-      toast.error(t('admin.mediaUrlRequired'));
-      return;
-    }
-
-    let detectedType: BannerMediaType = 'IMAGE';
-    if (form.mediaType === 'AUTO') {
-      const lower = form.mediaUrl.toLowerCase();
-      if (
-        lower.endsWith('.mp4') ||
-        lower.endsWith('.webm') ||
-        lower.endsWith('.mov') ||
-        lower.endsWith('.ogg') ||
-        lower.endsWith('.m4v')
-      ) {
-        detectedType = 'VIDEO';
-      } else {
-        detectedType = 'IMAGE';
-      }
-    } else {
-      detectedType = form.mediaType;
-    }
-
-    const duration =
-      detectedType === 'IMAGE' && form.durationSeconds.trim()
-        ? parseInt(form.durationSeconds.trim(), 10)
-        : null;
-
-    setSavingBanner(true);
+  const handleSave = async () => {
+    setSaving(true);
     try {
-      if (form.id) {
-        await api.adminUpdateHeroBanner(form.id, {
-          title: form.title.trim() || null,
-          subtitle: form.subtitle.trim() || null,
-          mediaUrl: form.mediaUrl.trim(),
-          mediaType: detectedType,
-          durationSeconds: duration && duration > 0 ? duration : null,
-          linkUrl: form.linkUrl.trim() || null,
-          linkText: form.linkText.trim() || null,
-          enabled: form.enabled,
-        });
-        toast.success(t('admin.bannerUpdated'));
-      } else {
-        await api.adminCreateHeroBanner({
-          title: form.title.trim() || null,
-          subtitle: form.subtitle.trim() || null,
-          mediaUrl: form.mediaUrl.trim(),
-          mediaType: detectedType,
-          durationSeconds: duration && duration > 0 ? duration : null,
-          linkUrl: form.linkUrl.trim() || null,
-          linkText: form.linkText.trim() || null,
-          enabled: form.enabled,
-        });
-        toast.success(t('admin.bannerCreated'));
-      }
-      setSheetOpen(false);
-      await loadData();
+      await api.adminUpdateBanner({
+        enabled,
+        title: title.trim(),
+        subtitle: subtitle.trim() || null,
+        badgeText: badgeText.trim() || null,
+        buttonText: buttonText.trim() || null,
+        linkUrl: linkUrl.trim() || null,
+        imageKey,
+        imageUrl: imageUrl?.trim() || null,
+      });
+      toast.success(t('admin.bannerSaved'));
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
     } finally {
-      setSavingBanner(false);
+      setSaving(false);
     }
   };
 
-  const toggleBannerEnabled = async (banner: HeroBannerDto) => {
-    try {
-      await api.adminUpdateHeroBanner(banner.id, {
-        enabled: !banner.enabled,
-      });
-      toast.success(banner.enabled ? t('admin.bannerDisabled') : t('admin.bannerEnabled'));
-      await loadData();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
-    }
-  };
-
-  const deleteBanner = (banner: HeroBannerDto) => {
-    const doDelete = async () => {
-      try {
-        await api.adminDeleteHeroBanner(banner.id);
-        toast.success(t('admin.bannerDeleted'));
-        await loadData();
-      } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      if (window.confirm(t('admin.confirmDeleteBanner'))) {
-        void doDelete();
-      }
-    } else {
-      Alert.alert(t('admin.deleteBannerTitle'), t('admin.confirmDeleteBanner'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        { text: t('common.delete'), style: 'destructive', onPress: () => void doDelete() },
-      ]);
-    }
-  };
-
-  const moveBanner = async (index: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= banners.length) return;
-
-    const newBanners = [...banners];
-    const temp = newBanners[index];
-    newBanners[index] = newBanners[targetIndex];
-    newBanners[targetIndex] = temp;
-
-    setBanners(newBanners);
-    try {
-      await api.adminReorderHeroBanners(newBanners.map((b) => b.id));
-      refreshPreview();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : t('errors.generic'));
-      await loadData();
-    }
-  };
+  const previewImgUrl = imageUrl ? absoluteUrl(imageUrl) : null;
 
   return (
     <AdminShell>
@@ -301,64 +126,144 @@ export default function AdminBannerScreen() {
         <Spinner />
       ) : (
         <View style={{ gap: spacing.xl }}>
-          {/* Header */}
           <View style={{ gap: 4 }}>
-            <H2>{t('admin.bannersTitle')}</H2>
-            <Muted>{t('admin.bannersSubtitle')}</Muted>
+            <H2>{t('admin.bannerTitle')}</H2>
+            <Muted>{t('admin.bannerSubtitle')}</Muted>
           </View>
 
-          {/* Rotation & Carousel Settings Card */}
+          {/* Form Card */}
           <Card style={{ gap: spacing.lg }}>
-            <View style={{ gap: 4 }}>
-              <H3>{t('admin.bannerSettings')}</H3>
-              <Muted>{t('admin.bannerSettingsDesc')}</Muted>
-            </View>
+            <SwitchRow
+              label={t('admin.bannerEnabled')}
+              value={enabled}
+              onValueChange={setEnabled}
+            />
 
-            <Row gap={spacing.lg} style={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              <View style={{ flex: 1, minWidth: 260 }}>
+            <View style={{ height: 1, backgroundColor: colors.border }} />
+
+            <Input
+              label={t('admin.bannerHeading')}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Welkom bij Dichtbij3D"
+              icon="cube"
+            />
+
+            <Input
+              label={t('admin.bannerSubheading')}
+              value={subtitle}
+              onChangeText={setSubtitle}
+              placeholder="Vind 3D-printers en ontwerpers bij jou in de buurt..."
+              multiline
+            />
+
+            <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
+              <View style={{ flex: 1, minWidth: 200 }}>
                 <Input
-                  label={t('admin.slideDuration')}
-                  hint={t('admin.slideDurationHint')}
-                  keyboardType="numeric"
-                  value={slideDurationInput}
-                  onChangeText={setSlideDurationInput}
-                  icon="calendar"
+                  label={t('admin.bannerBadge')}
+                  value={badgeText}
+                  onChangeText={setBadgeText}
+                  placeholder="Nieuw / Uitgelicht"
+                  icon="tag"
                 />
               </View>
-              <View style={{ flex: 1, minWidth: 260, paddingTop: 6 }}>
-                <SwitchRow
-                  label={t('admin.showForLoggedIn')}
-                  hint={t('admin.showForLoggedInDesc')}
-                  value={showForLoggedIn}
-                  onValueChange={setShowForLoggedIn}
+              <View style={{ flex: 1, minWidth: 200 }}>
+                <Input
+                  label={t('admin.bannerButtonText')}
+                  value={buttonText}
+                  onChangeText={setButtonText}
+                  placeholder="Ontdek marktplaats"
+                  icon="link"
                 />
               </View>
             </Row>
 
-            <Row style={{ justifyContent: 'flex-end', marginTop: spacing.xs }}>
+            <Input
+              label={t('admin.bannerLinkUrl')}
+              value={linkUrl}
+              onChangeText={setLinkUrl}
+              placeholder="/marketplace"
+              icon="link"
+            />
+
+            {/* Banner Image */}
+            <View style={{ gap: spacing.sm }}>
+              <Muted style={{ fontWeight: '600', color: colors.ink }}>
+                {t('admin.bannerImageUpload')}
+              </Muted>
+
+              {previewImgUrl ? (
+                <View style={{ gap: spacing.sm }}>
+                  <View
+                    style={{
+                      height: 180,
+                      borderRadius: radius.md,
+                      overflow: 'hidden',
+                      backgroundColor: colors.surfaceAlt,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <Image
+                      source={{ uri: previewImgUrl }}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                  <Row gap={spacing.sm}>
+                    <Button
+                      title={t('common.delete')}
+                      icon="trash"
+                      variant="danger"
+                      size="sm"
+                      onPress={handleRemoveImage}
+                    />
+                    <Button
+                      title={t('admin.bannerImageUpload')}
+                      icon="upload"
+                      variant="outline"
+                      size="sm"
+                      loading={uploading}
+                      onPress={handleUploadImage}
+                    />
+                  </Row>
+                </View>
+              ) : (
+                <Row gap={spacing.sm} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Button
+                    title={t('admin.bannerImageUpload')}
+                    icon="upload"
+                    variant="outline"
+                    loading={uploading}
+                    onPress={handleUploadImage}
+                  />
+                  <View style={{ flex: 1, minWidth: 200 }}>
+                    <Input
+                      value={imageUrl || ''}
+                      onChangeText={setImageUrl}
+                      placeholder={t('admin.bannerImageUrl')}
+                    />
+                  </View>
+                </Row>
+              )}
+            </View>
+
+            <Row style={{ justifyContent: 'flex-end', marginTop: spacing.md }}>
               <Button
                 title={t('common.save')}
                 icon="check"
-                loading={savingSettings}
-                onPress={saveSettings}
+                loading={saving}
+                onPress={handleSave}
               />
             </Row>
           </Card>
 
-          {/* Live Preview Card */}
-          <Card padded={false} flat style={{ gap: spacing.md, backgroundColor: 'transparent' }}>
-            <Row
-              style={{
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: spacing.sm,
-                paddingHorizontal: spacing.xs,
-              }}
-            >
+          {/* Live Preview Section */}
+          <View style={{ gap: spacing.md }}>
+            <Row style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
               <View>
-                <H3>{t('admin.livePreview')}</H3>
-                <Muted>{t('admin.livePreviewDesc')}</Muted>
+                <H3>Live Preview</H3>
+                <Muted>Directe weergave zoals op de homepage</Muted>
               </View>
               <View style={{ width: 220 }}>
                 <Segmented<'desktop' | 'mobile'>
@@ -372,304 +277,191 @@ export default function AdminBannerScreen() {
               </View>
             </Row>
 
-            <View
-              style={{
-                width: '100%',
-                maxWidth: previewMode === 'mobile' ? 440 : undefined,
-                alignSelf: 'center',
-                borderRadius: radius.xl,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.surface,
-              }}
-            >
-              <HeroBanner key={previewKey} previewMode={true} />
-            </View>
-          </Card>
-
-          {/* Banners List Section */}
-          <Card style={{ gap: spacing.lg }}>
-            <Row
-              style={{
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: spacing.md,
-              }}
-            >
-              <View style={{ gap: 2 }}>
-                <H3>{t('admin.banners')} ({banners.length})</H3>
-                <Muted>Sleep of gebruik pijlen om volgorde van de carrousel aan te passen.</Muted>
-              </View>
-              <Button
-                title={t('admin.addBanner')}
-                icon="plus"
-                variant="primary"
-                onPress={openCreate}
-              />
-            </Row>
-
-            {banners.length === 0 ? (
-              <EmptyState
-                icon="image"
-                title={t('admin.noBanners')}
-                body={t('admin.noBannersBody')}
-                action={
-                  <Button
-                    title={t('admin.addBanner')}
-                    icon="plus"
-                    onPress={openCreate}
-                  />
-                }
-              />
-            ) : (
-              <View style={{ gap: spacing.md }}>
-                {banners.map((banner, index) => (
-                  <Card
-                    key={banner.id}
+            {previewMode === 'desktop' ? (
+              /* ---------------- DESKTOP HERO BANNER PREVIEW ---------------- */
+              <Card
+                padded={false}
+                flat
+                style={{
+                  width: '100%',
+                  height: 400,
+                  position: 'relative',
+                  backgroundColor: colors.surfaceAlt,
+                  borderRadius: radius.xl,
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                {previewImgUrl ? (
+                  <Image
+                    source={{ uri: previewImgUrl }}
                     style={{
-                      backgroundColor: colors.surface,
-                      borderColor: banner.enabled ? colors.border : colors.surfaceAlt,
-                      opacity: banner.enabled ? 1 : 0.72,
-                      padding: spacing.md,
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      width: '100%',
+                      height: '100%',
                     }}
+                    resizeMode="cover"
+                  />
+                ) : null}
+
+                {/* Floating Frosted Glass Card */}
+                <View
+                  style={{
+                    width: '100%',
+                    maxWidth: layout.maxWidth,
+                    height: '100%',
+                    alignSelf: 'center',
+                    paddingHorizontal: spacing.xxl,
+                    justifyContent: 'center',
+                    alignItems: 'flex-start',
+                    position: 'relative',
+                    zIndex: 2,
+                  }}
+                >
+                  <BlurView
+                    intensity={previewImgUrl ? 85 : 0}
+                    tint={scheme === 'dark' ? 'dark' : 'light'}
+                    style={[
+                      {
+                        maxWidth: 520,
+                        width: '100%',
+                        backgroundColor: previewImgUrl
+                          ? scheme === 'dark'
+                            ? 'rgba(21, 26, 33, 0.82)'
+                            : 'rgba(255, 255, 255, 0.88)'
+                          : colors.surface,
+                        borderRadius: radius.xl,
+                        padding: spacing.xxl,
+                        gap: spacing.lg,
+                        borderWidth: 1,
+                        borderColor:
+                          scheme === 'dark'
+                            ? 'rgba(255, 255, 255, 0.12)'
+                            : 'rgba(0, 0, 0, 0.08)',
+                        overflow: 'hidden',
+                        ...(Platform.OS === 'web' && previewImgUrl
+                          ? ({
+                              backdropFilter: 'saturate(180%) blur(20px)',
+                              WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+                              boxShadow:
+                                scheme === 'dark'
+                                  ? '0 16px 40px rgba(0, 0, 0, 0.45)'
+                                  : '0 16px 40px rgba(0, 0, 0, 0.08)',
+                            } as any)
+                          : null),
+                      },
+                      shadow.raised,
+                    ]}
                   >
-                    <Row
-                      style={{
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: spacing.md,
-                      }}
-                    >
-                      {/* Media preview thumbnail */}
-                      <View
-                        style={{
-                          width: 80,
-                          height: 52,
-                          borderRadius: radius.md,
-                          overflow: 'hidden',
-                          backgroundColor: colors.surfaceAlt,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          flexShrink: 0,
-                        }}
-                      >
-                        <BannerMedia
-                          mediaUrl={banner.mediaUrl}
-                          mediaType={banner.mediaType}
-                          style={{ width: '100%', height: '100%' }}
-                        />
-                      </View>
-
-                      {/* Info */}
-                      <View style={{ flex: 1, minWidth: 200, gap: 4 }}>
-                        <Row gap={spacing.xs} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                          <Body style={{ fontWeight: '600' }}>
-                            {banner.title || t('marketplace.heroTitle')}
-                          </Body>
-                          <Badge
-                            label={banner.mediaType === 'VIDEO' ? 'VIDEO' : 'IMAGE'}
-                            tone={
-                              banner.mediaType === 'VIDEO'
-                                ? { bg: 'rgba(234, 88, 12, 0.15)', fg: colors.orange }
-                                : { bg: colors.surfaceAlt, fg: colors.textMuted }
-                            }
-                          />
-                          <Badge
-                            label={banner.enabled ? t('common.active') : t('common.disabled')}
-                            tone={
-                              banner.enabled
-                                ? { bg: 'rgba(34, 197, 94, 0.15)', fg: '#16a34a' }
-                                : { bg: colors.border, fg: colors.textMuted }
-                            }
-                          />
-                        </Row>
-
-                        <Muted numberOfLines={1}>
-                          {banner.subtitle || t('home.welcomeSubtitle')}
-                        </Muted>
-
-                        <Muted style={{ ...typography.tiny }}>
-                          {banner.mediaType === 'VIDEO'
-                            ? t('admin.playsUntilEnd')
-                            : banner.durationSeconds
-                            ? `${banner.durationSeconds}s (${t('admin.customDuration')})`
-                            : `${settings.slideDurationSeconds}s (${t('admin.defaultDuration')})`}
-                          {banner.linkUrl ? ` · CTA: "${banner.linkText || 'Link'}" ➔ ${banner.linkUrl}` : ''}
-                        </Muted>
-                      </View>
-
-                      {/* Action buttons */}
-                      <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-                        {/* Move Up */}
-                        <Button
-                          title=""
-                          icon="chevronUp"
-                          variant="ghost"
-                          size="sm"
-                          disabled={index === 0}
-                          onPress={() => moveBanner(index, 'up')}
-                        />
-                        {/* Move Down */}
-                        <Button
-                          title=""
-                          icon="chevronDown"
-                          variant="ghost"
-                          size="sm"
-                          disabled={index === banners.length - 1}
-                          onPress={() => moveBanner(index, 'down')}
-                        />
-                        {/* Toggle active */}
-                        <Button
-                          title={banner.enabled ? t('common.disable') : t('common.enable')}
-                          variant="ghost"
-                          size="sm"
-                          onPress={() => toggleBannerEnabled(banner)}
-                        />
-                        {/* Edit */}
-                        <Button
-                          title={t('common.edit')}
-                          icon="edit"
-                          variant="outline"
-                          size="sm"
-                          onPress={() => openEdit(banner)}
-                        />
-                        {/* Delete */}
-                        <Button
-                          title=""
-                          icon="trash"
-                          variant="danger"
-                          size="sm"
-                          onPress={() => deleteBanner(banner)}
+                    {badgeText ? (
+                      <Row gap={6}>
+                        <Badge
+                          label={badgeText}
+                          tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
                         />
                       </Row>
+                    ) : null}
+                    <H1 style={{ fontSize: 32, lineHeight: 38 }}>
+                      {title || 'Welkom bij Dichtbij3D'}
+                    </H1>
+                    {subtitle ? (
+                      <Body style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                        {subtitle}
+                      </Body>
+                    ) : null}
+                    <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+                      {buttonText ? (
+                        <Button title={buttonText} icon="arrowRight" size="md" />
+                      ) : null}
+                      <Button
+                        title={t('home.viewMarketplace')}
+                        icon="layers"
+                        variant={buttonText ? 'outline' : 'primary'}
+                        size="md"
+                      />
                     </Row>
-                  </Card>
-                ))}
+                  </BlurView>
+                </View>
+              </Card>
+            ) : (
+              /* ---------------- MOBILE HERO BANNER PREVIEW ---------------- */
+              <View
+                style={{
+                  width: '100%',
+                  maxWidth: 420,
+                  alignSelf: 'center',
+                  borderRadius: radius.xl,
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
+                  ...shadow.raised,
+                }}
+              >
+                {previewImgUrl ? (
+                  <View
+                    style={{
+                      width: '100%',
+                      aspectRatio: 16 / 9,
+                      backgroundColor: colors.surfaceAlt,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Image
+                      source={{ uri: previewImgUrl }}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                ) : null}
+
+                <View
+                  style={{
+                    paddingHorizontal: spacing.lg,
+                    paddingVertical: spacing.xl,
+                    gap: spacing.md,
+                    backgroundColor: colors.surface,
+                  }}
+                >
+                  {badgeText ? (
+                    <Row gap={6}>
+                      <Badge
+                        label={badgeText}
+                        tone={{ bg: colors.orangeSoft, fg: colors.orangeDarker }}
+                      />
+                    </Row>
+                  ) : null}
+                  <H1 style={{ fontSize: 24, lineHeight: 30 }}>
+                    {title || 'Welkom bij Dichtbij3D'}
+                  </H1>
+                  {subtitle ? (
+                    <Body style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+                      {subtitle}
+                    </Body>
+                  ) : null}
+                  <Row gap={spacing.sm} style={{ flexWrap: 'wrap', marginTop: spacing.xs }}>
+                    {buttonText ? (
+                      <Button title={buttonText} icon="arrowRight" size="md" />
+                    ) : null}
+                    <Button
+                      title={t('home.viewMarketplace')}
+                      icon="layers"
+                      variant={buttonText ? 'outline' : 'primary'}
+                      size="md"
+                    />
+                  </Row>
+                </View>
               </View>
             )}
-          </Card>
+          </View>
         </View>
       )}
-
-      {/* Add / Edit Banner Sheet */}
-      <Sheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        title={form.id ? t('admin.editBanner') : t('admin.addBanner')}
-        width={540}
-      >
-        <ScrollView contentContainerStyle={{ gap: spacing.md, paddingBottom: spacing.xl }}>
-          {/* Media upload or URL */}
-          <View style={{ gap: spacing.xs }}>
-            <Body style={{ fontWeight: '600' }}>{t('admin.bannerMedia')}</Body>
-            <Muted>{t('admin.bannerMediaHelp')}</Muted>
-
-            <Row gap={spacing.sm} style={{ marginTop: spacing.xs }}>
-              <Button
-                title={uploading ? t('common.loading') : t('admin.uploadMedia')}
-                icon="upload"
-                loading={uploading}
-                onPress={handleUpload}
-              />
-            </Row>
-
-            <Input
-              label={t('admin.orEnterMediaUrl')}
-              placeholder="https://.../video.mp4 of /api/files/..."
-              value={form.mediaUrl}
-              onChangeText={(txt) => setForm((p) => ({ ...p, mediaUrl: txt }))}
-            />
-          </View>
-
-          {/* Media Type Selection */}
-          <Select
-            label={t('admin.mediaType')}
-            value={form.mediaType}
-            options={[
-              { value: 'AUTO', label: t('admin.mediaTypeAuto') },
-              { value: 'IMAGE', label: t('admin.mediaTypeImage') },
-              { value: 'VIDEO', label: t('admin.mediaTypeVideo') },
-            ]}
-            onChange={(val) => setForm((p) => ({ ...p, mediaType: val as any }))}
-          />
-
-          {/* Optional Title */}
-          <Input
-            label={t('admin.bannerHeading')}
-            hint={t('admin.bannerTitleHint')}
-            placeholder={t('marketplace.heroTitle')}
-            value={form.title}
-            onChangeText={(txt) => setForm((p) => ({ ...p, title: txt }))}
-          />
-
-          {/* Optional Subtitle */}
-          <Input
-            label={t('admin.bannerSubheading')}
-            hint={t('admin.bannerSubtitleHint')}
-            placeholder={t('home.welcomeSubtitle')}
-            multiline
-            numberOfLines={2}
-            value={form.subtitle}
-            onChangeText={(txt) => setForm((p) => ({ ...p, subtitle: txt }))}
-          />
-
-          {/* Optional custom duration for static images */}
-          {form.mediaType !== 'VIDEO' && (
-            <Input
-              label={t('admin.customDuration')}
-              hint={t('admin.customDurationHint')}
-              keyboardType="numeric"
-              placeholder={String(settings.slideDurationSeconds)}
-              value={form.durationSeconds}
-              onChangeText={(txt) => setForm((p) => ({ ...p, durationSeconds: txt }))}
-            />
-          )}
-
-          {/* Optional CTA Link */}
-          <Input
-            label={t('admin.ctaLinkUrl')}
-            hint={t('admin.ctaLinkUrlHint')}
-            placeholder="/marketplace"
-            value={form.linkUrl}
-            onChangeText={(txt) => setForm((p) => ({ ...p, linkUrl: txt }))}
-          />
-
-          {/* Optional CTA Text */}
-          <Input
-            label={t('admin.ctaLinkText')}
-            hint={t('admin.ctaLinkTextHint')}
-            placeholder="Ontdek marktplaats"
-            value={form.linkText}
-            onChangeText={(txt) => setForm((p) => ({ ...p, linkText: txt }))}
-          />
-
-          {/* Enabled Switch */}
-          <SwitchRow
-            label={t('admin.bannerEnabledTitle')}
-            hint={t('admin.bannerEnabledDesc')}
-            value={form.enabled}
-            onValueChange={(val) => setForm((p) => ({ ...p, enabled: val }))}
-          />
-
-          {/* Actions */}
-          <Row gap={spacing.sm} style={{ marginTop: spacing.md }}>
-            <Button
-              title={t('common.save')}
-              icon="check"
-              loading={savingBanner}
-              onPress={saveBanner}
-            />
-            <Button
-              title={t('common.cancel')}
-              variant="outline"
-              onPress={() => setSheetOpen(false)}
-            />
-          </Row>
-        </ScrollView>
-      </Sheet>
     </AdminShell>
   );
 }
+
