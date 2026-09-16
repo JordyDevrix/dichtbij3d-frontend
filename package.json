@@ -52,5 +52,9 @@
     "typecheck": "node --stack-size=4000 ./node_modules/typescript/lib/tsc.js --noEmit"
   },
   "private": true,
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "overrides": {
+    "decode-uri-component": "^0.5.0",
+    "uuid": "^11.1.1"
+  }
 }
