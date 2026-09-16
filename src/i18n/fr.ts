@@ -9,6 +9,7 @@ const fr: Translations = {
     filters: 'Filtres',
     sort: 'Trier',
     apply: 'Appliquer',
+    add: 'Ajouter',
     reset: 'Effacer',
     clear: 'Effacer',
     save: 'Enregistrer',

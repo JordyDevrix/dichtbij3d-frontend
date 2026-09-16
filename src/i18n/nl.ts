@@ -7,6 +7,7 @@ const nl = {
     filters: 'Filters',
     sort: 'Sorteren',
     apply: 'Toepassen',
+    add: 'Toevoegen',
     reset: 'Wissen',
     clear: 'Wissen',
     save: 'Opslaan',

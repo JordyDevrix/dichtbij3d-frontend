@@ -9,6 +9,7 @@ const de: Translations = {
     filters: 'Filter',
     sort: 'Sortieren',
     apply: 'Übernehmen',
+    add: 'Hinzufügen',
     reset: 'Zurücksetzen',
     clear: 'Löschen',
     save: 'Speichern',
