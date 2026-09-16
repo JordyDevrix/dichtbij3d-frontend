@@ -628,4 +628,66 @@ export interface MaintenanceUpdateRequest {
   until?: string | null;
 }
 
+// ---------------------------------------------------------------- hero banners
+
+export type BannerMediaType = 'IMAGE' | 'VIDEO';
+
+export interface HeroBannerDto {
+  id: string;
+  title?: string | null;
+  subtitle?: string | null;
+  mediaUrl: string;
+  mediaType: BannerMediaType;
+  durationSeconds?: number | null;
+  linkUrl?: string | null;
+  linkText?: string | null;
+  sortOrder: number;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HeroBannerSettingsDto {
+  slideDurationSeconds: number;
+  showForLoggedInUsers: boolean;
+}
+
+export interface PublicBannersResponse {
+  banners: HeroBannerDto[];
+  settings: HeroBannerSettingsDto;
+}
+
+export interface HeroBannerCreateRequest {
+  title?: string | null;
+  subtitle?: string | null;
+  mediaUrl: string;
+  mediaType?: BannerMediaType | null;
+  durationSeconds?: number | null;
+  linkUrl?: string | null;
+  linkText?: string | null;
+  sortOrder?: number | null;
+  enabled?: boolean | null;
+}
+
+export interface HeroBannerUpdateRequest {
+  title?: string | null;
+  subtitle?: string | null;
+  mediaUrl?: string | null;
+  mediaType?: BannerMediaType | null;
+  durationSeconds?: number | null;
+  linkUrl?: string | null;
+  linkText?: string | null;
+  sortOrder?: number | null;
+  enabled?: boolean | null;
+}
+
+export interface HeroBannerReorderRequest {
+  bannerIds: string[];
+}
+
+export interface HeroBannerSettingsUpdateRequest {
+  slideDurationSeconds?: number | null;
+  showForLoggedInUsers?: boolean | null;
+}
+
 

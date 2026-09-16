@@ -19,6 +19,11 @@ import type {
   Bid,
   CostEstimateRequest,
   CostEstimateResponse,
+  HeroBannerCreateRequest,
+  HeroBannerDto,
+  HeroBannerSettingsDto,
+  HeroBannerSettingsUpdateRequest,
+  HeroBannerUpdateRequest,
   MaintenanceStatus,
   MaintenanceUpdateRequest,
   MessageKind,
@@ -33,6 +38,7 @@ import type {
   PlatformBanner,
   PlatformBannerUpdateRequest,
   PrinterModel,
+  PublicBannersResponse,
   PublicStats,
   PublicUser,
   PurchaseResponse,
@@ -276,6 +282,7 @@ export const api = {
 
   /* ---------------------------------------------------------------- public */
   stats: () => request<PublicStats>('/api/public/stats', { auth: false }),
+  banners: () => request<PublicBannersResponse>('/api/banners', { auth: false }),
   platformBanner: () => request<PlatformBanner>('/api/public/banner', { auth: false }),
   platformAnnouncements: () => request<PlatformAnnouncement[]>('/api/public/announcements', { auth: false }),
   maintenanceStatus: () => request<MaintenanceStatus>('/api/public/maintenance', { auth: false }),
@@ -300,6 +307,18 @@ export const api = {
   adminBanner: () => request<PlatformBanner>('/api/admin/banner'),
   adminUpdateBanner: (body: PlatformBannerUpdateRequest) =>
     request<PlatformBanner>('/api/admin/banner', { method: 'PUT', body }),
+  adminHeroBanners: () => request<HeroBannerDto[]>('/api/admin/banners'),
+  adminCreateHeroBanner: (body: HeroBannerCreateRequest) =>
+    request<HeroBannerDto>('/api/admin/banners', { method: 'POST', body }),
+  adminUpdateHeroBanner: (id: string, body: HeroBannerUpdateRequest) =>
+    request<HeroBannerDto>(`/api/admin/banners/${id}`, { method: 'PUT', body }),
+  adminDeleteHeroBanner: (id: string) =>
+    request<MessageResponse>(`/api/admin/banners/${id}`, { method: 'DELETE' }),
+  adminReorderHeroBanners: (bannerIds: string[]) =>
+    request<MessageResponse>('/api/admin/banners/reorder', { method: 'POST', body: { bannerIds } }),
+  adminHeroBannerSettings: () => request<HeroBannerSettingsDto>('/api/admin/banners/settings'),
+  adminUpdateHeroBannerSettings: (body: HeroBannerSettingsUpdateRequest) =>
+    request<HeroBannerSettingsDto>('/api/admin/banners/settings', { method: 'PUT', body }),
   adminAnnouncements: () => request<PlatformAnnouncement[]>('/api/admin/announcements'),
   adminCreateAnnouncement: (body: PlatformAnnouncementRequest) =>
     request<PlatformAnnouncement>('/api/admin/announcements', { method: 'POST', body }),

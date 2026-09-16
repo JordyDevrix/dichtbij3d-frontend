@@ -46,7 +46,8 @@
         {
           "photosPermission": "Dichtbij3D gebruikt je fotos om afbeeldingen bij advertenties te plaatsen."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "extra": {
       "apiUrl": "http://localhost:8080",

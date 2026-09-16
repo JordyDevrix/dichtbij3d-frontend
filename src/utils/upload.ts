@@ -179,3 +179,21 @@ export async function pickAndUploadFiles(folder = 'models'): Promise<UploadRespo
   }
   return uploads;
 }
+
+/** Opens the media library and uploads the chosen image or video for hero banners. */
+export async function pickAndUploadBannerMedia(folder = 'banners'): Promise<UploadResponse | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images', 'videos'],
+    quality: 0.9,
+    allowsMultipleSelection: false,
+  });
+  if (result.canceled || !result.assets?.length) return null;
+  const asset = result.assets[0];
+  const mime = asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
+  const isVideo = asset.type === 'video' || mime.startsWith('video/');
+  const ext = isVideo ? 'mp4' : mime === 'image/gif' ? 'gif' : 'jpg';
+  const name = asset.fileName || `banner-${Date.now()}.${ext}`;
+  const isImageToNormalize = !isVideo && !name.toLowerCase().endsWith('.gif') && mime !== 'image/gif';
+  const file = await toUploadable(asset.uri, name, mime, isImageToNormalize);
+  return api.upload(file as any, folder);
+}
