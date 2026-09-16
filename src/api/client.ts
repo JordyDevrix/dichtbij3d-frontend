@@ -286,3 +286,12 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   if (!text) return undefined as T;
   return JSON.parse(text) as T;
 }
+
+/** Extracts a user-readable error message from an unknown error object. */
+export function getErrorMessage(error: unknown, fallback = 'Er is iets misgegaan'): string {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  return fallback;
+}
+

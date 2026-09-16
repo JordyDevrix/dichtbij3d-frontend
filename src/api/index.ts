@@ -1,4 +1,4 @@
-import { request, buildQuery, API_BASE_URL, ApiError } from './client';
+import { request, buildQuery, API_BASE_URL, ApiError, getErrorMessage } from './client';
 import type {
   AdminAdvert,
   AdminMetrics,
@@ -318,5 +318,5 @@ export const api = {
     request<MaintenanceStatus>('/api/admin/maintenance', { method: 'PUT', body }),
 };
 
-export { ApiError, API_BASE_URL, buildQuery };
+export { ApiError, API_BASE_URL, buildQuery, getErrorMessage };
 export * from './types';
