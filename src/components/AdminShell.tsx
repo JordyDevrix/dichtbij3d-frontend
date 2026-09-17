@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, IconName } from './Icon';
 import { Page } from './Page';
+import { HEADER_HEIGHT } from './AppHeader';
 import { Badge, Body, Button, Card, EmptyState, H1, Muted, Row, Spinner } from './ui';
 import { useAuth } from '../context/AuthContext';
 import { useMaintenance } from '../context/MaintenanceContext';
+import { useHeaderScroll } from '../context/HeaderScrollContext';
 import { useI18n } from '../i18n';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import { useTheme } from '../theme/ThemeContext';
-import { colors, radius, spacing, typography } from '../theme/theme';
+import { colors, layout, radius, spacing, typography } from '../theme/theme';
 import { getItemSync, setItem } from '../api/storage';
 import { api } from '../api';
 
@@ -38,6 +41,7 @@ export interface AdminShellProps {
   title?: string;
   subtitle?: string;
   headerActions?: React.ReactNode;
+  maxWidth?: number;
 }
 
 /**
@@ -45,9 +49,18 @@ export interface AdminShellProps {
  * on desktop/ultrawide (docked directly at x=0 like Jira/Linear) and
  * clean, unboxed content layout.
  */
-export function AdminShell({ children, title, subtitle, headerActions }: AdminShellProps) {
+export function AdminShell({
+  children,
+  title,
+  subtitle,
+  headerActions,
+  maxWidth = layout.maxWidth,
+}: AdminShellProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+  const { headerHeight: contextHeaderHeight } = useHeaderScroll();
+  const headerHeight = contextHeaderHeight > 0 ? contextHeaderHeight : HEADER_HEIGHT + insets.top;
   const { t } = useI18n();
   const { isAdmin, booting } = useAuth();
   const { isMaintenanceActive } = useMaintenance();
@@ -254,17 +267,15 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
         /* ===================== DESKTOP / ULTRAWIDE (>=1024px) ===================== */
         <View
           style={{
-            flexDirection: 'row',
             width: '100%',
-            minHeight: Platform.OS === 'web' ? ('calc(100vh - 58px)' as any) : 800,
-            alignItems: 'stretch',
+            minHeight: Platform.OS === 'web' ? (`calc(100vh - ${headerHeight}px)` as any) : 800,
+            position: 'relative',
           }}
         >
           {/* FULL-HEIGHT LEFT-DOCKED SIDEBAR */}
           <View
             style={{
               width: collapsed ? 56 : 224,
-              flexShrink: 0,
               backgroundColor: colors.surface,
               borderRightWidth: 1,
               borderRightColor: colors.border,
@@ -272,17 +283,23 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
               paddingBottom: spacing.lg,
               paddingHorizontal: collapsed ? 6 : 10,
               justifyContent: 'space-between',
+              zIndex: 15,
               ...(Platform.OS === 'web'
                 ? ({
-                    position: 'sticky',
-                    top: 58,
-                    height: 'calc(100vh - 58px)',
-                    alignSelf: 'flex-start',
+                    position: 'fixed',
+                    top: headerHeight,
+                    left: 0,
+                    bottom: 0,
+                    height: `calc(100vh - ${headerHeight}px)`,
                     transition: 'width 0.18s cubic-bezier(0.4, 0, 0.2, 1), padding 0.18s ease',
-                    zIndex: 15,
                     overflowY: 'auto',
                   } as any)
-                : null),
+                : {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                  }),
             }}
           >
             {/* Top Section */}
@@ -487,20 +504,20 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
             </View>
           </View>
 
-          {/* MAIN UNBOXED CONTENT PANE */}
+          {/* MAIN CONTENT PANE - PERFECTLY CENTERED IN THE WHOLE SCREEN */}
           <View
             style={{
-              flex: 1,
-              minWidth: 0,
+              width: '100%',
               paddingHorizontal: isWide ? spacing.xxl : spacing.xl,
               paddingVertical: spacing.xl,
+              alignItems: 'center',
             }}
           >
             <View
               style={{
                 width: '100%',
-                maxWidth: 1600,
-                alignSelf: 'flex-start',
+                maxWidth,
+                alignSelf: 'center',
                 gap: spacing.xl,
               }}
             >
