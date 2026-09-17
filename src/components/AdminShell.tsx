@@ -91,7 +91,7 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
 
   if (booting) {
     return (
-      <Page maxWidth={undefined} hideFooter={true}>
+      <Page fullBleed={true} hideFooter={true}>
         <View style={{ paddingVertical: 80, alignItems: 'center' }}>
           <Spinner />
         </View>
@@ -122,14 +122,13 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
 
   return (
     <Page
-      maxWidth={undefined}
+      fullBleed={true}
       hideFooter={true}
       contentStyle={{
         paddingHorizontal: 0,
         paddingTop: 0,
         paddingBottom: 0,
         gap: 0,
-        maxWidth: undefined,
       }}
     >
       {/* ===================== MOBILE / TABLET NAV (<1024px) ===================== */}
@@ -264,13 +263,14 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
           {/* FULL-HEIGHT LEFT-DOCKED SIDEBAR */}
           <View
             style={{
-              width: collapsed ? 60 : 230,
+              width: collapsed ? 56 : 224,
+              flexShrink: 0,
               backgroundColor: colors.surface,
               borderRightWidth: 1,
               borderRightColor: colors.border,
               paddingTop: spacing.md,
               paddingBottom: spacing.lg,
-              paddingHorizontal: collapsed ? 8 : 12,
+              paddingHorizontal: collapsed ? 6 : 10,
               justifyContent: 'space-between',
               ...(Platform.OS === 'web'
                 ? ({
@@ -279,7 +279,8 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
                     height: 'calc(100vh - 58px)',
                     alignSelf: 'flex-start',
                     transition: 'width 0.18s cubic-bezier(0.4, 0, 0.2, 1), padding 0.18s ease',
-                    zIndex: 20,
+                    zIndex: 15,
+                    overflowY: 'auto',
                   } as any)
                 : null),
             }}
@@ -498,7 +499,7 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
             <View
               style={{
                 width: '100%',
-                maxWidth: isWide ? 1440 : 1200,
+                maxWidth: 1600,
                 alignSelf: 'flex-start',
                 gap: spacing.xl,
               }}

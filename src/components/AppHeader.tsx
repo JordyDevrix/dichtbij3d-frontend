@@ -226,7 +226,7 @@ export function AppHeader() {
       <View
         style={{
           width: '100%',
-          maxWidth: layout.maxWidth,
+          maxWidth: pathname?.startsWith('/admin') ? undefined : layout.maxWidth,
           alignSelf: 'center',
           paddingHorizontal: spacing.lg,
           height: 58,

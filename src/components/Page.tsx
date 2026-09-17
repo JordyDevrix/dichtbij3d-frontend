@@ -27,6 +27,7 @@ export function Page({
   contentStyle,
   onScroll,
   hideFooter = false,
+  fullBleed = false,
 }: {
   children: React.ReactNode;
   hero?: React.ReactNode;
@@ -36,6 +37,7 @@ export function Page({
   contentStyle?: ViewStyle;
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   hideFooter?: boolean;
+  fullBleed?: boolean;
 }) {
   const pathname = usePathname();
   const { width } = useWindowDimensions();
@@ -56,9 +58,9 @@ export function Page({
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{
         paddingTop: headerHeight,
-        paddingBottom: spacing.xl,
+        paddingBottom: fullBleed ? 0 : spacing.xl,
         flexGrow: 1,
-        justifyContent: 'space-between',
+        justifyContent: fullBleed ? 'flex-start' : 'space-between',
       }}
       keyboardShouldPersistTaps="handled"
       scrollEventThrottle={16}
@@ -81,15 +83,20 @@ export function Page({
         {hero}
         <View
           style={[
-            {
-              width: '100%',
-              maxWidth,
-              alignSelf: 'center',
-              paddingHorizontal: gutter,
-              paddingTop: hero ? spacing.xl : gutter,
-              gap: spacing.lg,
-              flexGrow: 1,
-            },
+            fullBleed
+              ? {
+                  width: '100%',
+                  flexGrow: 1,
+                }
+              : {
+                  width: '100%',
+                  maxWidth,
+                  alignSelf: 'center',
+                  paddingHorizontal: gutter,
+                  paddingTop: hero ? spacing.xl : gutter,
+                  gap: spacing.lg,
+                  flexGrow: 1,
+                },
             contentStyle,
           ]}
         >
