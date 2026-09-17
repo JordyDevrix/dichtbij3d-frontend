@@ -481,7 +481,7 @@ export default function AdminBannerScreen() {
               )}
 
               {/* Add Media Controls */}
-              <Card flat style={{ gap: spacing.md, backgroundColor: colors.surfaceAlt }}>
+              <View style={{ gap: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceAlt }}>
                 <H3 style={{ fontSize: 14 }}>{t('admin.bannerAddMedia')}</H3>
 
                 <Row gap={spacing.md} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
@@ -518,7 +518,7 @@ export default function AdminBannerScreen() {
                   </View>
 
                   {newMediaType === 'IMAGE' && (
-                    <View style={{ width: 75 }}>
+                    <View style={{ width: 80 }}>
                       <Input
                         value={newDuration}
                         onChangeText={setNewDuration}
@@ -530,15 +530,16 @@ export default function AdminBannerScreen() {
                   <Button
                     title={t('common.add')}
                     icon="plus"
-                    variant="outline"
+                    variant="secondary"
                     disabled={!newUrl.trim()}
                     onPress={handleAddManualMedia}
                   />
                 </Row>
+
                 <Muted style={typography.tiny}>
                   {t('admin.bannerDurationHint')}
                 </Muted>
-              </Card>
+              </View>
             </View>
 
             <Row style={{ justifyContent: 'flex-end', marginTop: spacing.xs }}>

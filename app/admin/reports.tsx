@@ -9,7 +9,6 @@ import {
   Badge,
   Body,
   Button,
-  Card,
   Chip,
   EmptyState,
   Input,
@@ -108,14 +107,12 @@ export default function AdminReportsScreen() {
       subtitle={t('admin.subtitle')}
       headerActions={
         <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-          <Badge
-            label={`${openCount} ${t('admin.openReports').toLowerCase()}`}
-            tone={
-              openCount > 0
-                ? { bg: colors.dangerSoft, fg: colors.danger }
-                : { bg: colors.successSoft, fg: colors.success }
-            }
-          />
+          {openCount > 0 && (
+            <Badge
+              label={`${openCount} open`}
+              tone={{ bg: colors.dangerSoft, fg: colors.danger }}
+            />
+          )}
           <Button
             title={t('common.refresh')}
             icon="refresh"
@@ -127,42 +124,28 @@ export default function AdminReportsScreen() {
         </Row>
       }
     >
-      <Card style={{ gap: spacing.md }}>
-        {/* Search & Filters */}
+      <View style={{ gap: spacing.lg }}>
+        {/* Search & Filter Toolbar */}
         <View style={{ gap: spacing.sm }}>
-          <Input
-            value={query}
-            onChangeText={(text) => {
-              setQuery(text);
-              setPage(0);
-            }}
-            placeholder="Zoek op reden, melder of ID..."
-            icon="search"
-            autoCapitalize="none"
-          />
-
-          <Row gap={spacing.xs} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-            <Muted style={typography.tiny}>{t('admin.status')}:</Muted>
-            <Chip
-              label={t('admin.filterAll')}
-              selected={statusFilter === 'ALL'}
-              size="sm"
-              onPress={() => {
-                setStatusFilter('ALL');
+          <View style={{ maxWidth: 420 }}>
+            <Input
+              value={query}
+              onChangeText={(text) => {
+                setQuery(text);
                 setPage(0);
               }}
+              placeholder="Zoek op reden, melder..."
+              icon="search"
+              autoCapitalize="none"
             />
+          </View>
+
+          <Row gap={spacing.xs} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
             <Chip
-              label={`${t('admin.filterOpen')} (${openCount})`}
+              label={openCount > 0 ? `${t('admin.filterOpen')} (${openCount})` : t('admin.filterOpen')}
               selected={statusFilter === 'OPEN'}
               size="sm"
-              tone={
-                statusFilter === 'OPEN'
-                  ? { bg: colors.danger, fg: colors.white }
-                  : openCount > 0
-                  ? { bg: colors.dangerSoft, fg: colors.danger }
-                  : undefined
-              }
+              tone={statusFilter === 'OPEN' ? { bg: colors.orange, fg: colors.white } : undefined}
               onPress={() => {
                 setStatusFilter('OPEN');
                 setPage(0);
@@ -186,10 +169,18 @@ export default function AdminReportsScreen() {
                 setPage(0);
               }}
             />
+            <Chip
+              label={t('admin.filterAll')}
+              selected={statusFilter === 'ALL'}
+              size="sm"
+              onPress={() => {
+                setStatusFilter('ALL');
+                setPage(0);
+              }}
+            />
 
             <View style={{ width: 1, height: 16, backgroundColor: colors.border, marginHorizontal: 4 }} />
 
-            <Muted style={typography.tiny}>{t('admin.target')}:</Muted>
             <Chip
               label={t('admin.filterAll')}
               selected={targetFilter === 'ALL'}
@@ -220,6 +211,7 @@ export default function AdminReportsScreen() {
           </Row>
         </View>
 
+        {/* Reports Table List (Single clean surface) */}
         {loading ? (
           <Spinner />
         ) : filteredReports.length === 0 ? (
@@ -229,136 +221,133 @@ export default function AdminReportsScreen() {
             body={
               statusFilter === 'OPEN' && !query
                 ? 'Er zijn momenteel geen openstaande meldingen die actie vereisen.'
-                : 'Geen resultaten gevonden voor de gekozen filters.'
+                : undefined
             }
           />
         ) : (
-          <View style={{ gap: spacing.sm }}>
-            {pagedReports.map((report) => (
-              <Card
-                key={report.id}
-                flat
-                style={{
-                  gap: spacing.md,
-                  opacity: busyId === report.id ? 0.6 : 1,
-                  backgroundColor: colors.surfaceAlt,
-                  borderColor: report.status === 'OPEN' ? colors.borderStrong : colors.border,
-                  borderLeftWidth: report.status === 'OPEN' ? 4 : 1,
-                  borderLeftColor: report.status === 'OPEN' ? colors.danger : colors.border,
-                }}
-              >
-                <Row style={{ flexWrap: 'wrap', gap: spacing.md, alignItems: 'flex-start' }}>
-                  <View style={{ flex: 1, minWidth: 240, gap: 8 }}>
-                    {/* Header Badges */}
-                    <Row gap={spacing.sm} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Badge
-                        label={report.advertId ? t('admin.reportedAdvert') : t('admin.reportedUser')}
-                        tone={
-                          report.advertId
-                            ? { bg: colors.orangeSoft, fg: colors.orangeDark }
-                            : { bg: colors.infoSoft, fg: colors.info }
-                        }
-                      />
-                      <Badge
-                        label={report.status}
-                        tone={
-                          report.status === 'OPEN'
-                            ? { bg: colors.dangerSoft, fg: colors.danger }
-                            : report.status === 'RESOLVED'
-                            ? { bg: colors.successSoft, fg: colors.success }
-                            : { bg: colors.surfaceSunken, fg: colors.textMuted }
-                        }
-                      />
-                    </Row>
-
-                    {/* Report Reason Box */}
-                    <View
-                      style={{
-                        backgroundColor: colors.surface,
-                        borderRadius: radius.md,
-                        padding: spacing.md,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        gap: 4,
-                      }}
-                    >
-                      <Row gap={6} style={{ alignItems: 'center' }}>
-                        <Icon name="flag" size={13} color={report.status === 'OPEN' ? colors.danger : colors.textMuted} />
-                        <Muted style={{ ...typography.tiny, fontWeight: '700' }}>{t('admin.reason')}:</Muted>
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: radius.lg,
+              overflow: 'hidden',
+            }}
+          >
+            {pagedReports.map((report, idx) => {
+              const isLast = idx === pagedReports.length - 1;
+              return (
+                <View
+                  key={report.id}
+                  style={{
+                    paddingVertical: 14,
+                    paddingHorizontal: 18,
+                    borderBottomWidth: isLast ? 0 : 1,
+                    borderBottomColor: colors.border,
+                    opacity: busyId === report.id ? 0.6 : 1,
+                    gap: 8,
+                  }}
+                >
+                  <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: spacing.md }}>
+                    <View style={{ flex: 1, minWidth: 260, gap: 6 }}>
+                      {/* Badges row */}
+                      <Row gap={8} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                        <Badge
+                          label={report.advertId ? t('admin.reportedAdvert') : t('admin.reportedUser')}
+                          tone={
+                            report.advertId
+                              ? { bg: colors.orangeSoft, fg: colors.orangeDark }
+                              : { bg: colors.infoSoft, fg: colors.info }
+                          }
+                        />
+                        <Badge
+                          label={report.status}
+                          tone={
+                            report.status === 'OPEN'
+                              ? { bg: colors.dangerSoft, fg: colors.danger }
+                              : report.status === 'RESOLVED'
+                              ? { bg: colors.successSoft, fg: colors.success }
+                              : { bg: colors.surfaceSunken, fg: colors.textMuted }
+                          }
+                        />
                       </Row>
-                      <Body style={{ fontSize: 14, color: colors.text }}>{report.reason}</Body>
+
+                      {/* Reason */}
+                      <Body style={{ fontSize: 14, color: colors.ink, fontWeight: '500' }}>
+                        {report.reason}
+                      </Body>
+
+                      {/* Reporter and Date */}
+                      <Row gap={14} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                        <Row gap={4} style={{ alignItems: 'center' }}>
+                          <Icon name="user" size={11} color={colors.textMuted} />
+                          <Muted style={{ fontSize: 12 }}>
+                            {t('admin.reporter')}: <Body style={{ fontSize: 12, fontWeight: '600', color: colors.ink }}>{report.reporter}</Body>
+                          </Muted>
+                        </Row>
+                        <Row gap={4} style={{ alignItems: 'center' }}>
+                          <Icon name="clock" size={11} color={colors.textMuted} />
+                          <Muted style={{ fontSize: 12 }}>{formatDateTime(report.createdAt, locale)}</Muted>
+                        </Row>
+                      </Row>
                     </View>
 
-                    {/* Reporter info and timestamp */}
-                    <Row gap={spacing.md} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Row gap={4} style={{ alignItems: 'center' }}>
-                        <Icon name="user" size={12} color={colors.textMuted} />
-                        <Muted style={typography.tiny}>
-                          {t('admin.reporter')}: <Body style={{ fontSize: 12, fontWeight: '600' }}>{report.reporter}</Body>
-                        </Muted>
-                      </Row>
-                      <Row gap={4} style={{ alignItems: 'center' }}>
-                        <Icon name="clock" size={12} color={colors.textMuted} />
-                        <Muted style={typography.tiny}>{formatDateTime(report.createdAt, locale)}</Muted>
-                      </Row>
+                    {/* Actions */}
+                    <Row gap={4} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                      {report.advertId && (
+                        <Button
+                          title={t('admin.openAdvert')}
+                          icon="external"
+                          variant="ghost"
+                          size="sm"
+                          onPress={() => router.push(`/advert/${report.advertId}` as any)}
+                        />
+                      )}
+                      {report.userId && (
+                        <Button
+                          title=""
+                          icon="user"
+                          variant="ghost"
+                          size="sm"
+                          onPress={() => router.push(`/user/${report.userId}` as any)}
+                        />
+                      )}
+                      {report.status === 'OPEN' && (
+                        <>
+                          <Button
+                            title={t('admin.dismiss')}
+                            icon="close"
+                            variant="outline"
+                            size="sm"
+                            loading={busyId === report.id}
+                            onPress={() => void handle(report, true)}
+                          />
+                          <Button
+                            title={t('admin.resolve')}
+                            icon="check"
+                            variant="primary"
+                            size="sm"
+                            loading={busyId === report.id}
+                            onPress={() => void handle(report, false)}
+                          />
+                        </>
+                      )}
                     </Row>
-                  </View>
-
-                  {/* Actions Column */}
-                  <Row gap={spacing.xs} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                    {report.advertId && (
-                      <Button
-                        title={t('admin.openAdvert')}
-                        icon="external"
-                        variant="ghost"
-                        size="sm"
-                        onPress={() => router.push(`/advert/${report.advertId}` as any)}
-                      />
-                    )}
-                    {report.userId && (
-                      <Button
-                        title={t('admin.user')}
-                        icon="user"
-                        variant="ghost"
-                        size="sm"
-                        onPress={() => router.push(`/user/${report.userId}` as any)}
-                      />
-                    )}
-                    {report.status === 'OPEN' && (
-                      <>
-                        <Button
-                          title={t('admin.dismiss')}
-                          icon="close"
-                          variant="outline"
-                          size="sm"
-                          loading={busyId === report.id}
-                          onPress={() => void handle(report, true)}
-                        />
-                        <Button
-                          title={t('admin.resolve')}
-                          icon="check"
-                          variant="primary"
-                          size="sm"
-                          loading={busyId === report.id}
-                          onPress={() => void handle(report, false)}
-                        />
-                      </>
-                    )}
                   </Row>
-                </Row>
-              </Card>
-            ))}
-
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              totalElements={filteredReports.length}
-              onChange={(newPage) => setPage(newPage)}
-              loading={loading}
-            />
+                </View>
+              );
+            })}
           </View>
         )}
-      </Card>
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={filteredReports.length}
+          onChange={(newPage) => setPage(newPage)}
+          loading={loading}
+        />
+      </View>
     </AdminShell>
   );
 }

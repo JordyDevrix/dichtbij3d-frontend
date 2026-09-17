@@ -185,115 +185,125 @@ export default function AdminAnnouncementsScreen() {
       {loading ? (
         <Spinner />
       ) : items.length === 0 ? (
-        <Card style={{ padding: spacing.xl }}>
-          <EmptyState
-            icon="bell"
-            title="Geen aankondigingen"
-            body="Er zijn momenteel geen aankondigingen geplaatst. Maak er een aan om nieuws of evenementen op de homepage te tonen."
-            action={
-              <Button
-                title={t('admin.newAnnouncement')}
-                icon="plus"
-                variant="primary"
-                onPress={openCreate}
-              />
-            }
-          />
-        </Card>
+        <EmptyState
+          icon="bell"
+          title="Geen aankondigingen"
+          body="Er zijn momenteel geen aankondigingen geplaatst. Maak er een aan om nieuws of evenementen op de homepage te tonen."
+          action={
+            <Button
+              title={t('admin.newAnnouncement')}
+              icon="plus"
+              variant="primary"
+              onPress={openCreate}
+            />
+          }
+        />
       ) : (
-        <View style={{ gap: spacing.md }}>
-          {items.map((item) => (
-            <Card
-              key={item.id}
-              style={{
-                gap: spacing.md,
-                borderLeftWidth: 4,
-                borderLeftColor: item.active
-                  ? item.type === 'WARNING'
-                    ? colors.danger
-                    : colors.orange
-                  : colors.border,
-              }}
-            >
-              <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: spacing.sm }}>
-                <Row gap={spacing.sm} style={{ flex: 1, minWidth: 240, alignItems: 'center' }}>
-                  <View
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: radius.md,
-                      backgroundColor: colors.surfaceAlt,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon
-                      name={getAnnouncementIcon(item.type)}
-                      size={15}
-                      color={item.type === 'WARNING' ? colors.danger : colors.orange}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Row gap={spacing.xs} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                      <H3 style={{ fontSize: 16 }}>{item.title}</H3>
-                      <Badge label={item.type} tone={getAnnouncementBadgeTone(item.type)} />
-                      <Badge
-                        label={item.active ? t('admin.active') : 'Inactief'}
-                        tone={
-                          item.active
-                            ? { bg: colors.successSoft, fg: colors.success }
-                            : { bg: colors.surfaceAlt, fg: colors.textMuted }
-                        }
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: radius.lg,
+            overflow: 'hidden',
+          }}
+        >
+          {items.map((item, idx) => {
+            const isLast = idx === items.length - 1;
+            return (
+              <View
+                key={item.id}
+                style={{
+                  paddingVertical: 14,
+                  paddingHorizontal: 18,
+                  borderBottomWidth: isLast ? 0 : 1,
+                  borderBottomColor: colors.border,
+                  borderLeftWidth: 4,
+                  borderLeftColor: item.active
+                    ? item.type === 'WARNING'
+                      ? colors.danger
+                      : colors.orange
+                    : colors.border,
+                  gap: 8,
+                }}
+              >
+                <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: spacing.sm }}>
+                  <Row gap={spacing.sm} style={{ flex: 1, minWidth: 240, alignItems: 'center' }}>
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: radius.md,
+                        backgroundColor: colors.surfaceAlt,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Icon
+                        name={getAnnouncementIcon(item.type)}
+                        size={15}
+                        color={item.type === 'WARNING' ? colors.danger : colors.orange}
                       />
-                    </Row>
-                  </View>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Row gap={spacing.xs} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                        <H3 style={{ fontSize: 15 }}>{item.title}</H3>
+                        <Badge label={item.type} tone={getAnnouncementBadgeTone(item.type)} />
+                        <Badge
+                          label={item.active ? t('admin.active') : 'Inactief'}
+                          tone={
+                            item.active
+                              ? { bg: colors.successSoft, fg: colors.success }
+                              : { bg: colors.surfaceAlt, fg: colors.textMuted }
+                          }
+                        />
+                      </Row>
+                    </View>
+                  </Row>
+
+                  <Row gap={spacing.xs}>
+                    <Button
+                      title={t('advert.edit')}
+                      icon="edit"
+                      variant="ghost"
+                      size="sm"
+                      onPress={() => openEdit(item)}
+                    />
+                    <Button
+                      title=""
+                      icon="trash"
+                      variant="danger"
+                      size="sm"
+                      onPress={() => setDeleteConfirmItem(item)}
+                    />
+                  </Row>
                 </Row>
 
-                <Row gap={spacing.xs}>
-                  <Button
-                    title={t('advert.edit')}
-                    icon="edit"
-                    variant="ghost"
-                    size="sm"
-                    onPress={() => openEdit(item)}
-                  />
-                  <Button
-                    title=""
-                    icon="trash"
-                    variant="danger"
-                    size="sm"
-                    onPress={() => setDeleteConfirmItem(item)}
-                  />
-                </Row>
-              </Row>
+                <Body style={{ color: colors.textMuted, fontSize: 13.5 }}>{item.content}</Body>
 
-              <Body style={{ color: colors.textMuted, fontSize: 14 }}>{item.content}</Body>
-
-              <Row style={{ justifyContent: 'space-between', marginTop: spacing.xs, flexWrap: 'wrap', gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
-                <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
-                  {item.eventDate && (
-                    <Row gap={4} style={{ alignItems: 'center' }}>
-                      <Icon name="calendar" size={12} color={colors.orange} />
-                      <Muted style={typography.tiny}>
-                        {formatDate(item.eventDate, locale)}
-                      </Muted>
-                    </Row>
-                  )}
-                  {item.linkUrl && (
-                    <Row gap={4} style={{ alignItems: 'center' }}>
-                      <Icon name="link" size={12} color={colors.textFaint} />
-                      <Muted style={typography.tiny}>
-                        {item.linkText || item.linkUrl}
-                      </Muted>
-                    </Row>
-                  )}
-                </Row>
-                <Muted style={typography.tiny}>
-                  {formatDateTime(item.createdAt, locale)}
-                </Muted>
-              </Row>
-            </Card>
-          ))}
+                {(item.eventDate || item.linkUrl) && (
+                  <Row gap={spacing.md} style={{ flexWrap: 'wrap', marginTop: 2 }}>
+                    {item.eventDate && (
+                      <Row gap={4} style={{ alignItems: 'center' }}>
+                        <Icon name="calendar" size={11} color={colors.orange} />
+                        <Muted style={typography.tiny}>
+                          {formatDate(item.eventDate, locale)}
+                        </Muted>
+                      </Row>
+                    )}
+                    {item.linkUrl && (
+                      <Row gap={4} style={{ alignItems: 'center' }}>
+                        <Icon name="link" size={11} color={colors.textFaint} />
+                        <Muted style={typography.tiny}>
+                          {item.linkText || item.linkUrl}
+                        </Muted>
+                      </Row>
+                    )}
+                  </Row>
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
 

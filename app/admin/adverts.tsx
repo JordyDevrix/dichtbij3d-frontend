@@ -11,10 +11,8 @@ import {
   Badge,
   Body,
   Button,
-  Card,
   Chip,
   EmptyState,
-  H3,
   Input,
   Muted,
   Pagination,
@@ -104,10 +102,9 @@ export default function AdminAdvertsScreen() {
       subtitle={t('admin.subtitle')}
       headerActions={
         <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-          <Badge
-            label={`${total} ${t('admin.adverts').toLowerCase()}`}
-            tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }}
-          />
+          <Muted style={{ fontSize: 13, fontWeight: '600' }}>
+            {total} {t('admin.adverts').toLowerCase()}
+          </Muted>
           <Button
             title={t('common.refresh')}
             icon="refresh"
@@ -119,20 +116,21 @@ export default function AdminAdvertsScreen() {
         </Row>
       }
     >
-      <Card style={{ gap: spacing.md }}>
-        {/* Search & Filter Controls */}
+      <View style={{ gap: spacing.lg }}>
+        {/* Search & Filter Toolbar (Flat on background) */}
         <View style={{ gap: spacing.sm }}>
-          <Input
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t('admin.searchAdverts')}
-            icon="search"
-            autoCapitalize="none"
-          />
+          <View style={{ maxWidth: 420 }}>
+            <Input
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t('admin.searchAdverts')}
+              icon="search"
+              autoCapitalize="none"
+            />
+          </View>
 
-          {/* Filter Chips Bar */}
+          {/* Filter Chips */}
           <Row gap={spacing.xs} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-            <Muted style={typography.tiny}>{t('admin.status')}:</Muted>
             <Chip
               label={t('admin.filterAll')}
               selected={statusFilter === 'ALL'}
@@ -155,7 +153,6 @@ export default function AdminAdvertsScreen() {
 
             <View style={{ width: 1, height: 16, backgroundColor: colors.border, marginHorizontal: 4 }} />
 
-            <Muted style={typography.tiny}>{t('create.step1')}:</Muted>
             <Chip
               label={t('admin.filterAll')}
               selected={selectedType === 'ALL'}
@@ -174,139 +171,134 @@ export default function AdminAdvertsScreen() {
           </Row>
         </View>
 
+        {/* Adverts Table List (Single clean surface) */}
         {loading && adverts.length === 0 ? (
           <Spinner />
         ) : filteredAdverts.length === 0 ? (
           <EmptyState
             icon="layers"
             title={t('admin.noAdverts')}
-            body={query || statusFilter !== 'ALL' || selectedType !== 'ALL' ? 'Geen resultaten gevonden voor de gekozen filters.' : undefined}
+            body={query || statusFilter !== 'ALL' || selectedType !== 'ALL' ? 'Geen advertenties gevonden voor de gekozen filters.' : undefined}
           />
         ) : (
-          <View style={{ gap: spacing.sm }}>
-            {filteredAdverts.map((advert) => (
-              <Card
-                key={advert.id}
-                flat
-                style={{
-                  gap: spacing.md,
-                  backgroundColor: colors.surfaceAlt,
-                  borderColor: colors.border,
-                  opacity: busyId === advert.id ? 0.6 : 1,
-                }}
-              >
-                <Row style={{ flexWrap: 'wrap', gap: spacing.md, alignItems: 'flex-start' }}>
-                  <Avatar name={advert.author} size={42} />
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: radius.lg,
+              overflow: 'hidden',
+            }}
+          >
+            {filteredAdverts.map((advert, idx) => {
+              const isLast = idx === filteredAdverts.length - 1;
+              return (
+                <View
+                  key={advert.id}
+                  style={{
+                    paddingVertical: 14,
+                    paddingHorizontal: 18,
+                    borderBottomWidth: isLast ? 0 : 1,
+                    borderBottomColor: colors.border,
+                    opacity: busyId === advert.id ? 0.6 : 1,
+                    gap: 6,
+                  }}
+                >
+                  <Row style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: spacing.md }}>
+                    {/* Advert Title & Badges */}
+                    <View style={{ flex: 1, minWidth: 260, gap: 6 }}>
+                      <Row gap={8} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                        <Pressable onPress={() => router.push(`/advert/${advert.id}` as any)}>
+                          <Body style={{ fontWeight: '700', fontSize: 14.5, color: colors.ink }}>
+                            {advert.title}
+                          </Body>
+                        </Pressable>
 
-                  <View style={{ flex: 1, minWidth: 220, gap: 6 }}>
-                    {/* Title and Badges */}
-                    <Row gap={spacing.sm} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Pressable onPress={() => router.push(`/advert/${advert.id}` as any)}>
-                        <Body style={{ fontWeight: '700', fontSize: 15, color: colors.ink }}>
-                          {advert.title}
-                        </Body>
-                      </Pressable>
-
-                      <Badge
-                        label={t(`advertTypes.${advert.type}`)}
-                        tone={advertTypeColor[advert.type] ?? { bg: colors.surfaceAlt, fg: colors.textMuted }}
-                      />
-                      <Badge
-                        label={t(`status.${advert.status}`)}
-                        tone={statusColor[advert.status] ?? { bg: colors.surfaceAlt, fg: colors.textMuted }}
-                      />
-                      {advert.deletedAt && (
                         <Badge
-                          label={t('admin.deleted')}
-                          tone={{ bg: colors.dangerSoft, fg: colors.danger }}
+                          label={t(`advertTypes.${advert.type}`)}
+                          tone={advertTypeColor[advert.type] ?? { bg: colors.surfaceAlt, fg: colors.textMuted }}
+                        />
+                        <Badge
+                          label={t(`status.${advert.status}`)}
+                          tone={statusColor[advert.status] ?? { bg: colors.surfaceAlt, fg: colors.textMuted }}
+                        />
+                        {advert.deletedAt && (
+                          <Badge
+                            label={t('admin.deleted')}
+                            tone={{ bg: colors.dangerSoft, fg: colors.danger }}
+                          />
+                        )}
+                      </Row>
+
+                      {/* Author, Date & Views info */}
+                      <Row gap={14} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                        <Row gap={4} style={{ alignItems: 'center' }}>
+                          <Icon name="user" size={11} color={colors.textMuted} />
+                          <Muted style={{ fontSize: 12 }}>{advert.author}</Muted>
+                        </Row>
+                        <Row gap={4} style={{ alignItems: 'center' }}>
+                          <Icon name="calendar" size={11} color={colors.textMuted} />
+                          <Muted style={{ fontSize: 12 }}>{formatDate(advert.createdAt, locale)}</Muted>
+                        </Row>
+                        <Row gap={4} style={{ alignItems: 'center' }}>
+                          <Icon name="eye" size={11} color={colors.textMuted} />
+                          <Muted style={{ fontSize: 12 }}>
+                            {numberFmt(advert.viewCount, locale)} {t('advert.views')}
+                          </Muted>
+                        </Row>
+                      </Row>
+
+                      {advert.deletedReason && (
+                        <Muted style={{ fontSize: 11.5, color: colors.danger }}>
+                          {t('admin.reason')}: {advert.deletedReason}
+                        </Muted>
+                      )}
+                    </View>
+
+                    {/* Action Buttons */}
+                    <Row gap={4} style={{ alignItems: 'center' }}>
+                      <Button
+                        title={t('admin.openAdvert')}
+                        icon="external"
+                        variant="ghost"
+                        size="sm"
+                        onPress={() => router.push(`/advert/${advert.id}` as any)}
+                      />
+                      {advert.authorId && (
+                        <Button
+                          title=""
+                          icon="user"
+                          variant="ghost"
+                          size="sm"
+                          onPress={() => router.push(`/user/${advert.authorId}` as any)}
+                        />
+                      )}
+                      {advert.deletedAt && (
+                        <Button
+                          title={t('admin.restore')}
+                          icon="refresh"
+                          variant="outline"
+                          size="sm"
+                          loading={busyId === advert.id}
+                          onPress={() => void restore(advert)}
                         />
                       )}
                     </Row>
-
-                    {/* Metadata details */}
-                    <Row gap={spacing.md} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Row gap={4} style={{ alignItems: 'center' }}>
-                        <Icon name="user" size={12} color={colors.textMuted} />
-                        <Muted style={typography.tiny}>{advert.author}</Muted>
-                      </Row>
-                      <Row gap={4} style={{ alignItems: 'center' }}>
-                        <Icon name="calendar" size={12} color={colors.textMuted} />
-                        <Muted style={typography.tiny}>{formatDate(advert.createdAt, locale)}</Muted>
-                      </Row>
-                      <Row gap={4} style={{ alignItems: 'center' }}>
-                        <Icon name="eye" size={12} color={colors.textMuted} />
-                        <Muted style={typography.tiny}>
-                          {numberFmt(advert.viewCount, locale)} {t('advert.views')}
-                        </Muted>
-                      </Row>
-                    </Row>
-
-                    {/* Deleted Reason Warning Notice */}
-                    {advert.deletedReason ? (
-                      <View
-                        style={{
-                          backgroundColor: colors.dangerSoft,
-                          borderRadius: radius.sm,
-                          paddingHorizontal: 8,
-                          paddingVertical: 5,
-                          borderLeftWidth: 3,
-                          borderLeftColor: colors.danger,
-                          marginTop: 2,
-                        }}
-                      >
-                        <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-                          <Icon name="warning" size={12} color={colors.danger} />
-                          <Muted style={{ ...typography.tiny, color: colors.danger, fontWeight: '600' }}>
-                            {t('admin.reason')}: {advert.deletedReason}
-                          </Muted>
-                        </Row>
-                      </View>
-                    ) : null}
-                  </View>
-
-                  {/* Actions */}
-                  <Row gap={spacing.xs} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                    <Button
-                      title={t('admin.openAdvert')}
-                      icon="external"
-                      variant="ghost"
-                      size="sm"
-                      onPress={() => router.push(`/advert/${advert.id}` as any)}
-                    />
-                    {advert.authorId ? (
-                      <Button
-                        title={t('admin.user')}
-                        icon="user"
-                        variant="ghost"
-                        size="sm"
-                        onPress={() => router.push(`/user/${advert.authorId}` as any)}
-                      />
-                    ) : null}
-                    {advert.deletedAt ? (
-                      <Button
-                        title={t('admin.restore')}
-                        icon="refresh"
-                        variant="outline"
-                        size="sm"
-                        loading={busyId === advert.id}
-                        onPress={() => void restore(advert)}
-                      />
-                    ) : null}
                   </Row>
-                </Row>
-              </Card>
-            ))}
-
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              totalElements={total}
-              onChange={(newPage) => void load(newPage)}
-              loading={loading}
-            />
+                </View>
+              );
+            })}
           </View>
         )}
-      </Card>
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={total}
+          onChange={(newPage) => void load(newPage)}
+          loading={loading}
+        />
+      </View>
     </AdminShell>
   );
 }

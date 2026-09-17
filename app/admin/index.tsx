@@ -11,7 +11,6 @@ import {
   Button,
   Card,
   EmptyState,
-  H2,
   H3,
   Muted,
   Row,
@@ -21,7 +20,7 @@ import {
 import { useAuth } from '../../src/context/AuthContext';
 import { useMaintenance } from '../../src/context/MaintenanceContext';
 import { useI18n } from '../../src/i18n';
-import { advertTypeColor, colors, radius, shadow, spacing, typography } from '../../src/theme/theme';
+import { advertTypeColor, colors, radius, spacing, typography } from '../../src/theme/theme';
 import { formatDateTime, numberFmt } from '../../src/utils/format';
 
 function BarChart({ data, title, icon }: { data: { day: string; count: number }[]; title: string; icon: any }) {
@@ -29,22 +28,22 @@ function BarChart({ data, title, icon }: { data: { day: string; count: number }[
   const total = data.reduce((acc, curr) => acc + curr.count, 0);
 
   return (
-    <Card style={{ gap: spacing.md, flex: 1, minWidth: 300 }}>
+    <Card style={{ gap: spacing.md, flex: 1, minWidth: 280 }}>
       <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
           <Icon name={icon} size={14} color={colors.orange} />
-          <H3 style={{ fontSize: 16 }}>{title}</H3>
+          <H3 style={{ fontSize: 15 }}>{title}</H3>
         </Row>
         <Badge label={`${total} totaal`} tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }} />
       </Row>
 
-      <Row gap={4} style={{ alignItems: 'flex-end', height: 110, paddingTop: 10 }}>
+      <Row gap={3} style={{ alignItems: 'flex-end', height: 100, paddingTop: 10 }}>
         {data.map((point) => (
           <View
             key={point.day}
             style={{
               flex: 1,
-              height: Math.max(4, (point.count / max) * 98),
+              height: Math.max(4, (point.count / max) * 90),
               backgroundColor: point.count ? colors.orange : colors.border,
               borderRadius: radius.sm,
               opacity: point.count ? 1 : 0.4,
@@ -138,17 +137,15 @@ export default function AdminOverviewScreen() {
       {loading ? (
         <Spinner />
       ) : !metrics ? (
-        <Card>
-          <EmptyState
-            icon="warning"
-            title={t('common.somethingWentWrong')}
-            body={errorMessage || (failed ? t('errors.generic') : undefined)}
-            action={<Button title={t('common.retry')} icon="refresh" variant="outline" onPress={() => void load()} />}
-          />
-        </Card>
+        <EmptyState
+          icon="warning"
+          title={t('common.somethingWentWrong')}
+          body={errorMessage || (failed ? t('errors.generic') : undefined)}
+          action={<Button title={t('common.retry')} icon="refresh" variant="outline" onPress={() => void load()} />}
+        />
       ) : (
-        <View style={{ gap: spacing.lg }}>
-          {/* Global Maintenance Alert Card */}
+        <View style={{ gap: spacing.xl }}>
+          {/* Global Maintenance Banner if Active */}
           {isMaintenanceActive && (
             <Card
               style={{
@@ -182,35 +179,20 @@ export default function AdminOverviewScreen() {
             </Card>
           )}
 
-          {/* User Metrics Stats Row */}
+          {/* KPI Stats Grid */}
           <View style={{ gap: spacing.sm }}>
-            <Muted style={{ ...typography.tiny, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              {t('admin.users')}
-            </Muted>
             <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
               <Stat icon="users" value={numberFmt(metrics.totalUsers, locale)} label={t('admin.totalUsers')} />
               <Stat icon="userPlus" value={numberFmt(metrics.newUsers7d, locale)} label={t('admin.newUsers')} />
-              <Stat icon="checkCircle" value={numberFmt(metrics.activeUsers, locale)} label={t('admin.activeUsers')} />
-              <Stat icon="ban" value={numberFmt(metrics.disabledUsers, locale)} label={t('admin.disabledUsers')} />
-            </Row>
-          </View>
-
-          {/* Content & Platform Stats Row */}
-          <View style={{ gap: spacing.sm }}>
-            <Muted style={{ ...typography.tiny, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              {t('admin.adverts')} & Activiteit
-            </Muted>
-            <Row gap={spacing.md} style={{ flexWrap: 'wrap' }}>
               <Stat icon="layers" value={numberFmt(metrics.totalAdverts, locale)} label={t('admin.totalAdverts')} />
               <Stat icon="plus" value={numberFmt(metrics.newAdverts7d, locale)} label={t('admin.newAdverts')} />
-              <Stat icon="handshake" value={numberFmt(metrics.acceptedAdverts, locale)} label={t('admin.acceptedAdverts')} />
               <Stat icon="cube" value={numberFmt(metrics.totalModels, locale)} label={t('admin.totalModels')} />
               <Stat icon="eye" value={numberFmt(metrics.totalViews, locale)} label={t('admin.totalViews')} />
               <Stat icon="flag" value={numberFmt(metrics.openReports, locale)} label={t('admin.openReports')} />
             </Row>
           </View>
 
-          {/* Charts Row */}
+          {/* Activity Charts Row */}
           <Row gap={spacing.md} style={{ flexWrap: 'wrap', alignItems: 'stretch' }}>
             <BarChart data={metrics.signupsPerDay} title={t('admin.signupsChart')} icon="userPlus" />
             <BarChart data={metrics.advertsPerDay} title={t('admin.advertsChart')} icon="layers" />
@@ -219,23 +201,23 @@ export default function AdminOverviewScreen() {
           {/* Advert Category Distribution */}
           <Card style={{ gap: spacing.md }}>
             <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-              <Icon name="chart" size={15} color={colors.orange} />
-              <H3 style={{ fontSize: 16 }}>{t('admin.byType')}</H3>
+              <Icon name="chart" size={14} color={colors.orange} />
+              <H3 style={{ fontSize: 15 }}>{t('admin.byType')}</H3>
             </Row>
 
             <View style={{ gap: spacing.sm }}>
               {typeRows.map((row) => (
                 <View key={row.type} style={{ gap: 4 }}>
                   <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Body style={{ fontWeight: '600', fontSize: 13.5 }}>{t(`advertTypes.${row.type}`)}</Body>
+                    <Body style={{ fontWeight: '600', fontSize: 13 }}>{t(`advertTypes.${row.type}`)}</Body>
                     <Muted style={typography.tiny}>
                       {numberFmt(row.count, locale)} · {row.pct}%
                     </Muted>
                   </Row>
-                  <View style={{ height: 8, backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, overflow: 'hidden' }}>
+                  <View style={{ height: 6, backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, overflow: 'hidden' }}>
                     <View
                       style={{
-                        height: 8,
+                        height: 6,
                         width: `${Math.max(2, row.pct)}%`,
                         backgroundColor: advertTypeColor[row.type]?.fg ?? colors.orange,
                         borderRadius: radius.sm,
@@ -247,44 +229,61 @@ export default function AdminOverviewScreen() {
             </View>
           </Card>
 
-          {/* Audit Log Card */}
-          <Card style={{ gap: spacing.md }}>
+          {/* Audit Log (Single clean surface with dividers) */}
+          <View style={{ gap: spacing.sm }}>
             <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-              <Icon name="clock" size={15} color={colors.orange} />
-              <H2 style={{ fontSize: 18 }}>{t('admin.auditLog')}</H2>
+              <Icon name="clock" size={14} color={colors.orange} />
+              <H3 style={{ fontSize: 15 }}>{t('admin.auditLog')}</H3>
             </Row>
 
             {audit.length === 0 ? (
               <Muted>{t('admin.noAuditEntries')}</Muted>
             ) : (
-              <View style={{ gap: 0 }}>
-                {audit.map((entry, idx) => (
-                  <Row
-                    key={entry.id}
-                    style={{
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingVertical: 10,
-                      borderBottomWidth: idx < audit.length - 1 ? 1 : 0,
-                      borderBottomColor: colors.border,
-                      flexWrap: 'wrap',
-                      gap: spacing.sm,
-                    }}
-                  >
-                    <View style={{ flex: 1, minWidth: 200, gap: 2 }}>
-                      <Body style={{ fontWeight: '600', fontSize: 13.5 }}>{entry.action}</Body>
-                      <Muted style={typography.tiny}>
-                        {entry.actor ?? 'system'}
-                        {entry.targetType ? ` · ${entry.targetType}` : ''}
-                        {entry.detail ? ` · ${entry.detail}` : ''}
-                      </Muted>
+              <View
+                style={{
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: radius.lg,
+                  overflow: 'hidden',
+                }}
+              >
+                {audit.map((entry, idx) => {
+                  const isLast = idx === audit.length - 1;
+                  return (
+                    <View
+                      key={entry.id}
+                      style={{
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderBottomWidth: isLast ? 0 : 1,
+                        borderBottomColor: colors.border,
+                      }}
+                    >
+                      <Row
+                        style={{
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: spacing.sm,
+                        }}
+                      >
+                        <View style={{ flex: 1, minWidth: 200, gap: 2 }}>
+                          <Body style={{ fontWeight: '600', fontSize: 13.5 }}>{entry.action}</Body>
+                          <Muted style={typography.tiny}>
+                            {entry.actor ?? 'system'}
+                            {entry.targetType ? ` · ${entry.targetType}` : ''}
+                            {entry.detail ? ` · ${entry.detail}` : ''}
+                          </Muted>
+                        </View>
+                        <Muted style={typography.tiny}>{formatDateTime(entry.createdAt, locale)}</Muted>
+                      </Row>
                     </View>
-                    <Muted style={typography.tiny}>{formatDateTime(entry.createdAt, locale)}</Muted>
-                  </Row>
-                ))}
+                  );
+                })}
               </View>
             )}
-          </Card>
+          </View>
         </View>
       )}
     </AdminShell>

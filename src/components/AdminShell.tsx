@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { Icon, IconName } from './Icon';
 import { Page } from './Page';
-import { Badge, Body, Button, Card, EmptyState, H1, H2, Muted, Row, Spinner } from './ui';
+import { Badge, Body, Button, Card, EmptyState, H1, Muted, Row, Spinner } from './ui';
 import { useAuth } from '../context/AuthContext';
 import { useMaintenance } from '../context/MaintenanceContext';
 import { useI18n } from '../i18n';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import { useTheme } from '../theme/ThemeContext';
-import { colors, radius, shadow, spacing, typography } from '../theme/theme';
+import { colors, radius, spacing, typography } from '../theme/theme';
 import { getItemSync, setItem } from '../api/storage';
+import { api } from '../api';
 
 export interface AdminNavItem {
   href: string;
@@ -40,8 +41,9 @@ export interface AdminShellProps {
 }
 
 /**
- * Modern, responsive Admin Shell with a collapsible vertical sidebar navigation
- * on desktop/ultrawide and a streamlined touch navigation bar on mobile/tablet.
+ * Minimalist, full-bleed Admin Shell with left-docked collapsible sidebar
+ * on desktop/ultrawide (docked directly at x=0 like Jira/Linear) and
+ * clean, unboxed content layout.
  */
 export function AdminShell({ children, title, subtitle, headerActions }: AdminShellProps) {
   const router = useRouter();
@@ -52,11 +54,32 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
   const { isDesktop, isWide } = useBreakpoint();
   const { scheme } = useTheme();
 
+  const [openReportsCount, setOpenReportsCount] = useState<number>(0);
+
   // Collapsible vertical sidebar state (defaults to expanded on desktop, remembers user preference)
   const [collapsed, setCollapsed] = useState(() => {
     const saved = getItemSync(SIDEBAR_STORAGE_KEY);
     return saved === 'true';
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    if (isAdmin && !booting) {
+      api.adminReports()
+        .then((reports) => {
+          if (!cancelled) {
+            const open = reports.filter((r) => r.status === 'OPEN').length;
+            setOpenReportsCount(open);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setOpenReportsCount(0);
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, booting, pathname]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -68,8 +91,8 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
 
   if (booting) {
     return (
-      <Page maxWidth={1600}>
-        <View style={{ paddingVertical: 60, alignItems: 'center' }}>
+      <Page maxWidth={undefined} hideFooter={true}>
+        <View style={{ paddingVertical: 80, alignItems: 'center' }}>
           <Spinner />
         </View>
       </Page>
@@ -79,7 +102,7 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
   if (!isAdmin) {
     return (
       <Page maxWidth={640}>
-        <Card style={{ padding: spacing.xl }}>
+        <Card style={{ padding: spacing.xl, marginTop: spacing.xl }}>
           <EmptyState
             icon="ban"
             title={t('admin.adminOnly')}
@@ -93,40 +116,46 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
   const generalItems = ADMIN_NAV_ITEMS.filter((i) => i.section === 'general');
   const managementItems = ADMIN_NAV_ITEMS.filter((i) => i.section === 'management');
 
-  // Active item lookup for dynamic breadcrumb / header default
   const activeItem = ADMIN_NAV_ITEMS.find((item) => item.href === pathname) || ADMIN_NAV_ITEMS[0];
   const pageTitle = title || t(activeItem.labelKey);
+  const pageSubtitle = subtitle || t('admin.subtitle');
 
   return (
-    <Page maxWidth={1600} contentStyle={{ paddingHorizontal: isWide ? spacing.lg : spacing.md, paddingTop: spacing.md }}>
-      {/* ----------------- MOBILE / TABLET NAV HEADER (<1024px) ----------------- */}
-      {!isDesktop && (
-        <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
+    <Page
+      maxWidth={undefined}
+      hideFooter={true}
+      contentStyle={{
+        paddingHorizontal: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+        gap: 0,
+        maxWidth: undefined,
+      }}
+    >
+      {/* ===================== MOBILE / TABLET NAV (<1024px) ===================== */}
+      {!isDesktop ? (
+        <View style={{ padding: spacing.md, gap: spacing.md }}>
+          {/* Header */}
           <Row style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
             <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
               <View
                 style={{
-                  width: 34,
-                  height: 34,
+                  width: 32,
+                  height: 32,
                   borderRadius: radius.md,
                   backgroundColor: colors.orangeSoft,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Icon name="userShield" size={16} color={colors.orange} />
+                <Icon name="userShield" size={15} color={colors.orange} />
               </View>
               <View>
                 <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-                  <H1 style={{ fontSize: 20, lineHeight: 26 }}>{t('admin.title')}</H1>
-                  <Badge
-                    label={isMaintenanceActive ? t('admin.statusOffline') : t('admin.statusOnline')}
-                    tone={
-                      isMaintenanceActive
-                        ? { bg: colors.danger, fg: colors.white }
-                        : { bg: colors.successSoft, fg: colors.success }
-                    }
-                  />
+                  <H1 style={{ fontSize: 18, lineHeight: 22 }}>{pageTitle}</H1>
+                  {isMaintenanceActive && (
+                    <Badge label={t('admin.statusOffline')} tone={{ bg: colors.danger, fg: colors.white }} />
+                  )}
                 </Row>
               </View>
             </Row>
@@ -134,15 +163,16 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
             {headerActions && <View>{headerActions}</View>}
           </Row>
 
-          {/* Horizontal Scrolling Pill Bar for Mobile */}
+          {/* Horizontal Touch Scroll Bar */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: spacing.xs, paddingVertical: 4 }}
+            contentContainerStyle={{ gap: spacing.xs, paddingVertical: 2 }}
           >
             {ADMIN_NAV_ITEMS.map((tab) => {
               const isSelected = pathname === tab.href;
-              const hasAlert = tab.badgeKey === 'maintenance' && isMaintenanceActive;
+              const hasMaintenanceAlert = tab.badgeKey === 'maintenance' && isMaintenanceActive;
+              const hasReportsAlert = tab.badgeKey === 'reports' && openReportsCount > 0;
 
               return (
                 <Pressable
@@ -152,9 +182,9 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
                     {
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 8,
-                      paddingVertical: 8,
-                      paddingHorizontal: 14,
+                      gap: 6,
+                      paddingVertical: 7,
+                      paddingHorizontal: 12,
                       borderRadius: radius.pill,
                       backgroundColor: isSelected
                         ? colors.orange
@@ -162,92 +192,133 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
                         ? 'rgba(255,255,255,0.06)'
                         : colors.surfaceAlt,
                       borderWidth: 1,
-                      borderColor: isSelected
-                        ? colors.orange
-                        : colors.border,
+                      borderColor: isSelected ? colors.orange : colors.border,
                       opacity: pressed ? 0.8 : 1,
                     },
                   ]}
                 >
                   <Icon
                     name={tab.icon}
-                    size={14}
+                    size={13}
                     color={isSelected ? colors.white : colors.textMuted}
                   />
                   <Text
                     style={{
-                      fontSize: 13,
+                      fontSize: 12.5,
                       fontWeight: isSelected ? '700' : '500',
                       color: isSelected ? colors.white : colors.ink,
                     }}
                   >
                     {t(tab.labelKey)}
                   </Text>
-                  {hasAlert && (
+                  {hasMaintenanceAlert && (
                     <View
                       style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: 4,
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
                         backgroundColor: isSelected ? colors.white : colors.danger,
                       }}
                     />
+                  )}
+                  {hasReportsAlert && (
+                    <View
+                      style={{
+                        paddingHorizontal: 5,
+                        paddingVertical: 1,
+                        borderRadius: radius.pill,
+                        backgroundColor: isSelected ? colors.white : colors.danger,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: '800',
+                          color: isSelected ? colors.orange : colors.white,
+                        }}
+                      >
+                        {openReportsCount}
+                      </Text>
+                    </View>
                   )}
                 </Pressable>
               );
             })}
           </ScrollView>
-        </View>
-      )}
 
-      {/* ----------------- MAIN DESKTOP & ULTRAWIDE LAYOUT (>=1024px) ----------------- */}
-      <View
-        style={{
-          flexDirection: isDesktop ? 'row' : 'column',
-          alignItems: 'flex-start',
-          gap: isDesktop ? spacing.xl : spacing.lg,
-          width: '100%',
-        }}
-      >
-        {/* DESKTOP VERTICAL COLLAPSIBLE SIDEBAR */}
-        {isDesktop && (
+          {/* Mobile Main Content */}
+          <View style={{ paddingTop: spacing.sm, gap: spacing.md }}>
+            {children}
+          </View>
+        </View>
+      ) : (
+        /* ===================== DESKTOP / ULTRAWIDE (>=1024px) ===================== */
+        <View
+          style={{
+            flexDirection: 'row',
+            width: '100%',
+            minHeight: Platform.OS === 'web' ? ('calc(100vh - 58px)' as any) : 800,
+            alignItems: 'stretch',
+          }}
+        >
+          {/* FULL-HEIGHT LEFT-DOCKED SIDEBAR */}
           <View
-            style={[
-              {
-                width: collapsed ? 74 : 248,
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderWidth: 1,
-                borderRadius: radius.lg,
-                paddingVertical: spacing.md,
-                paddingHorizontal: collapsed ? spacing.xs : spacing.sm,
-                gap: spacing.lg,
-                ...(Platform.OS === 'web'
-                  ? ({
-                      position: 'sticky',
-                      top: 84,
-                      alignSelf: 'flex-start',
-                      transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease',
-                      zIndex: 10,
-                    } as any)
-                  : null),
-              },
-              shadow.card,
-            ]}
+            style={{
+              width: collapsed ? 60 : 230,
+              backgroundColor: colors.surface,
+              borderRightWidth: 1,
+              borderRightColor: colors.border,
+              paddingTop: spacing.md,
+              paddingBottom: spacing.lg,
+              paddingHorizontal: collapsed ? 8 : 12,
+              justifyContent: 'space-between',
+              ...(Platform.OS === 'web'
+                ? ({
+                    position: 'sticky',
+                    top: 58,
+                    height: 'calc(100vh - 58px)',
+                    alignSelf: 'flex-start',
+                    transition: 'width 0.18s cubic-bezier(0.4, 0, 0.2, 1), padding 0.18s ease',
+                    zIndex: 20,
+                  } as any)
+                : null),
+            }}
           >
-            {/* Sidebar Top: Logo / Brand + Collapse Button */}
-            <Row
-              style={{
-                justifyContent: collapsed ? 'center' : 'space-between',
-                alignItems: 'center',
-                paddingHorizontal: collapsed ? 0 : spacing.sm,
-                paddingBottom: spacing.sm,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.border,
-              }}
-            >
-              {!collapsed ? (
-                <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
+            {/* Top Section */}
+            <View style={{ gap: spacing.lg }}>
+              {/* Brand / Logo + Collapse Button Header */}
+              <Row
+                style={{
+                  justifyContent: collapsed ? 'center' : 'space-between',
+                  alignItems: 'center',
+                  paddingHorizontal: collapsed ? 0 : spacing.xs,
+                  paddingBottom: spacing.xs,
+                }}
+              >
+                {!collapsed ? (
+                  <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: radius.md,
+                        backgroundColor: colors.orangeSoft,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Icon name="userShield" size={14} color={colors.orange} />
+                    </View>
+                    <View>
+                      <Text style={{ fontWeight: '800', fontSize: 13.5, color: colors.ink }}>
+                        Admin
+                      </Text>
+                      <Text style={{ ...typography.tiny, color: colors.textMuted, fontSize: 10, fontWeight: '600' }}>
+                        Dichtbij3D
+                      </Text>
+                    </View>
+                  </Row>
+                ) : (
                   <View
                     style={{
                       width: 32,
@@ -260,327 +331,315 @@ export function AdminShell({ children, title, subtitle, headerActions }: AdminSh
                   >
                     <Icon name="userShield" size={15} color={colors.orange} />
                   </View>
-                  <View>
-                    <Body style={{ fontWeight: '800', fontSize: 14, color: colors.ink }}>
-                      Dichtbij3D
-                    </Body>
-                    <Muted style={{ ...typography.tiny, color: colors.orange, fontWeight: '700' }}>
-                      ADMIN PANEL
-                    </Muted>
-                  </View>
-                </Row>
-              ) : (
+                )}
+
+                <Pressable
+                  onPress={toggleCollapsed}
+                  accessibilityLabel={collapsed ? t('admin.expandSidebar') : t('admin.collapseSidebar')}
+                  style={({ pressed }) => [
+                    {
+                      width: 26,
+                      height: 26,
+                      borderRadius: radius.sm,
+                      backgroundColor: colors.surfaceAlt,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}
+                >
+                  <Icon
+                    name={collapsed ? 'chevronRight' : 'chevronLeft'}
+                    size={11}
+                    color={colors.textMuted}
+                  />
+                </Pressable>
+              </Row>
+
+              {/* Navigation Items */}
+              <View style={{ gap: spacing.md }}>
+                {/* General Group */}
+                <View style={{ gap: 2 }}>
+                  {!collapsed && (
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: '700',
+                        color: colors.textFaint,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.8,
+                        paddingHorizontal: spacing.sm,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {t('admin.navGeneral')}
+                    </Text>
+                  )}
+                  {generalItems.map((item) => (
+                    <SidebarLink
+                      key={item.href}
+                      item={item}
+                      collapsed={collapsed}
+                      active={pathname === item.href}
+                      badgeCount={
+                        item.badgeKey === 'maintenance' && isMaintenanceActive
+                          ? 'OFFLINE'
+                          : undefined
+                      }
+                      badgeTone={
+                        item.badgeKey === 'maintenance'
+                          ? { bg: colors.danger, fg: colors.white }
+                          : undefined
+                      }
+                    />
+                  ))}
+                </View>
+
+                {/* Management Group */}
+                <View style={{ gap: 2 }}>
+                  {!collapsed && (
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: '700',
+                        color: colors.textFaint,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.8,
+                        paddingHorizontal: spacing.sm,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {t('admin.navManagement')}
+                    </Text>
+                  )}
+                  {managementItems.map((item) => (
+                    <SidebarLink
+                      key={item.href}
+                      item={item}
+                      collapsed={collapsed}
+                      active={pathname === item.href}
+                      badgeCount={
+                        item.badgeKey === 'reports' && openReportsCount > 0
+                          ? String(openReportsCount)
+                          : undefined
+                      }
+                      badgeTone={
+                        item.badgeKey === 'reports'
+                          ? { bg: colors.danger, fg: colors.white }
+                          : undefined
+                      }
+                    />
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            {/* Bottom Section */}
+            <View style={{ gap: spacing.xs, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm }}>
+              {isMaintenanceActive && (
                 <View
                   style={{
-                    width: 36,
-                    height: 36,
+                    backgroundColor: colors.dangerSoft,
                     borderRadius: radius.md,
-                    backgroundColor: colors.orangeSoft,
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    padding: collapsed ? 6 : 8,
+                    alignItems: collapsed ? 'center' : 'flex-start',
+                    marginBottom: 4,
                   }}
                 >
-                  <Icon name="userShield" size={17} color={colors.orange} />
+                  {collapsed ? (
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger }} />
+                  ) : (
+                    <Row gap={6} style={{ alignItems: 'center' }}>
+                      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.danger }} />
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.danger }}>
+                        {t('admin.statusOffline')}
+                      </Text>
+                    </Row>
+                  )}
                 </View>
               )}
 
-              {/* Collapse / Expand Toggle Button */}
               <Pressable
-                onPress={toggleCollapsed}
-                accessibilityLabel={collapsed ? t('admin.expandSidebar') : t('admin.collapseSidebar')}
-                style={({ pressed }) => [
-                  {
-                    width: 28,
-                    height: 28,
-                    borderRadius: radius.md,
-                    backgroundColor: colors.surfaceAlt,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    opacity: pressed ? 0.7 : 1,
-                    marginTop: collapsed ? spacing.xs : 0,
-                  },
-                ]}
-              >
-                <Icon
-                  name={collapsed ? 'chevronRight' : 'chevronLeft'}
-                  size={12}
-                  color={colors.textMuted}
-                />
-              </Pressable>
-            </Row>
-
-            {/* General Navigation Group */}
-            <View style={{ gap: 4 }}>
-              {!collapsed && (
-                <Text
-                  style={{
-                    ...typography.tiny,
-                    color: colors.textFaint,
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.6,
-                    paddingHorizontal: spacing.sm,
-                    marginBottom: 4,
-                  }}
-                >
-                  {t('admin.navGeneral')}
-                </Text>
-              )}
-              {generalItems.map((item) => (
-                <SidebarNavItem
-                  key={item.href}
-                  item={item}
-                  active={pathname === item.href}
-                  collapsed={collapsed}
-                  isMaintenanceActive={isMaintenanceActive}
-                  onPress={() => router.push(item.href as any)}
-                  label={t(item.labelKey)}
-                />
-              ))}
-            </View>
-
-            {/* Management Navigation Group */}
-            <View style={{ gap: 4 }}>
-              {!collapsed && (
-                <Text
-                  style={{
-                    ...typography.tiny,
-                    color: colors.textFaint,
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.6,
-                    paddingHorizontal: spacing.sm,
-                    marginBottom: 4,
-                  }}
-                >
-                  {t('admin.navManagement')}
-                </Text>
-              )}
-              {managementItems.map((item) => (
-                <SidebarNavItem
-                  key={item.href}
-                  item={item}
-                  active={pathname === item.href}
-                  collapsed={collapsed}
-                  isMaintenanceActive={isMaintenanceActive}
-                  onPress={() => router.push(item.href as any)}
-                  label={t(item.labelKey)}
-                />
-              ))}
-            </View>
-
-            {/* Sidebar Bottom: Status Card & Return to Site */}
-            <View
-              style={{
-                marginTop: 'auto',
-                paddingTop: spacing.md,
-                borderTopWidth: 1,
-                borderTopColor: colors.border,
-                gap: spacing.sm,
-              }}
-            >
-              {!collapsed ? (
-                <Pressable
-                  onPress={() => router.push('/admin/maintenance')}
-                  style={{
-                    padding: spacing.sm,
-                    borderRadius: radius.md,
-                    backgroundColor: isMaintenanceActive ? colors.dangerSoft : colors.surfaceAlt,
-                    borderWidth: 1,
-                    borderColor: isMaintenanceActive ? colors.danger : colors.border,
-                    gap: 2,
-                  }}
-                >
-                  <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted }}>
-                      {t('admin.systemStatus')}
-                    </Text>
-                    <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: isMaintenanceActive ? colors.danger : colors.success,
-                      }}
-                    />
-                  </Row>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: '700',
-                      color: isMaintenanceActive ? colors.danger : colors.ink,
-                    }}
-                  >
-                    {isMaintenanceActive ? t('admin.statusOffline') : t('admin.statusOnline')}
-                  </Text>
-                </Pressable>
-              ) : (
-                <Pressable
-                  onPress={() => router.push('/admin/maintenance')}
-                  style={{
-                    alignItems: 'center',
-                    paddingVertical: 6,
-                  }}
-                  accessibilityLabel={isMaintenanceActive ? t('admin.statusOffline') : t('admin.statusOnline')}
-                >
-                  <View
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 5,
-                      backgroundColor: isMaintenanceActive ? colors.danger : colors.success,
-                    }}
-                  />
-                </Pressable>
-              )}
-
-              <Pressable
-                onPress={() => router.push('/marketplace')}
+                onPress={() => router.push('/')}
                 style={({ pressed }) => [
                   {
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: collapsed ? 'center' : 'flex-start',
-                    gap: spacing.sm,
-                    paddingVertical: 8,
-                    paddingHorizontal: collapsed ? 0 : spacing.sm,
+                    gap: 8,
+                    paddingVertical: 7,
+                    paddingHorizontal: collapsed ? 0 : 8,
                     borderRadius: radius.md,
-                    opacity: pressed ? 0.7 : 1,
+                    backgroundColor: pressed ? colors.surfaceAlt : 'transparent',
                   },
                 ]}
               >
-                <Icon name="arrowRight" size={12} color={colors.textMuted} />
+                <Icon name="external" size={13} color={colors.textMuted} />
                 {!collapsed && (
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>
+                  <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500' }}>
                     {t('admin.quickHome')}
                   </Text>
                 )}
               </Pressable>
             </View>
           </View>
-        )}
 
-        {/* ----------------- MAIN CONTENT AREA ----------------- */}
-        <View
-          style={{
-            flex: 1,
-            width: '100%',
-            gap: spacing.lg,
-            maxWidth: isDesktop ? (collapsed ? 1500 : 1380) : '100%',
-          }}
-        >
-          {/* Main Content Page Header */}
-          {isDesktop && (
-            <Row
+          {/* MAIN UNBOXED CONTENT PANE */}
+          <View
+            style={{
+              flex: 1,
+              minWidth: 0,
+              paddingHorizontal: isWide ? spacing.xxl : spacing.xl,
+              paddingVertical: spacing.xl,
+            }}
+          >
+            <View
               style={{
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                flexWrap: 'wrap',
-                gap: spacing.md,
-                paddingBottom: spacing.sm,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.border,
+                width: '100%',
+                maxWidth: isWide ? 1440 : 1200,
+                alignSelf: 'flex-start',
+                gap: spacing.xl,
               }}
             >
-              <View style={{ gap: 4, flex: 1, minWidth: 260 }}>
-                <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
-                  <Icon name={activeItem.icon} size={18} color={colors.orange} />
-                  <H1 style={{ fontSize: 24, lineHeight: 30 }}>{pageTitle}</H1>
-                </Row>
-                {subtitle ? (
-                  <Muted>{subtitle}</Muted>
-                ) : activeItem.labelKey ? (
-                  <Muted>{t('admin.subtitle')}</Muted>
-                ) : null}
-              </View>
+              {/* Clean Minimalist Page Header */}
+              <Row
+                style={{
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  flexWrap: 'wrap',
+                  gap: spacing.md,
+                }}
+              >
+                <View style={{ gap: 4 }}>
+                  <H1 style={{ fontSize: 24, fontWeight: '800', color: colors.ink }}>
+                    {pageTitle}
+                  </H1>
+                  {pageSubtitle && (
+                    <Muted style={{ fontSize: 13.5 }}>{pageSubtitle}</Muted>
+                  )}
+                </View>
 
-              {headerActions && <Row gap={spacing.sm}>{headerActions}</Row>}
-            </Row>
-          )}
+                {headerActions && (
+                  <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
+                    {headerActions}
+                  </Row>
+                )}
+              </Row>
 
-          {/* Render Page Children */}
-          {children}
+              {/* Main Screen Content */}
+              {children}
+            </View>
+          </View>
         </View>
-      </View>
+      )}
     </Page>
   );
 }
 
-function SidebarNavItem({
+/**
+ * Clean, minimalist Sidebar Link matching Jira/Linear aesthetic.
+ */
+function SidebarLink({
   item,
-  active,
   collapsed,
-  isMaintenanceActive,
-  onPress,
-  label,
+  active,
+  badgeCount,
+  badgeTone,
 }: {
   item: AdminNavItem;
-  active: boolean;
   collapsed: boolean;
-  isMaintenanceActive: boolean;
-  onPress: () => void;
-  label: string;
+  active: boolean;
+  badgeCount?: string;
+  badgeTone?: { bg: string; fg: string };
 }) {
-  const { scheme } = useTheme();
-  const hasAlert = item.badgeKey === 'maintenance' && isMaintenanceActive;
+  const router = useRouter();
+  const { t } = useI18n();
+  const [hovered, setHovered] = useState(false);
 
   return (
     <Pressable
-      onPress={onPress}
-      accessibilityLabel={label}
+      onPress={() => router.push(item.href as any)}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      accessibilityRole="button"
+      accessibilityLabel={t(item.labelKey)}
       style={({ pressed }) => [
         {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
-          paddingVertical: 10,
-          paddingHorizontal: collapsed ? 0 : spacing.md,
+          gap: 10,
+          paddingVertical: 7.5,
+          paddingHorizontal: collapsed ? 0 : 10,
           borderRadius: radius.md,
           backgroundColor: active
-            ? colors.orange
-            : pressed
+            ? colors.orangeSoft
+            : hovered
             ? colors.surfaceAlt
             : 'transparent',
           position: 'relative',
+          opacity: pressed ? 0.75 : 1,
         },
       ]}
     >
-      <Row gap={spacing.sm} style={{ alignItems: 'center' }}>
+      {/* Active Indicator Bar on left edge */}
+      {active && (
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 6,
+            bottom: 6,
+            width: 3,
+            borderTopRightRadius: 2,
+            borderBottomRightRadius: 2,
+            backgroundColor: colors.orange,
+          }}
+        />
+      )}
+
+      <Row gap={9} style={{ alignItems: 'center', flex: 1, minWidth: 0, justifyContent: collapsed ? 'center' : 'flex-start' }}>
         <Icon
           name={item.icon}
-          size={16}
-          color={active ? colors.white : colors.textMuted}
+          size={14}
+          color={active ? colors.orange : hovered ? colors.ink : colors.textMuted}
         />
         {!collapsed && (
           <Text
-            style={{
-              fontSize: 13.5,
-              fontWeight: active ? '700' : '500',
-              color: active ? colors.white : colors.ink,
-            }}
             numberOfLines={1}
+            style={{
+              fontSize: 13,
+              fontWeight: active ? '700' : '500',
+              color: active ? colors.orangeDark : hovered ? colors.ink : colors.text,
+            }}
           >
-            {label}
+            {t(item.labelKey)}
           </Text>
         )}
       </Row>
 
-      {/* Alert Dot or Badge */}
-      {hasAlert && (
+      {!collapsed && badgeCount && (
         <View
           style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: active ? colors.white : colors.danger,
-            marginRight: collapsed ? 0 : 2,
+            backgroundColor: badgeTone?.bg ?? colors.danger,
+            borderRadius: radius.pill,
+            paddingHorizontal: 6,
+            paddingVertical: 1.5,
           }}
-        />
+        >
+          <Text
+            style={{
+              fontSize: 10,
+              fontWeight: '800',
+              color: badgeTone?.fg ?? colors.white,
+            }}
+          >
+            {badgeCount}
+          </Text>
+        </View>
       )}
     </Pressable>
   );
 }
-
-export default AdminShell;

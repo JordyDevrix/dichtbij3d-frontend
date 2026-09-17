@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../../src/api';
 import { SELECTABLE_ROLES } from '../../src/api/types';
@@ -11,7 +11,6 @@ import {
   Badge,
   Body,
   Button,
-  Card,
   Chip,
   EmptyState,
   H3,
@@ -25,7 +24,7 @@ import {
 import { useAuth } from '../../src/context/AuthContext';
 import { useToast } from '../../src/context/ToastContext';
 import { useI18n } from '../../src/i18n';
-import { colors, radius, shadow, spacing, typography } from '../../src/theme/theme';
+import { colors, radius, spacing, typography } from '../../src/theme/theme';
 import { formatDate } from '../../src/utils/format';
 
 export default function AdminUsersScreen() {
@@ -115,208 +114,246 @@ export default function AdminUsersScreen() {
       subtitle={t('admin.subtitle')}
       headerActions={
         <Row gap={spacing.xs} style={{ alignItems: 'center' }}>
-          <Badge label={`${total} ${t('admin.users').toLowerCase()}`} tone={{ bg: colors.surfaceAlt, fg: colors.textMuted }} />
+          <Muted style={{ fontSize: 13, fontWeight: '600' }}>
+            {total} {t('admin.users').toLowerCase()}
+          </Muted>
+          <Button
+            title={t('common.refresh')}
+            icon="refresh"
+            variant="outline"
+            size="sm"
+            loading={loading}
+            onPress={() => void load(query.trim(), page)}
+          />
         </Row>
       }
     >
-      <Card style={{ gap: spacing.md }}>
-        <Input
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('admin.searchUsers')}
-          icon="search"
-          autoCapitalize="none"
-        />
+      <View style={{ gap: spacing.lg }}>
+        {/* Inline Search Bar (No container wrapper) */}
+        <View style={{ maxWidth: 420 }}>
+          <Input
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('admin.searchUsers')}
+            icon="search"
+            autoCapitalize="none"
+          />
+        </View>
 
+        {/* Users Table List (Single clean surface with dividing lines) */}
         {loading && users.length === 0 ? (
           <Spinner />
         ) : users.length === 0 ? (
-          <EmptyState icon="users" title={t('admin.noUsers')} />
+          <EmptyState
+            icon="users"
+            title={t('admin.noUsers')}
+            body={query ? `Geen gebruikers gevonden voor "${query}".` : undefined}
+          />
         ) : (
-          <View style={{ gap: spacing.sm }}>
-            {users.map((user) => (
-              <Card
-                key={user.id}
-                flat
-                style={{
-                  gap: spacing.md,
-                  opacity: busyId === user.id ? 0.6 : 1,
-                  backgroundColor: colors.surfaceAlt,
-                  borderColor: colors.border,
-                }}
-              >
-                <Row style={{ flexWrap: 'wrap', gap: spacing.md, alignItems: 'flex-start' }}>
-                  <Avatar name={user.displayName} size={42} />
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: radius.lg,
+              overflow: 'hidden',
+            }}
+          >
+            {users.map((user, idx) => {
+              const isLast = idx === users.length - 1;
+              return (
+                <View
+                  key={user.id}
+                  style={{
+                    paddingVertical: 14,
+                    paddingHorizontal: 18,
+                    borderBottomWidth: isLast ? 0 : 1,
+                    borderBottomColor: colors.border,
+                    opacity: busyId === user.id ? 0.6 : 1,
+                    gap: 10,
+                  }}
+                >
+                  <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: spacing.md }}>
+                    {/* User Identity */}
+                    <Row gap={12} style={{ flex: 1, minWidth: 260, alignItems: 'center' }}>
+                      <Avatar name={user.displayName} size={38} />
+                      <View style={{ gap: 2, flex: 1 }}>
+                        <Row gap={8} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                          <Pressable onPress={() => router.push(`/user/${user.id}` as any)}>
+                            <Body style={{ fontWeight: '700', fontSize: 14.5, color: colors.ink }}>
+                              {user.displayName}
+                            </Body>
+                          </Pressable>
 
-                  <View style={{ flex: 1, minWidth: 220, gap: 4 }}>
-                    <Row gap={spacing.sm} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Body style={{ fontWeight: '700', fontSize: 15 }}>{user.displayName}</Body>
-                      <Badge
-                        label={
-                          user.deletedAt ? t('admin.deleted') : user.enabled ? t('admin.active') : t('admin.blocked')
-                        }
-                        tone={
-                          user.deletedAt || !user.enabled
-                            ? { bg: colors.dangerSoft, fg: colors.danger }
-                            : { bg: colors.successSoft, fg: colors.success }
-                        }
-                      />
-                      {user.totpEnabled && (
-                        <Badge label="TOTP" tone={{ bg: colors.infoSoft, fg: colors.info }} />
-                      )}
-                      {user.emailMfaEnabled && (
-                        <Badge label="Email MFA" tone={{ bg: colors.warningSoft, fg: colors.orange }} />
-                      )}
+                          <Badge
+                            label={
+                              user.deletedAt ? t('admin.deleted') : user.enabled ? t('admin.active') : t('admin.blocked')
+                            }
+                            tone={
+                              user.deletedAt || !user.enabled
+                                ? { bg: colors.dangerSoft, fg: colors.danger }
+                                : { bg: colors.successSoft, fg: colors.success }
+                            }
+                          />
+
+                          {user.totpEnabled && (
+                            <Badge label="TOTP" tone={{ bg: colors.infoSoft, fg: colors.info }} />
+                          )}
+                          {user.emailMfaEnabled && (
+                            <Badge label="Email MFA" tone={{ bg: colors.warningSoft, fg: colors.orange }} />
+                          )}
+                        </Row>
+
+                        <Muted style={{ fontSize: 12.5 }}>{user.email}</Muted>
+                      </View>
                     </Row>
 
-                    <Muted style={typography.tiny}>{user.email}</Muted>
-                    <Muted style={typography.tiny}>
-                      {t('admin.lastLogin')}: {user.lastLoginAt ? formatDate(user.lastLoginAt, locale) : '—'} ·{' '}
-                      {t('admin.adverts')}: {user.advertCount}
-                    </Muted>
+                    {/* Metadata: Login & Adverts */}
+                    <Row gap={spacing.md} style={{ alignItems: 'center' }}>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Muted style={{ fontSize: 11.5 }}>
+                          {t('admin.lastLogin')}: {user.lastLoginAt ? formatDate(user.lastLoginAt, locale) : '—'}
+                        </Muted>
+                        <Muted style={{ fontSize: 11.5 }}>
+                          {t('admin.adverts')}: {user.advertCount}
+                        </Muted>
+                      </View>
 
-                    {user.disabledReason ? (
-                      <Muted style={{ ...typography.tiny, color: colors.danger }}>
-                        {t('admin.reason')}: {user.disabledReason}
-                      </Muted>
-                    ) : null}
-                  </View>
-
-                  <Row gap={spacing.xs} style={{ flexWrap: 'wrap' }}>
-                    <Button
-                      title={t('profile.title')}
-                      icon="user"
-                      variant="ghost"
-                      size="sm"
-                      onPress={() => router.push(`/user/${user.id}` as any)}
-                    />
-                    {user.enabled ? (
-                      <Button
-                        title={t('admin.disable')}
-                        icon="ban"
-                        variant="outline"
-                        size="sm"
-                        onPress={() => {
-                          setDisabling(user);
-                          setReason('');
-                        }}
-                      />
-                    ) : (
-                      <Button
-                        title={t('admin.enable')}
-                        icon="check"
-                        variant="outline"
-                        size="sm"
-                        onPress={() =>
-                          void run(
-                            user.id,
-                            () => api.adminUpdateUser(user.id, { enabled: true }).then(() => undefined),
-                            t('admin.userEnabled'),
-                          )
-                        }
-                      />
-                    )}
-                    <Button
-                      title=""
-                      icon="trash"
-                      variant="danger"
-                      size="sm"
-                      onPress={() => setDeletingUser(user)}
-                    />
+                      {/* Action Buttons */}
+                      <Row gap={4} style={{ alignItems: 'center' }}>
+                        <Button
+                          title=""
+                          icon="user"
+                          variant="ghost"
+                          size="sm"
+                          onPress={() => router.push(`/user/${user.id}` as any)}
+                        />
+                        {user.enabled ? (
+                          <Button
+                            title={t('admin.disable')}
+                            icon="ban"
+                            variant="ghost"
+                            size="sm"
+                            onPress={() => {
+                              setDisabling(user);
+                              setReason('');
+                            }}
+                          />
+                        ) : (
+                          <Button
+                            title={t('admin.enable')}
+                            icon="check"
+                            variant="ghost"
+                            size="sm"
+                            onPress={() =>
+                              void run(
+                                user.id,
+                                () => api.adminUpdateUser(user.id, { enabled: true }).then(() => undefined),
+                                t('admin.userEnabled'),
+                              )
+                            }
+                          />
+                        )}
+                        <Button
+                          title=""
+                          icon="trash"
+                          variant="danger"
+                          size="sm"
+                          onPress={() => setDeletingUser(user)}
+                        />
+                      </Row>
+                    </Row>
                   </Row>
-                </Row>
 
-                {/* Role Management Chips */}
-                <View style={{ gap: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
-                  <Muted style={typography.tiny}>{t('admin.roles')}:</Muted>
-                  <Row gap={6} style={{ flexWrap: 'wrap' }}>
+                  {/* Role Selection Chips row */}
+                  <Row gap={6} style={{ flexWrap: 'wrap', alignItems: 'center', paddingLeft: 50 }}>
+                    <Muted style={{ fontSize: 11, fontWeight: '600' }}>{t('admin.roles')}:</Muted>
                     {SELECTABLE_ROLES.map((role) => {
                       const hasRole = user.roles.includes(role);
                       return (
                         <Chip
                           key={role}
                           label={role}
+                          size="sm"
                           selected={hasRole}
                           onPress={() => toggleRole(user, role)}
                         />
                       );
                     })}
+
+                    {user.disabledReason && (
+                      <Muted style={{ fontSize: 11, color: colors.danger, marginLeft: 8 }}>
+                        {t('admin.reason')}: {user.disabledReason}
+                      </Muted>
+                    )}
                   </Row>
                 </View>
-              </Card>
-            ))}
-
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              totalElements={total}
-              onChange={(newPage) => void load(query.trim(), newPage)}
-              loading={loading}
-            />
+              );
+            })}
           </View>
         )}
-      </Card>
 
-      {/* Disable Reason Modal Sheet */}
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={total}
+          onChange={(newPage) => void load(query.trim(), newPage)}
+          loading={loading}
+        />
+      </View>
+
+      {/* Disable User Modal */}
       <Sheet
-        open={!!disabling}
+        open={Boolean(disabling)}
         onClose={() => setDisabling(null)}
         title={t('admin.disable')}
-        width={440}
+        footer={
+          <Row style={{ justifyContent: 'flex-end', gap: spacing.sm }}>
+            <Button title={t('common.cancel')} variant="outline" onPress={() => setDisabling(null)} />
+            <Button
+              title={t('admin.disable')}
+              variant="danger"
+              onPress={confirmDisable}
+            />
+          </Row>
+        }
       >
-        <View style={{ gap: spacing.lg }}>
-          <Body>{disabling?.displayName}</Body>
+        <View style={{ gap: spacing.md, padding: spacing.md }}>
+          <Body>
+            {t('admin.disable')}: <Body style={{ fontWeight: '700' }}>{disabling?.displayName}</Body>
+          </Body>
           <Input
             label={t('admin.disableReason')}
             value={reason}
             onChangeText={setReason}
-            placeholder="Geef reden voor blokkering..."
-            multiline
+            placeholder="Bijv. overtreding van marktplaatsregels"
           />
-          <Row style={{ justifyContent: 'flex-end', gap: spacing.sm }}>
-            <Button
-              title={t('common.cancel')}
-              variant="ghost"
-              onPress={() => setDisabling(null)}
-            />
-            <Button
-              title={t('admin.disable')}
-              variant="danger"
-              icon="ban"
-              onPress={confirmDisable}
-            />
-          </Row>
         </View>
       </Sheet>
 
-      {/* Delete User Modal Sheet */}
+      {/* Delete User Modal */}
       <Sheet
-        open={!!deletingUser}
+        open={Boolean(deletingUser)}
         onClose={() => setDeletingUser(null)}
         title={t('admin.deleteUser')}
-        width={440}
-      >
-        <View style={{ gap: spacing.lg }}>
-          <Body>{t('admin.deleteUserConfirm')}</Body>
-          {deletingUser && (
-            <Card style={{ backgroundColor: colors.surfaceAlt }}>
-              <Body style={{ fontWeight: '700' }}>{deletingUser.displayName}</Body>
-              <Muted>{deletingUser.email}</Muted>
-            </Card>
-          )}
+        footer={
           <Row style={{ justifyContent: 'flex-end', gap: spacing.sm }}>
-            <Button
-              title={t('common.cancel')}
-              variant="ghost"
-              onPress={() => setDeletingUser(null)}
-            />
+            <Button title={t('common.cancel')} variant="outline" onPress={() => setDeletingUser(null)} />
             <Button
               title={t('common.delete')}
               variant="danger"
-              icon="trash"
               onPress={confirmDelete}
             />
           </Row>
+        }
+      >
+        <View style={{ gap: spacing.md, padding: spacing.md }}>
+          <Body style={{ color: colors.danger, fontWeight: '600' }}>
+            {t('admin.deleteUserConfirm')}
+          </Body>
+          <Body>
+            Gebruiker: <Body style={{ fontWeight: '700' }}>{deletingUser?.displayName}</Body> ({deletingUser?.email})
+          </Body>
         </View>
       </Sheet>
     </AdminShell>
