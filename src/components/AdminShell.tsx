@@ -272,9 +272,13 @@ export function AdminShell({
             position: 'relative',
           }}
         >
-          {/* FULL-HEIGHT LEFT-DOCKED SIDEBAR */}
+          {/* FULL-HEIGHT LEFT-DOCKED SCROLLABLE SIDEBAR */}
           <View
             style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              bottom: 0,
               width: collapsed ? 56 : 224,
               backgroundColor: colors.surface,
               borderRightWidth: 1,
@@ -286,20 +290,9 @@ export function AdminShell({
               zIndex: 15,
               ...(Platform.OS === 'web'
                 ? ({
-                    position: 'fixed',
-                    top: headerHeight,
-                    left: 0,
-                    bottom: 0,
-                    height: `calc(100vh - ${headerHeight}px)`,
                     transition: 'width 0.18s cubic-bezier(0.4, 0, 0.2, 1), padding 0.18s ease',
-                    overflowY: 'auto',
                   } as any)
-                : {
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    bottom: 0,
-                  }),
+                : null),
             }}
           >
             {/* Top Section */}
