@@ -85,8 +85,9 @@ export function Footer() {
             <Text style={[typography.label, { color: colors.ink, fontWeight: '700' }]}>
               {t('footer.legal')}
             </Text>
-            <FooterLink label={t('footer.disclaimer')} onPress={() => router.push('/disclaimer' as any)} />
+            <FooterLink label={t('footer.privacy')} onPress={() => router.push('/privacy' as any)} />
             <FooterLink label={t('footer.terms')} onPress={() => router.push('/terms' as any)} />
+            <FooterLink label={t('footer.disclaimer')} onPress={() => router.push('/disclaimer' as any)} />
             <FooterLink label={t('footer.security')} onPress={() => router.push('/settings/security')} />
           </View>
         </View>
