@@ -18,6 +18,7 @@ import {
   Input,
   Muted,
   Row,
+  Sheet,
   Spinner,
 } from '../../src/components/ui';
 import { useAuth } from '../../src/context/AuthContext';
@@ -52,6 +53,11 @@ export default function SecurityScreen() {
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [passkeyLabel, setPasskeyLabel] = useState('');
   const [loadingPasskeys, setLoadingPasskeys] = useState(true);
+
+  const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const loadPasskeys = useCallback(async () => {
     if (!user) return;
@@ -520,6 +526,115 @@ export default function SecurityScreen() {
           />
         </View>
       </Card>
+
+      {/* ------------------------------------------------ Danger Zone / Delete Account */}
+      <Card style={{ gap: spacing.md, borderColor: colors.danger, borderWidth: 1 }}>
+        <Row style={{ alignItems: 'center', gap: spacing.sm }}>
+          <Icon name="warning" size={20} color={colors.danger} />
+          <H3 style={{ color: colors.danger }}>{t('security.dangerZone')}</H3>
+        </Row>
+        <Muted>{t('security.deleteAccountWarning')}</Muted>
+        <Divider />
+        <View style={{ alignItems: isWide ? 'flex-end' : 'stretch' }}>
+          <Button
+            title={t('security.deleteAccountTitle')}
+            icon="trash"
+            variant="danger"
+            onPress={() => {
+              setDeletePassword('');
+              setDeleteReason('');
+              setDeleteAccountModalOpen(true);
+            }}
+          />
+        </View>
+      </Card>
+
+      {/* ------------------------------------------------ Delete Account Modal */}
+      <Sheet
+        open={deleteAccountModalOpen}
+        onClose={() => {
+          if (!deletingAccount) {
+            setDeleteAccountModalOpen(false);
+          }
+        }}
+        title={t('security.deleteAccountConfirmDialogTitle')}
+        footer={
+          <Row style={{ justifyContent: 'flex-end', gap: spacing.sm }}>
+            <Button
+              title={t('common.cancel')}
+              variant="ghost"
+              disabled={deletingAccount}
+              onPress={() => setDeleteAccountModalOpen(false)}
+            />
+            <Button
+              title={t('security.deleteAccountButton')}
+              variant="danger"
+              icon="trash"
+              loading={deletingAccount}
+              disabled={user.hasPassword !== false && !deletePassword.trim()}
+              onPress={async () => {
+                setDeletingAccount(true);
+                try {
+                  await api.deleteAccount({
+                    password: deletePassword.trim() || undefined,
+                    reason: deleteReason.trim() || undefined,
+                  });
+                  setDeleteAccountModalOpen(false);
+                  await logout();
+                  toast.success(t('security.deleteAccountSuccess'));
+                  router.replace('/');
+                } catch (error) {
+                  toast.error(error instanceof ApiError ? error.message : (error as Error)?.message || t('errors.generic'));
+                } finally {
+                  setDeletingAccount(false);
+                }
+              }}
+            />
+          </Row>
+        }
+      >
+        <View style={{ gap: spacing.md }}>
+          <View
+            style={{
+              backgroundColor: colors.dangerSoft,
+              padding: spacing.md,
+              borderRadius: radius.md,
+              gap: spacing.xs,
+              borderWidth: 1,
+              borderColor: colors.danger,
+            }}
+          >
+            <Body style={{ color: colors.danger, fontWeight: '600' }}>
+              {t('security.deleteAccountConfirmDialogBody')}
+            </Body>
+            <Muted style={{ color: colors.danger, opacity: 0.9, fontSize: 13 }}>
+              {t('security.deleteAccountWarning')}
+            </Muted>
+          </View>
+
+          {user.hasPassword !== false && (
+            <Input
+              label={t('auth.password')}
+              placeholder={t('security.deleteAccountPasswordPrompt')}
+              value={deletePassword}
+              onChangeText={setDeletePassword}
+              secureTextEntry
+              icon="lock"
+              autoFocus
+            />
+          )}
+
+          <Input
+            label={t('security.deleteAccountReasonLabel')}
+            placeholder={t('security.deleteAccountReasonPlaceholder')}
+            value={deleteReason}
+            onChangeText={setDeleteReason}
+            multiline
+            numberOfLines={3}
+            icon="comments"
+          />
+        </View>
+      </Sheet>
     </Page>
   );
 }

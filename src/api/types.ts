@@ -97,6 +97,7 @@ export interface UserProfile {
   emailMfaEnabled?: boolean;
   passkeyCount: number;
   createdAt?: string | null;
+  hasPassword?: boolean;
 }
 
 export interface PublicUser {

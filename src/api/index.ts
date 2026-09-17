@@ -130,6 +130,8 @@ export const api = {
   blockUser: (id: string, reason?: string) =>
     request<MessageResponse>(`/api/users/${id}/block`, { method: 'POST', body: { reason } }),
   unblockUser: (id: string) => request<MessageResponse>(`/api/users/${id}/block`, { method: 'DELETE' }),
+  deleteAccount: (body?: { password?: string; reason?: string }) =>
+    request<MessageResponse>('/api/users/me', { method: 'DELETE', body: body ?? {} }),
 
   /* ---------------------------------------------------------------- tags */
   tags: (q?: string, limit = 60) => request<Tag[]>('/api/tags', { query: { q, limit }, auth: false }),
