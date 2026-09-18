@@ -58,6 +58,7 @@ const fr: Translations = {
     share: 'Partager',
     submit: 'Envoyer',
     send: 'Envoyer',
+    refresh: 'Actualiser',
   },
   nav: {
     home: 'Accueil',

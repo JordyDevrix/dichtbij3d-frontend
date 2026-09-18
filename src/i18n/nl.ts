@@ -55,6 +55,7 @@ const nl = {
     share: 'Delen',
     submit: 'Versturen',
     send: 'Versturen',
+    refresh: 'Vernieuwen',
   },
   nav: {
     home: 'Home',

@@ -57,6 +57,7 @@ const en: Translations = {
     share: 'Share',
     submit: 'Submit',
     send: 'Send',
+    refresh: 'Refresh',
   },
   nav: {
     home: 'Home',
