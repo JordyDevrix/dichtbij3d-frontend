@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
-import { colors, layout, radius, spacing, typography } from '../theme/theme';
+import { colors, radius, spacing, typography } from '../theme/theme';
 import { Icon, IconName } from './Icon';
 import { Avatar, Button, CountBadge, Divider, MenuItem, Muted, Row, Sheet } from './ui';
 import { PreferencesSheet } from './PreferencesSheet';
@@ -226,8 +226,6 @@ export function AppHeader() {
       <View
         style={{
           width: '100%',
-          maxWidth: pathname?.startsWith('/admin') ? undefined : layout.maxWidth,
-          alignSelf: 'center',
           paddingHorizontal: spacing.lg,
           height: 58,
           flexDirection: 'row',
